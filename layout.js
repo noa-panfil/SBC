@@ -67,14 +67,12 @@ const footerHTML = `
 `;
 
 document.addEventListener("DOMContentLoaded", function() {
-    // 1. Injection
     const headerPlaceholder = document.getElementById('header-placeholder');
     if(headerPlaceholder) headerPlaceholder.innerHTML = headerHTML;
 
     const footerPlaceholder = document.getElementById('footer-placeholder');
     if(footerPlaceholder) footerPlaceholder.innerHTML = footerHTML;
 
-    // 2. Lien Actif
     const currentPage = window.location.pathname.split("/").pop() || "index.html";
     const links = document.querySelectorAll('#desktop-menu a, #mobile-menu a');
     
@@ -89,7 +87,6 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-    // 3. LOGIQUE ANIMATION BURGER
     const burgerBtn = document.getElementById('burger-btn');
     const burgerIcon = document.getElementById('burger-icon');
     const mobileMenu = document.getElementById('mobile-menu');
@@ -99,14 +96,12 @@ document.addEventListener("DOMContentLoaded", function() {
             const isClosed = mobileMenu.classList.contains('opacity-0');
 
             if (isClosed) {
-                // OUVERTURE
                 mobileMenu.classList.remove('opacity-0', '-translate-y-4', 'pointer-events-none', '-z-10');
                 mobileMenu.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto', 'z-40');
                 burgerIcon.classList.remove('fa-bars');
                 burgerIcon.classList.add('fa-times');
                 burgerBtn.classList.add('rotate-90');
             } else {
-                // FERMETURE
                 mobileMenu.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto', 'z-40');
                 mobileMenu.classList.add('opacity-0', '-translate-y-4', 'pointer-events-none', '-z-10');
                 burgerIcon.classList.remove('fa-times');

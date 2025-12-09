@@ -103,7 +103,6 @@
                 }
             }
 
-            //montrer ou cacher la section favoris
             if (hasFavorites) {
                 favSection.classList.remove('hidden');
                 document.getElementById('all-teams-title').innerText = "Autres équipes"; // Petit détail sympa
@@ -113,7 +112,6 @@
             }
         }
 
-        //action du favoris
         window.toggleFavorite = function(e, id) {
             e.preventDefault();
             e.stopPropagation();
@@ -131,7 +129,6 @@
             renderTeams();
         };
 
-        //Chargement initial
         fetch('teams.json')
             .then(response => response.json())
             .then(data => {

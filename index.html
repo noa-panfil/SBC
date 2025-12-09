@@ -5,47 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SBC - Accueil</title>
     <link rel="icon" href="img/logo.png" type="image/png">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=1.1">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="tailwind-config.js"></script>
-    <style>
-        /* CSS DU CARROUSEL */
-        .zoomable { cursor: zoom-in; }
-
-        .carousel-container {
-            overflow: hidden;
-            position: relative;
-            width: 100%;
-            padding: 2rem 0;
-            /* Masque pour l'effet fondu sur les bords */
-            mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
-            -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
-        }
-
-        .carousel-track {
-            display: flex;
-            /* gap: 2rem;  <-- SUPPRIMÉ pour éviter le bug de saut */
-            width: max-content;
-            animation: scroll 40s linear infinite;
-            will-change: transform; /* Optimisation pour la fluidité */
-        }
-
-        /* Pause au survol */
-        .carousel-track:hover {
-            animation-play-state: paused;
-        }
-
-        @keyframes scroll {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-        }
-
-        .carousel-item {
-            flex: 0 0 auto;
-            width: 280px;
-            margin-right: 2rem; /* <-- AJOUTÉ pour remplacer le gap */
-        }
-    </style>
 </head>
 <body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
 
@@ -66,11 +28,22 @@
     </header>
 
     <main class="fade-in">
+        <section id="birthday-section" class="py-12 bg-green-50 border-b border-green-100 hidden">
+            <div class="container mx-auto px-4">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-sbc-dark flex items-center justify-center gap-3">
+                        <i class="fas fa-birthday-cake text-yellow-500 animate-bounce"></i> 
+                        Joyeux Anniversaire !
+                    </h2>
+                    <p class="text-gray-600 mt-2">Ils fêtent leur anniversaire en <span id="current-month-name" class="font-bold capitalize text-sbc"></span></p>
+                </div>
+                <div id="birthday-grid" class="flex flex-wrap justify-center gap-6 w-full"></div>
+            </div>
+        </section>
 
         <section class="py-16 bg-white border-t border-gray-100 overflow-hidden">
             <div class="container mx-auto px-4 text-center">
                 <h2 class="text-2xl font-bold text-gray-400 mb-4 uppercase tracking-widest">Ils nous soutiennent</h2>
-                
                 <div class="carousel-container">
                     <div class="carousel-track">
                         
@@ -123,7 +96,6 @@
                         <div class="carousel-item bg-white rounded-xl shadow-md border border-gray-100 p-4">
                             <img src="img/partenaires/ineo.jpg" class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105" onclick="openModal(this.src, 'Ineo')" onerror="this.src='https://placehold.co/300x150?text=Ineo'">
                         </div>
-
                     </div>
                 </div>
 
@@ -134,43 +106,12 @@
                 </div>
             </div>
         </section>
-
     </main>
 
     <div id="footer-placeholder"></div>
-    <script src="layout.js?v=1.1"></script>
+    
+    <script src="layout.js?v=1.2"></script>
+    <script src="home.js?v=1.2"></script>
 
-    <div id="image-modal" class="fixed inset-0 bg-black bg-opacity-90 hidden z-[100] flex items-center justify-center p-4 backdrop-blur-sm cursor-pointer" onclick="closeModal()">
-        <div class="relative max-w-4xl w-full flex flex-col items-center" onclick="event.stopPropagation()">
-            <button onclick="closeModal()" class="absolute -top-12 right-0 text-white text-4xl hover:text-gray-300 transition focus:outline-none">&times;</button>
-            <img id="modal-img" src="" class="w-full max-h-[70vh] object-contain rounded-lg shadow-2xl bg-white p-4">
-            <div class="text-center mt-6">
-                <h3 id="modal-title" class="text-3xl font-bold text-white mb-2 tracking-wide"></h3>
-                <p class="text-sbc-light text-lg font-medium uppercase">Partenaire du Seclin Basket Club</p>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const modal = document.getElementById('image-modal');
-        const modalImg = document.getElementById('modal-img');
-        const modalTitle = document.getElementById('modal-title');
-
-        function openModal(src, title) {
-            modalImg.src = src;
-            modalTitle.innerText = title;
-            modal.classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeModal() {
-            modal.classList.add('hidden');
-            document.body.style.overflow = 'auto';
-        }
-
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') closeModal();
-        });
-    </script>
 </body>
 </html>

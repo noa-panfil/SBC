@@ -87,7 +87,6 @@
                     } else {
                         document.getElementById('team-players').innerHTML = `<p class="text-gray-500 col-span-full">Effectif non communiqué.</p>`;
                     }
-                    // Prepare desktop and mobile targets
                     const desktopTarget = document.getElementById('scorenco-widget-desktop');
                     const mobileTarget = document.getElementById('scorenco-widget-mobile');
 
@@ -108,11 +107,9 @@
                         s.src = 'https://widgets.scorenco.com/host/widgets.js';
                         w.appendChild(s);
 
-                        // Function to place (or move) widget depending on breakpoint
                         const placeWidget = () => {
                             const isDesktop = window.matchMedia('(min-width:1024px)').matches;
                             if (isDesktop && desktopTarget) {
-                                // append to desktop target (will move if already appended elsewhere)
                                 desktopTarget.appendChild(w);
                             } else if (!isDesktop && mobileTarget) {
                                 mobileTarget.appendChild(w);
@@ -123,10 +120,8 @@
                             }
                         };
 
-                        // initial placement
                         placeWidget();
 
-                        // move on resize when crossing breakpoint
                         let lastIsDesktop = window.matchMedia('(min-width:1024px)').matches;
                         window.addEventListener('resize', () => {
                             const nowIsDesktop = window.matchMedia('(min-width:1024px)').matches;

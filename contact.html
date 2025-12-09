@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SBC - Nous Contacter</title>
+    <link rel="icon" href="img/logo.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="tailwind-config.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
+
+    <div id="header-placeholder"></div>
+
+    <main class="container mx-auto px-4 py-12 flex-grow fade-in">
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-sbc-dark mb-4">Contactez-nous</h1>
+            <p class="text-gray-600">Une question sur les inscriptions ou le sponsoring ?</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div class="bg-sbc-dark text-white p-10 relative overflow-hidden">
+                <div class="relative z-10 space-y-8">
+                    <h2 class="text-2xl font-bold">Nos Coordonnées</h2>
+                    <div class="flex items-start gap-4">
+                        <i class="fas fa-map-marker-alt text-2xl text-sbc-light"></i>
+                        <p>7 rue Joliot Curie<br>59113 Seclin</p>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <i class="fas fa-envelope text-2xl text-sbc-light"></i>
+                        <p>seclinbc@gmail.com</p>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <i class="fas fa-phone text-2xl text-sbc-light"></i>
+                        <p>06 50 72 37 63</p>
+                    </div>
+                </div>
+                <img src="img/logo.png" class="absolute -bottom-10 -right-10 w-64 opacity-10">
+            </div>
+
+            <div class="p-10">
+                <form action="https://api.web3forms.com/submit" method="POST">
+                    
+                    <input type="hidden" name="access_key" value="872c9a5f-aca6-4124-9364-62c3afc12c1e">
+                    
+                    <input type="hidden" name="redirect" id="redirectUrl">
+
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <input type="text" name="Nom" placeholder="Nom" required class="bg-gray-50 border p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-sbc">
+                        <input type="text" name="Prénom" placeholder="Prénom" required class="bg-gray-50 border p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-sbc">
+                    </div>
+                    
+                    <input type="email" name="email" placeholder="Email" required class="bg-gray-50 border p-3 rounded-lg w-full mb-4 focus:outline-none focus:ring-2 focus:ring-sbc">
+                    
+                    <div class="flex items-center gap-3 mb-4">
+                        <input id="partnership" name="partenariat" type="checkbox" value="OUI" class="h-4 w-4 text-sbc focus:ring-sbc border-gray-300 rounded">
+                        <label for="partnership" class="text-sm text-gray-700">Demande de partenariat</label>
+                    </div>
+                    
+                    <textarea name="message" rows="4" placeholder="Message" required class="bg-gray-50 border p-3 rounded-lg w-full mb-4 focus:outline-none focus:ring-2 focus:ring-sbc"></textarea>
+
+                    <button type="submit" class="w-full bg-sbc text-white font-bold py-3 rounded-lg hover:bg-sbc-dark transition transform hover:-translate-y-1 shadow-md">
+                        Envoyer
+                    </button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <div id="footer-placeholder"></div>
+    <script src="layout.js?v=1.1"></script>
+
+    <script>
+        const redirectInput = document.getElementById('redirectUrl');
+        if(redirectInput) {
+            redirectInput.value = window.location.href.replace('contact.html', 'merci.html');
+        }
+    </script>
+</body>
+</html>

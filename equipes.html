@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SBC - Nos Équipes</title>
+    <link rel="icon" href="img/logo.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="tailwind-config.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
+
+    <div id="header-placeholder"></div>
+
+    <div class="bg-white py-12 shadow-sm text-center">
+        <h1 class="text-4xl font-bold text-sbc-dark">Nos Équipes</h1>
+        <p class="text-gray-600 mt-2">Saison 2024 - 2025</p>
+    </div>
+
+    <main class="container mx-auto px-4 py-12 flex-grow fade-in">
+        
+        <section id="favorites-section" class="hidden mb-16 border-b border-gray-200 pb-12">
+            <h2 class="text-2xl font-bold text-yellow-600 mb-6 flex items-center gap-2">
+                <i class="fas fa-star"></i> Mes Favoris
+            </h2>
+            <div id="favorites-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                </div>
+        </section>
+
+        <section>
+            <h2 class="text-2xl font-bold text-sbc-dark mb-6 flex items-center gap-2" id="all-teams-title">
+                <i class="fas fa-users"></i> Toutes les équipes
+            </h2>
+            <div id="teams-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <p class="text-center col-span-full text-gray-500">Chargement des équipes...</p>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="footer-placeholder"></div>
+    <script src="layout.js?v=1.1"></script>
+
+    <script>
+        let teamsData = {};
+
+        function getFavorites() {
+            const favs = localStorage.getItem('sbc_favorites');
+            return favs ? JSON.parse(favs) : [];
+        }
+
+        function createCardHTML(id, team, isFav) {
+            const starClass = isFav ? "fas fa-star text-yellow-400" : "far fa-star text-white hover:text-yellow-300";
+            
+            return `
+                <a href="detail-equipe.html?id=${id}" class="group block bg-white rounded-xl shadow-md overflow-hidden hover:shadow-2xl transition relative fade-in">
+                    <div class="h-56 overflow-hidden relative">
+                        <img src="${team.image}" alt="${team.name}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
+                        
+                        <div class="absolute top-0 left-0 bg-sbc text-white font-bold px-3 py-1 text-sm rounded-br-lg shadow-sm">
+                            ${team.category}
+                        </div>
+
+                        <button onclick="toggleFavorite(event, '${id}')" 
+                                class="absolute top-2 right-2 z-20 w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center transition shadow-lg backdrop-blur-sm group-hover:scale-110">
+                            <i class="${starClass} text-xl transition-colors duration-300 drop-shadow-md"></i>
+                        </button>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold group-hover:text-sbc transition flex items-center justify-between">
+                            ${team.name}
+                        </h3>
+                        <p class="text-gray-500 mt-2 text-sm flex items-center">
+                            Voir l'effectif <i class="fas fa-arrow-right ml-2 opacity-0 group-hover:opacity-100 transition-opacity transform group-hover:translate-x-1"></i>
+                        </p>
+                    </div>
+                </a>
+            `;
+        }
+
+        function renderTeams() {
+            const favContainer = document.getElementById('favorites-container');
+            const mainContainer = document.getElementById('teams-container');
+            const favSection = document.getElementById('favorites-section');
+            const favorites = getFavorites();
+
+            favContainer.innerHTML = '';
+            mainContainer.innerHTML = '';
+
+            let hasFavorites = false;
+
+            for (const [id, team] of Object.entries(teamsData)) {
+                const isFav = favorites.includes(id);
+
+                const card = createCardHTML(id, team, isFav);
+
+                mainContainer.innerHTML += card;
+
+                if (isFav) {
+                    favContainer.innerHTML += card;
+                    hasFavorites = true;
+                }
+            }
+
+            //montrer ou cacher la section favoris
+            if (hasFavorites) {
+                favSection.classList.remove('hidden');
+                document.getElementById('all-teams-title').innerText = "Autres équipes"; // Petit détail sympa
+            } else {
+                favSection.classList.add('hidden');
+                document.getElementById('all-teams-title').innerText = "Toutes les équipes";
+            }
+        }
+
+        //action du favoris
+        window.toggleFavorite = function(e, id) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            let favorites = getFavorites();
+            const index = favorites.indexOf(id);
+
+            if (index === -1) {
+                favorites.push(id);
+            } else {
+                favorites.splice(index, 1);
+            }
+            localStorage.setItem('sbc_favorites', JSON.stringify(favorites));
+            
+            renderTeams();
+        };
+
+        //Chargement initial
+        fetch('teams.json')
+            .then(response => response.json())
+            .then(data => {
+                teamsData = data;
+                renderTeams();
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                document.getElementById('teams-container').innerHTML = "<p class='text-red-500 col-span-full text-center'>Erreur de chargement des données.</p>";
+            });
+    </script>
+</body>
+</html>

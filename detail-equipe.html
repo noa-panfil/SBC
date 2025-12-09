@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SBC - Détail Équipe</title>
+    <link rel="icon" href="img/logo.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="tailwind-config.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
+
+    <div id="header-placeholder"></div>
+
+    <div class="bg-sbc-dark text-white py-12">
+        <div class="container mx-auto px-4">
+            <a href="equipes.html" class="text-gray-300 hover:text-white mb-4 inline-block text-sm">
+                <i class="fas fa-arrow-left mr-1"></i> Retour aux équipes
+            </a>
+            <h1 id="team-name" class="text-4xl md:text-5xl font-bold">Chargement...</h1>
+            <span id="team-category" class="inline-block bg-sbc-light text-sbc-dark font-bold px-3 py-1 rounded mt-3">...</span>
+        </div>
+    </div>
+
+    <main class="container mx-auto px-4 py-12 flex flex-col lg:grid lg:grid-cols-3 gap-12 flex-grow fade-in">
+        <div class="lg:col-span-1 space-y-8">
+            <div class="bg-white p-6 rounded-xl shadow border-l-4 border-sbc">
+                <h3 class="text-xl font-bold mb-4 flex items-center gap-2"><i class="far fa-clock text-sbc"></i> Horaires d'entraînement</h3>
+                <p id="team-schedule" class="text-gray-700 font-medium">...</p>
+            </div>
+            <div class="bg-gray-100 p-6 rounded-xl">
+                <h3 class="text-xl font-bold mb-4">Coachs</h3>
+                <div id="team-coaches" class="space-y-4"></div>
+            </div>
+                <div id="scorenco-widget-desktop" class="hidden lg:block lg:col-span-1 lg:col-start-1 lg:row-start-2 mt-6"></div>
+            <div id="scorenco-widget-container" class="lg:col-span-1 lg:col-start-1 lg:row-start-2 mt-6"></div>
+        </div>
+
+        <div class="lg:col-span-2">
+            <h2 class="text-2xl font-bold border-b-2 border-gray-200 pb-2 mb-6 text-sbc-dark flex items-center gap-3">
+                <img src="img/logo.png" class="h-8 w-auto"> Effectif Joueurs
+            </h2>
+                <div id="team-players" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6"></div>
+            <div id="scorenco-widget-mobile" class="block lg:hidden mt-6"></div>
+        </div>
+        
+    </main>
+
+    <div id="footer-placeholder"></div>
+    <script src="layout.js?v=1.1"></script>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const teamId = params.get('id');
+
+        fetch('teams.json')
+            .then(response => response.json())
+            .then(data => {
+                const team = data[teamId];
+
+                if (team) {
+                    document.getElementById('team-name').innerText = team.name;
+                    document.getElementById('team-category').innerText = team.category;
+                    document.getElementById('team-schedule').innerText = team.schedule;
+
+                    document.getElementById('team-coaches').innerHTML = team.coaches.map(c => `
+                        <div class="flex items-center gap-4 bg-white p-3 rounded shadow-sm">
+                            <img src="${c.img}" class="w-12 h-12 rounded-full object-cover border border-gray-200">
+                            <div>
+                                <p class="font-bold text-gray-800">${c.name}</p>
+                                <p class="text-xs text-sbc font-bold uppercase">${c.role}</p>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    if (team.players && team.players.length > 0) {
+                        document.getElementById('team-players').innerHTML = team.players.map(p => `
+                            <div class="text-center bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition border border-transparent hover:border-sbc">
+                                <div class="relative inline-block mb-3">
+                                    <img src="${p.img}" class="w-20 h-20 rounded-full object-cover border-2 border-gray-100">
+                                    <span class="absolute bottom-0 right-0 bg-sbc text-white text-xs font-bold h-6 w-6 flex items-center justify-center rounded-full border-2 border-white">#${p.num}</span>
+                                </div>
+                                <p class="font-bold text-gray-800 text-sm">${p.name}</p>
+                            </div>
+                        `).join('');
+                    } else {
+                        document.getElementById('team-players').innerHTML = `<p class="text-gray-500 col-span-full">Effectif non communiqué.</p>`;
+                    }
+                    // Prepare desktop and mobile targets
+                    const desktopTarget = document.getElementById('scorenco-widget-desktop');
+                    const mobileTarget = document.getElementById('scorenco-widget-mobile');
+
+                    if (team.widgetId && (desktopTarget || mobileTarget)) {
+                        const w = document.createElement('div');
+                        w.className = 'scorenco-widget';
+                        w.setAttribute('data-widget-type', 'team');
+                        w.setAttribute('data-widget-id', team.widgetId);
+                        w.style.cssText = 'background: #14532d; height: 500px; display: flex; align-items: center; justify-content: center; flex-direction: column; text-transform: uppercase; font-family: sans-serif; font-weight: bolder; gap: 9px; color:#1E457B;';
+
+                        const styleTag = document.createElement('style');
+                        styleTag.textContent = ".ldsdr{display:inline-block;width:80px;height:80px}.ldsdr:after{content:\" \";display:block;width:64px;height:64px;margin:8px;border-radius:50%;border:6px solid #1E457B;border-color:#1E457B transparent;animation:ldsdr 1.2s linear infinite}@keyframes ldsdr{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}";
+                        w.appendChild(styleTag);
+
+                        const s = document.createElement('script');
+                        s.async = true;
+                        s.defer = true;
+                        s.src = 'https://widgets.scorenco.com/host/widgets.js';
+                        w.appendChild(s);
+
+                        // Function to place (or move) widget depending on breakpoint
+                        const placeWidget = () => {
+                            const isDesktop = window.matchMedia('(min-width:1024px)').matches;
+                            if (isDesktop && desktopTarget) {
+                                // append to desktop target (will move if already appended elsewhere)
+                                desktopTarget.appendChild(w);
+                            } else if (!isDesktop && mobileTarget) {
+                                mobileTarget.appendChild(w);
+                            } else if (desktopTarget) {
+                                desktopTarget.appendChild(w);
+                            } else if (mobileTarget) {
+                                mobileTarget.appendChild(w);
+                            }
+                        };
+
+                        // initial placement
+                        placeWidget();
+
+                        // move on resize when crossing breakpoint
+                        let lastIsDesktop = window.matchMedia('(min-width:1024px)').matches;
+                        window.addEventListener('resize', () => {
+                            const nowIsDesktop = window.matchMedia('(min-width:1024px)').matches;
+                            if (nowIsDesktop !== lastIsDesktop) {
+                                lastIsDesktop = nowIsDesktop;
+                                placeWidget();
+                            }
+                        });
+                    }
+
+                } else {
+                    document.body.innerHTML = "<div class='text-center p-12 mt-12'><h1 class='text-2xl font-bold'>Équipe introuvable</h1><a href='equipes.html' class='text-sbc underline'>Retour</a></div>";
+                }
+            })
+            .catch(error => console.error('Erreur:', error));
+    </script>
+</body>
+</html>

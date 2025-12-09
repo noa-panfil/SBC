@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SBC - Message envoyé</title>
+    <link rel="icon" href="img/logo.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="tailwind-config.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
+
+    <div id="header-placeholder"></div>
+
+    <main class="container mx-auto px-4 flex-grow flex flex-col items-center justify-center py-20 fade-in">
+        
+        <div class="bg-white p-8 md:p-12 rounded-2xl shadow-xl text-center max-w-lg w-full border border-gray-100">
+            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-check text-4xl text-sbc"></i>
+            </div>
+
+            <h1 class="text-3xl font-bold text-sbc-dark mb-4">Message envoyé !</h1>
+            
+            <p class="text-gray-600 mb-8">
+                Merci de nous avoir contactés. L'équipe du SBC a bien reçu votre message et vous répondra dans les plus brefs délais.
+            </p>
+
+            <div class="space-y-3">
+                <a href="index.html" class="block w-full bg-sbc hover:bg-sbc-dark text-white font-bold py-3 rounded-lg transition transform hover:-translate-y-1 shadow-md">
+                    Retour à l'accueil
+                </a>
+            </div>
+        </div>
+
+    </main>
+
+    <div id="footer-placeholder"></div>
+    <script src="layout.js?v=1.1"></script>
+</body>
+</html>

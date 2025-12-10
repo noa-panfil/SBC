@@ -28,6 +28,49 @@
     </header>
 
     <main class="fade-in">
+
+        <section id="events-section" class="py-16 bg-white hidden"> 
+            <div class="container mx-auto px-4">
+                
+                <div class="flex items-center justify-center gap-2 md:gap-6 mb-10 select-none">
+                    <button id="btn-prev-event" class="w-10 h-10 md:w-12 md:h-12 flex-shrink-0 rounded-full bg-gray-100 hover:bg-sbc hover:text-white text-gray-600 transition flex items-center justify-center shadow-sm focus:outline-none">
+                        <i class="fas fa-chevron-left text-lg md:text-xl"></i>
+                    </button>
+
+                    <div class="text-center w-72 md:w-96 flex flex-col justify-center h-20"> 
+                        <h2 id="events-title" class="text-xl md:text-3xl font-bold text-sbc-dark flex items-center justify-center gap-2 md:gap-3 transition-all duration-300 whitespace-nowrap">
+                            </h2>
+                        <p id="events-subtitle" class="text-gray-500 mt-1 text-xs md:text-base line-clamp-1">
+                            </p>
+                    </div>
+
+                    <button id="btn-next-event" class="w-10 h-10 md:w-12 md:h-12 flex-shrink-0 rounded-full bg-gray-100 hover:bg-sbc hover:text-white text-gray-600 transition flex items-center justify-center shadow-sm focus:outline-none">
+                        <i class="fas fa-chevron-right text-lg md:text-xl"></i>
+                    </button>
+                </div>
+
+                <div class="relative flex items-center gap-4">
+                    <button id="carousel-prev" class="hidden z-10 w-10 h-10 rounded-full bg-white border border-gray-200 text-gray-600 shadow-md hover:bg-sbc hover:text-white hover:border-sbc transition flex-shrink-0 flex items-center justify-center">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    
+                    <div class="flex-grow overflow-hidden">
+                        <div id="events-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 transition-all duration-300 ease-out transform min-h-[400px]">
+                            </div>
+                        <div id="no-events-msg" class="hidden text-center text-gray-400 py-10 italic">
+                            Aucun événement à afficher pour le moment.
+                        </div>
+                    </div>
+                    
+                    <button id="carousel-next" class="hidden z-10 w-10 h-10 rounded-full bg-white border border-gray-200 text-gray-600 shadow-md hover:bg-sbc hover:text-white hover:border-sbc transition flex-shrink-0 flex items-center justify-center">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                <div id="pagination-dots" class="flex justify-center gap-2 mt-6"></div>
+
+            </div>
+        </section>
+
         <section id="birthday-section" class="py-12 bg-green-50 border-b border-green-100 hidden">
             <div class="container mx-auto px-4">
                 <div class="text-center mb-8">
@@ -44,9 +87,9 @@
         <section class="py-16 bg-white border-t border-gray-100 overflow-hidden">
             <div class="container mx-auto px-4 text-center">
                 <h2 class="text-2xl font-bold text-gray-400 mb-4 uppercase tracking-widest">Ils nous soutiennent</h2>
+                
                 <div class="carousel-container">
                     <div class="carousel-track">
-                        
                         <div class="carousel-item bg-white rounded-xl shadow-md border border-gray-100 p-4">
                             <img src="img/partenaires/generation-lulu.jpg" class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105" onclick="openModal(this.src, 'Génération Lulu')" onerror="this.src='https://placehold.co/300x150?text=Génération+Lulu'">
                         </div>
@@ -106,12 +149,13 @@
                 </div>
             </div>
         </section>
+
     </main>
 
     <div id="footer-placeholder"></div>
     
-    <script src="layout.js?v=1.2"></script>
-    <script src="home.js?v=1.2"></script>
+    <script src="js/layout.js?v=1.2"></script>
+    <script src="js/home.js?v=1.2"></script>
 
 </body>
 </html>

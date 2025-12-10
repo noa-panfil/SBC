@@ -40,7 +40,7 @@
     </main>
 
     <div id="footer-placeholder"></div>
-    <script src="layout.js?v=1.1"></script>
+    <script src="js/layout.js?v=1.1"></script>
 
     <script>
         let teamsData = {};
@@ -129,7 +129,7 @@
             renderTeams();
         };
 
-        fetch('teams.json')
+        fetch('json/teams.json')
             .then(response => response.json())
             .then(data => {
                 teamsData = data;

@@ -48,13 +48,13 @@
     </main>
 
     <div id="footer-placeholder"></div>
-    <script src="layout.js?v=1.1"></script>
+    <script src="js/layout.js?v=1.1"></script>
 
     <script>
         const params = new URLSearchParams(window.location.search);
         const teamId = params.get('id');
 
-        fetch('teams.json')
+        fetch('json/teams.json')
             .then(response => response.json())
             .then(data => {
                 const team = data[teamId];

@@ -1,0 +1,12 @@
+{
+    "Noel": {
+        "date": "20 Décembre 2025",
+        "format-date": "20/12/2025",
+        "title": "Goûter de Noël",
+        "image": "img/events/noel.jpg",
+        "description": "Rejoignez-nous pour une célébration festive de Noël avec des chants, des cadeaux et un repas spécial.",
+        "location": "Salle Jesse Owens",
+        "time": "10h00",
+        "allowed_teams": ["Baby Basket", "U9", "U11-A", "U11-B","U13F", "U13M-A", "U13M-B", "U15M"]
+    }
+}

@@ -1,28 +1,62 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SBC - Accueil</title>
+    <meta name="description"
+        content="Le site officiel du Seclin Basket Club (SBC). Retrouvez les actus, les résultats, les équipes et la vie du club.">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://seclinbasketclub.fr/">
+    <meta property="og:title" content="Seclin Basket Club - Accueil">
+    <meta property="og:description"
+        content="Le club de basket historique de la ville. Formation, Passion, Compétition.">
+    <meta property="og:image" content="https://seclinbasketclub.fr/img/logo.png">
+
     <link rel="canonical" href="https://seclinbasketclub.fr/">
     <link rel="icon" href="img/logo.png?v=2" type="image/png">
     <link rel="stylesheet" href="style.css?v=1.1">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="tailwind-config.js"></script>
 </head>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SportsTeam",
+  "name": "Seclin Basket Club",
+  "alternateName": "SBC",
+  "url": "https://seclinbasketclub.fr",
+  "logo": "https://seclinbasketclub.fr/img/logo.png",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "7 rue Joliot Curie",
+    "addressLocality": "Seclin",
+    "postalCode": "59113",
+    "addressCountry": "FR"
+  },
+  "email": "seclinbc@gmail.com",
+  "sport": "Basketball"
+}
+</script>
+
 <body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
 
     <div id="header-placeholder"></div>
 
     <header class="relative h-screen flex items-center justify-center bg-gray-900 text-white">
         <div class="absolute inset-0 overflow-hidden">
-            <img src="https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1950" alt="Terrain de basket - Seclin Basket Club" class="w-full h-full object-cover opacity-50">
+            <img src="https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1950"
+                alt="Terrain de basket - Seclin Basket Club" class="w-full h-full object-cover opacity-50">
         </div>
         <div class="relative z-10 text-center px-4 max-w-4xl fade-in">
             <img src="img/logo.png" alt="Logo Seclin Basket Club - SBC" class="h-32 w-auto mx-auto mb-6 drop-shadow-lg">
             <h1 class="text-5xl md:text-7xl font-bold mb-6">SECLIN <span class="text-sbc-light">BASKET</span> CLUB</h1>
             <p class="text-xl md:text-2xl mb-8 text-gray-200">Rejoignez la passion verte et blanche.</p>
-            <a href="equipes.html" class="bg-sbc hover:bg-sbc-light text-white px-8 py-4 rounded-full font-bold text-lg transition transform hover:scale-105 shadow-xl">
+            <a href="equipes.html"
+                class="bg-sbc hover:bg-sbc-light text-white px-8 py-4 rounded-full font-bold text-lg transition transform hover:scale-105 shadow-xl">
                 Voir les équipes
             </a>
         </div>
@@ -30,40 +64,46 @@
 
     <main class="fade-in">
 
-        <section id="events-section" class="py-16 bg-white hidden"> 
+        <section id="events-section" class="py-16 bg-white hidden">
             <div class="container mx-auto px-4">
-                
+
                 <div class="flex items-center justify-center gap-2 md:gap-6 mb-10 select-none">
-                    <button id="btn-prev-event" class="w-10 h-10 md:w-12 md:h-12 flex-shrink-0 rounded-full bg-gray-100 hover:bg-sbc hover:text-white text-gray-600 transition flex items-center justify-center shadow-sm focus:outline-none">
+                    <button id="btn-prev-event" aria-label="Événement précédent"
+                        class="w-10 h-10 md:w-12 md:h-12 flex-shrink-0 rounded-full bg-gray-100 hover:bg-sbc hover:text-white text-gray-600 transition flex items-center justify-center shadow-sm focus:outline-none">
                         <i class="fas fa-chevron-left text-lg md:text-xl"></i>
                     </button>
 
-                    <div class="text-center w-72 md:w-96 flex flex-col justify-center h-20"> 
-                        <h2 id="events-title" class="text-xl md:text-3xl font-bold text-sbc-dark flex items-center justify-center gap-2 md:gap-3 transition-all duration-300 whitespace-nowrap">
-                            </h2>
+                    <div class="text-center w-72 md:w-96 flex flex-col justify-center h-20">
+                        <h2 id="events-title"
+                            class="text-xl md:text-3xl font-bold text-sbc-dark flex items-center justify-center gap-2 md:gap-3 transition-all duration-300 whitespace-nowrap">
+                        </h2>
                         <p id="events-subtitle" class="text-gray-500 mt-1 text-xs md:text-base line-clamp-1">
-                            </p>
+                        </p>
                     </div>
 
-                    <button id="btn-next-event" class="w-10 h-10 md:w-12 md:h-12 flex-shrink-0 rounded-full bg-gray-100 hover:bg-sbc hover:text-white text-gray-600 transition flex items-center justify-center shadow-sm focus:outline-none">
+                    <button id="btn-next-event" aria-label="Événement suivant"
+                        class="w-10 h-10 md:w-12 md:h-12 flex-shrink-0 rounded-full bg-gray-100 hover:bg-sbc hover:text-white text-gray-600 transition flex items-center justify-center shadow-sm focus:outline-none">
                         <i class="fas fa-chevron-right text-lg md:text-xl"></i>
                     </button>
                 </div>
 
                 <div class="relative flex items-center gap-4">
-                    <button id="carousel-prev" class="hidden z-10 w-10 h-10 rounded-full bg-white border border-gray-200 text-gray-600 shadow-md hover:bg-sbc hover:text-white hover:border-sbc transition flex-shrink-0 flex items-center justify-center">
+                    <button id="carousel-prev"
+                        class="hidden z-10 w-10 h-10 rounded-full bg-white border border-gray-200 text-gray-600 shadow-md hover:bg-sbc hover:text-white hover:border-sbc transition flex-shrink-0 flex items-center justify-center">
                         <i class="fas fa-chevron-left"></i>
                     </button>
-                    
+
                     <div class="flex-grow overflow-hidden">
-                        <div id="events-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 transition-all duration-300 ease-out transform min-h-[400px]">
-                            </div>
+                        <div id="events-grid"
+                            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 transition-all duration-300 ease-out transform min-h-[400px]">
+                        </div>
                         <div id="no-events-msg" class="hidden text-center text-gray-400 py-10 italic">
                             Aucun événement à afficher pour le moment.
                         </div>
                     </div>
-                    
-                    <button id="carousel-next" class="hidden z-10 w-10 h-10 rounded-full bg-white border border-gray-200 text-gray-600 shadow-md hover:bg-sbc hover:text-white hover:border-sbc transition flex-shrink-0 flex items-center justify-center">
+
+                    <button id="carousel-next"
+                        class="hidden z-10 w-10 h-10 rounded-full bg-white border border-gray-200 text-gray-600 shadow-md hover:bg-sbc hover:text-white hover:border-sbc transition flex-shrink-0 flex items-center justify-center">
                         <i class="fas fa-chevron-right"></i>
                     </button>
                 </div>
@@ -76,10 +116,11 @@
             <div class="container mx-auto px-4">
                 <div class="text-center mb-8">
                     <h2 class="text-3xl font-bold text-sbc-dark flex items-center justify-center gap-3">
-                        <i class="fas fa-birthday-cake text-yellow-500 animate-bounce"></i> 
+                        <i class="fas fa-birthday-cake text-yellow-500 animate-bounce"></i>
                         Joyeux Anniversaire !
                     </h2>
-                    <p class="text-gray-600 mt-2">Ils fêtent leur anniversaire en <span id="current-month-name" class="font-bold capitalize text-sbc"></span></p>
+                    <p class="text-gray-600 mt-2">Ils fêtent leur anniversaire en <span id="current-month-name"
+                            class="font-bold capitalize text-sbc"></span></p>
                 </div>
                 <div id="birthday-grid" class="flex flex-wrap justify-center gap-6 w-full"></div>
             </div>
@@ -88,63 +129,119 @@
         <section class="py-16 bg-white border-t border-gray-100 overflow-hidden">
             <div class="container mx-auto px-4 text-center">
                 <h2 class="text-2xl font-bold text-gray-400 mb-4 uppercase tracking-widest">Ils nous soutiennent</h2>
-                
+
                 <div class="carousel-container">
                     <div class="carousel-track">
                         <div class="carousel-item bg-white rounded-xl shadow-md border border-gray-100 p-4">
-                            <img src="img/partenaires/generation-lulu.webp" alt="Partenaire Génération Lulu - Seclin" class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105" onclick="openModal(this.src, 'Génération Lulu')" onerror="this.src='https://placehold.co/300x150?text=Génération+Lulu'">
+                            <img src="img/partenaires/generation-lulu.webp" alt="Partenaire Génération Lulu - Seclin"
+                                class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105"
+                                onclick="openModal(this.src, 'Génération Lulu')"
+                                onerror="this.src='https://placehold.co/300x150?text=Génération+Lulu'">
                         </div>
                         <div class="carousel-item bg-white rounded-xl shadow-md border border-gray-100 p-4">
-                            <img src="img/partenaires/hippopotamus.webp" alt="Partenaire Hippopotamus - Restaurant grill Seclin" class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105" onclick="openModal(this.src, 'Hippopotamus')" onerror="this.src='https://placehold.co/300x150?text=Hippopotamus'">
+                            <img src="img/partenaires/hippopotamus.webp"
+                                alt="Partenaire Hippopotamus - Restaurant grill Seclin"
+                                class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105"
+                                onclick="openModal(this.src, 'Hippopotamus')"
+                                onerror="this.src='https://placehold.co/300x150?text=Hippopotamus'">
                         </div>
                         <div class="carousel-item bg-white rounded-xl shadow-md border border-gray-100 p-4">
-                            <img src="img/partenaires/david-parsy.webp" alt="Partenaire David Parsy - Sponsor SBC" class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105" onclick="openModal(this.src, 'David Parsy')" onerror="this.src='https://placehold.co/300x150?text=David+Parsy'">
+                            <img src="img/partenaires/david-parsy.webp" alt="Partenaire David Parsy - Sponsor SBC"
+                                class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105"
+                                onclick="openModal(this.src, 'David Parsy')"
+                                onerror="this.src='https://placehold.co/300x150?text=David+Parsy'">
                         </div>
                         <div class="carousel-item bg-white rounded-xl shadow-md border border-gray-100 p-4">
-                            <img src="img/partenaires/la-pause-dej.webp" alt="Partenaire La Pause Déj - Restaurant Seclin" class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105" onclick="openModal(this.src, 'La Pause Déj')" onerror="this.src='https://placehold.co/300x150?text=La+Pause+Déj'">
+                            <img src="img/partenaires/la-pause-dej.webp"
+                                alt="Partenaire La Pause Déj - Restaurant Seclin"
+                                class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105"
+                                onclick="openModal(this.src, 'La Pause Déj')"
+                                onerror="this.src='https://placehold.co/300x150?text=La+Pause+Déj'">
                         </div>
                         <div class="carousel-item bg-white rounded-xl shadow-md border border-gray-100 p-4">
-                            <img src="img/partenaires/neo-kebab.webp" alt="Partenaire Neo Kebab - Fast food Seclin" class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105" onclick="openModal(this.src, 'Neo Kebab')" onerror="this.src='https://placehold.co/300x150?text=Neo+Kebab'">
+                            <img src="img/partenaires/neo-kebab.webp" alt="Partenaire Neo Kebab - Fast food Seclin"
+                                class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105"
+                                onclick="openModal(this.src, 'Neo Kebab')"
+                                onerror="this.src='https://placehold.co/300x150?text=Neo+Kebab'">
                         </div>
                         <div class="carousel-item bg-white rounded-xl shadow-md border border-gray-100 p-4">
-                            <img src="img/partenaires/m-tech.webp" alt="Partenaire M-tech - Entreprise partenaire SBC" class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105" onclick="openModal(this.src, 'M-tech')" onerror="this.src='https://placehold.co/300x150?text=M-tech'">
+                            <img src="img/partenaires/m-tech.webp" alt="Partenaire M-tech - Entreprise partenaire SBC"
+                                class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105"
+                                onclick="openModal(this.src, 'M-tech')"
+                                onerror="this.src='https://placehold.co/300x150?text=M-tech'">
                         </div>
                         <div class="carousel-item bg-white rounded-xl shadow-md border border-gray-100 p-4">
-                            <img src="img/partenaires/volfoni.webp" alt="Partenaire Volfoni - Sponsor Seclin Basket Club" class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105" onclick="openModal(this.src, 'Volfoni')" onerror="this.src='https://placehold.co/300x150?text=Volfoni'">
+                            <img src="img/partenaires/volfoni.webp"
+                                alt="Partenaire Volfoni - Sponsor Seclin Basket Club"
+                                class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105"
+                                onclick="openModal(this.src, 'Volfoni')"
+                                onerror="this.src='https://placehold.co/300x150?text=Volfoni'">
                         </div>
                         <div class="carousel-item bg-white rounded-xl shadow-md border border-gray-100 p-4">
-                            <img src="img/partenaires/ineo.webp" alt="Partenaire Ineo - Entreprise sponsor SBC" class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105" onclick="openModal(this.src, 'Ineo')" onerror="this.src='https://placehold.co/300x150?text=Ineo'">
+                            <img src="img/partenaires/ineo.webp" alt="Partenaire Ineo - Entreprise sponsor SBC"
+                                class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105"
+                                onclick="openModal(this.src, 'Ineo')"
+                                onerror="this.src='https://placehold.co/300x150?text=Ineo'">
                         </div>
 
                         <div class="carousel-item bg-white rounded-xl shadow-md border border-gray-100 p-4">
-                            <img src="img/partenaires/generation-lulu.webp" alt="Partenaire Génération Lulu - Restaurant Seclin" class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105" onclick="openModal(this.src, 'Génération Lulu')" onerror="this.src='https://placehold.co/300x150?text=Génération+Lulu'">
+                            <img src="img/partenaires/generation-lulu.webp"
+                                alt="Partenaire Génération Lulu - Restaurant Seclin"
+                                class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105"
+                                onclick="openModal(this.src, 'Génération Lulu')"
+                                onerror="this.src='https://placehold.co/300x150?text=Génération+Lulu'">
                         </div>
                         <div class="carousel-item bg-white rounded-xl shadow-md border border-gray-100 p-4">
-                            <img src="img/partenaires/hippopotamus.webp" alt="Partenaire Hippopotamus - Restaurant grill Seclin" class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105" onclick="openModal(this.src, 'Hippopotamus')" onerror="this.src='https://placehold.co/300x150?text=Hippopotamus'">
+                            <img src="img/partenaires/hippopotamus.webp"
+                                alt="Partenaire Hippopotamus - Restaurant grill Seclin"
+                                class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105"
+                                onclick="openModal(this.src, 'Hippopotamus')"
+                                onerror="this.src='https://placehold.co/300x150?text=Hippopotamus'">
                         </div>
                         <div class="carousel-item bg-white rounded-xl shadow-md border border-gray-100 p-4">
-                            <img src="img/partenaires/david-parsy.webp" alt="Partenaire David Parsy - Sponsor SBC" class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105" onclick="openModal(this.src, 'David Parsy')" onerror="this.src='https://placehold.co/300x150?text=David+Parsy'">
+                            <img src="img/partenaires/david-parsy.webp" alt="Partenaire David Parsy - Sponsor SBC"
+                                class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105"
+                                onclick="openModal(this.src, 'David Parsy')"
+                                onerror="this.src='https://placehold.co/300x150?text=David+Parsy'">
                         </div>
                         <div class="carousel-item bg-white rounded-xl shadow-md border border-gray-100 p-4">
-                            <img src="img/partenaires/la-pause-dej.webp" alt="Partenaire La Pause Déj - Restaurant Seclin" class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105" onclick="openModal(this.src, 'La Pause Déj')" onerror="this.src='https://placehold.co/300x150?text=La+Pause+Déj'">
+                            <img src="img/partenaires/la-pause-dej.webp"
+                                alt="Partenaire La Pause Déj - Restaurant Seclin"
+                                class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105"
+                                onclick="openModal(this.src, 'La Pause Déj')"
+                                onerror="this.src='https://placehold.co/300x150?text=La+Pause+Déj'">
                         </div>
                         <div class="carousel-item bg-white rounded-xl shadow-md border border-gray-100 p-4">
-                            <img src="img/partenaires/neo-kebab.webp" alt="Partenaire Neo Kebab - Fast food Seclin" class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105" onclick="openModal(this.src, 'Neo Kebab')" onerror="this.src='https://placehold.co/300x150?text=Neo+Kebab'">
+                            <img src="img/partenaires/neo-kebab.webp" alt="Partenaire Neo Kebab - Fast food Seclin"
+                                class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105"
+                                onclick="openModal(this.src, 'Neo Kebab')"
+                                onerror="this.src='https://placehold.co/300x150?text=Neo+Kebab'">
                         </div>
                         <div class="carousel-item bg-white rounded-xl shadow-md border border-gray-100 p-4">
-                            <img src="img/partenaires/m-tech.webp" alt="Partenaire M-tech - Entreprise partenaire SBC" class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105" onclick="openModal(this.src, 'M-tech')" onerror="this.src='https://placehold.co/300x150?text=M-tech'">
+                            <img src="img/partenaires/m-tech.webp" alt="Partenaire M-tech - Entreprise partenaire SBC"
+                                class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105"
+                                onclick="openModal(this.src, 'M-tech')"
+                                onerror="this.src='https://placehold.co/300x150?text=M-tech'">
                         </div>
                         <div class="carousel-item bg-white rounded-xl shadow-md border border-gray-100 p-4">
-                            <img src="img/partenaires/volfoni.webp" alt="Partenaire Volfoni - Sponsor Seclin Basket Club" class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105" onclick="openModal(this.src, 'Volfoni')" onerror="this.src='https://placehold.co/300x150?text=Volfoni'">
+                            <img src="img/partenaires/volfoni.webp"
+                                alt="Partenaire Volfoni - Sponsor Seclin Basket Club"
+                                class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105"
+                                onclick="openModal(this.src, 'Volfoni')"
+                                onerror="this.src='https://placehold.co/300x150?text=Volfoni'">
                         </div>
                         <div class="carousel-item bg-white rounded-xl shadow-md border border-gray-100 p-4">
-                            <img src="img/partenaires/ineo.webp" alt="Partenaire Ineo - Entreprise sponsor SBC" class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105" onclick="openModal(this.src, 'Ineo')" onerror="this.src='https://placehold.co/300x150?text=Ineo'">
+                            <img src="img/partenaires/ineo.webp" alt="Partenaire Ineo - Entreprise sponsor SBC"
+                                class="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105"
+                                onclick="openModal(this.src, 'Ineo')"
+                                onerror="this.src='https://placehold.co/300x150?text=Ineo'">
                         </div>
                     </div>
                 </div>
 
                 <div class="mt-8">
-                    <a href="partenaires.html" class="inline-block border-2 border-sbc text-sbc font-bold py-2 px-8 rounded-full hover:bg-sbc hover:text-white transition duration-300 shadow-sm hover:shadow-md">
+                    <a href="partenaires.html"
+                        class="inline-block border-2 border-sbc text-sbc font-bold py-2 px-8 rounded-full hover:bg-sbc hover:text-white transition duration-300 shadow-sm hover:shadow-md">
                         Voir la page partenaires complète
                     </a>
                 </div>
@@ -154,9 +251,10 @@
     </main>
 
     <div id="footer-placeholder"></div>
-    
+
     <script src="js/layout.js?v=1.2"></script>
     <script src="js/home.js?v=1.2"></script>
 
 </body>
+
 </html>

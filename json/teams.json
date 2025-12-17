@@ -6,7 +6,7 @@
         "schedule": "Samedi 9h00 - 10h00",
         "widgetId": "",
         "coaches": [
-            { "name": "Jennifer", "role": "Coach", "img": "https://i.pravatar.cc/150?img=11" },
+            { "name": "Jennifer", "role": "Coach", "img": "https://i.pravatar.cc/150?img=12" },
             { "name": "Eric", "role": "Coach Assistant", "img": "https://i.pravatar.cc/150?img=12" }
         ],
         "players": [
@@ -67,22 +67,21 @@
         "schedule": "Mercredi 15h30 - 17h00 / Vendredi 17h00 - 18h15",
         "widgetId": "167828",
         "coaches": [
-            { "name": "Clement", "role": "Coach", "img": "https://i.pravatar.cc/150?img=11", "birth": "12/01/2006", "sexe": "M" },
-            { "name": "Noa", "role": "Coach Assistant", "img": "https://i.pravatar.cc/150?img=12", "birth": "28/01/2006", "sexe": "M" },
-            { "name": "Baptiste", "role": "Coach Assistant", "img": "https://i.pravatar.cc/150?img=15", "birth": "11/11/2005", "sexe": "M" }
+            { "name": "Clement", "role": "Coach", "img": "img/équipes/U11B/clement.jpg", "birth": "12/01/2006", "sexe": "M" },
+            { "name": "Noa", "role": "Coach Assistant", "img": "img/équipes/U11B/noa.jpg", "birth": "28/01/2006", "sexe": "M" }
         ],
         "players": [
-            { "name": "Shanna", "num": 4, "img": "https://i.pravatar.cc/150?img=13", "birth": "28/08/2015", "sexe": "F" },
-            { "name": "Rania", "num": 5, "img": "https://i.pravatar.cc/150?img=14", "birth": "13/04/2016", "sexe": "F" },
-            { "name": "Lino", "num": 6, "img": "https://i.pravatar.cc/150?img=16", "birth": "23/09/2016", "sexe": "M" },
-            { "name": "Elio", "num": 7, "img": "https://i.pravatar.cc/150?img=17", "birth": "06/01/2016", "sexe": "M" },
-            { "name": "Emile", "num": 8, "img": "https://i.pravatar.cc/150?img=18", "birth": "25/05/2016", "sexe": "M" },
-            { "name": "Elio", "num": 9, "img": "https://i.pravatar.cc/150?img=19", "birth": "26/09/2016", "sexe": "M" },
-            { "name": "Aglaé", "num": 10, "img": "https://i.pravatar.cc/150?img=20", "birth": "03/09/2015", "sexe": "F" },
-            { "name": "Axel", "num": 11, "img": "https://i.pravatar.cc/150?img=21", "birth": "07/07/2016", "sexe": "M" },
-            { "name": "Lou", "num": 12, "img": "https://i.pravatar.cc/150?img=22", "birth": "25/04/2016", "sexe": "F" },
-            { "name": "Maé", "num": 13, "img": "https://i.pravatar.cc/150?img=23", "birth": "13/01/2016", "sexe": "M" },
-            { "name": "Léyane", "num": 14, "img": "https://i.pravatar.cc/150?img=24", "birth": "20/10/2016", "sexe": "F" }
+            { "name": "Shanna", "num": 14, "img": "img/équipes/U11B/shanna.jpg", "birth": "28/08/2015", "sexe": "F" },
+            { "name": "Rania", "num": 0, "img": "img/équipes/U11B/rania.jpg", "birth": "13/04/2016", "sexe": "F" },
+            { "name": "Lino", "num": 0, "img": "img/équipes/U11B/lino.jpg", "birth": "23/09/2016", "sexe": "M" },
+            { "name": "Elio", "num": 11, "img": "img/équipes/U11B/elio1.jpg", "birth": "06/01/2016", "sexe": "M" },
+            { "name": "Emile", "num": 13, "img": "img/équipes/U11B/emile.jpg", "birth": "25/05/2016", "sexe": "M" },
+            { "name": "Elio", "num": 0, "img": "img/équipes/U11B/elio2.jpg", "birth": "26/09/2016", "sexe": "M" },
+            { "name": "Aglaé", "num": 0, "img": "img/équipes/U11B/aglae.jpg", "birth": "03/09/2015", "sexe": "F" },
+            { "name": "Axel", "num": 5, "img": "img/équipes/U11B/axel.jpg", "birth": "07/07/2016", "sexe": "M" },
+            { "name": "Lou", "num": 8, "img": "img/équipes/U11B/lou.jpg", "birth": "25/04/2016", "sexe": "F" },
+            { "name": "Maé", "num": 0, "img": "img/équipes/U11B/mae.jpg", "birth": "13/01/2016", "sexe": "M" },
+            { "name": "Léyane", "num": 10, "img": "img/équipes/U11B/leyane.jpg", "birth": "20/10/2016", "sexe": "F" }
         ]
     },
     "U13F": {
@@ -121,7 +120,7 @@
             { "name": "Téo", "role": "Coach Assistant", "img": "https://i.pravatar.cc/150?img=12", "birth": "27/01/2008", "sexe": "M" }
         ],
         "players": [
-            { "name": "Wissam", "num": 6, "img": "https://i.pravatar.cc/150?img=15", "birth": "09/03/2013", "sexe": "M" },
+            { "name": "Wissam", "num": 25, "img": "img/équipes/U13M/Wissam.jpg", "birth": "09/03/2013", "sexe": "M" },
             { "name": "Léandre", "num": 7, "img": "https://i.pravatar.cc/150?img=16", "birth": "27/09/2013", "sexe": "M" },
             { "name": "Baptiste", "num": 12, "img": "https://i.pravatar.cc/150?img=21", "birth": "04/09/2013", "sexe": "M" },
             { "name": "Léo", "num": 13, "img": "https://i.pravatar.cc/150?img=22", "birth": "30/07/2014", "sexe": "M" },
@@ -201,7 +200,7 @@
             { "name": "Manon", "num": 6, "img": "https://i.pravatar.cc/150?img=15", "birth": "27/04/2009", "sexe": "F" },
             { "name": "Emilie", "num": 7, "img": "https://i.pravatar.cc/150?img=16", "birth": "08/02/2010", "sexe": "F" },
             { "name": "Lina", "num": 8, "img": "https://i.pravatar.cc/150?img=17", "birth": "31/08/2008", "sexe": "F" },
-            { "name": "Lola", "num": 9, "img": "https://i.pravatar.cc/150?img=18", "birth": "27/10/2010", "sexe": "F" },
+            { "name": "Lola", "num": 9, "img": "img/équipes/U18F1/lola.jpg", "birth": "27/10/2010", "sexe": "F" },
             { "name": "Margaux", "num": 10, "img": "https://i.pravatar.cc/150?img=19", "birth": "16/01/2009", "sexe": "F" },
             { "name": "Lise", "num": 11, "img": "https://i.pravatar.cc/150?img=20", "birth": "22/11/2010", "sexe": "F" },
             { "name": "Romane", "num": 12, "img": "https://i.pravatar.cc/150?img=21", "birth": "02/10/2009", "sexe": "F" }
@@ -268,19 +267,19 @@
         "schedule": "Lundi 20h30 - 22h30",
         "widgetId": "165187",
         "coaches": [
-            { "name": "Wilfried", "role": "Coach", "img": "https://i.pravatar.cc/150?img=11", "birth": "20/04/1981", "sexe": "M" }
+            { "name": "Wilfried", "role": "Coach", "img": "img/équipes/U21/wilfried.jpg", "birth": "20/04/1981", "sexe": "M" }
         ],
         "players": [
             { "name": "Baptiste", "num": 12, "img": "https://i.pravatar.cc/150?img=13", "birth": "11/11/2005", "sexe": "M" },
-            { "name": "Clement", "num": 9, "img": "https://i.pravatar.cc/150?img=14", "birth": "12/01/2006", "sexe": "M" },
+            { "name": "Clement", "num": 9, "img": "img/équipes/U21/clement.jpg", "birth": "12/01/2006", "sexe": "M" },
             { "name": "Noa", "num": 10, "img": "https://i.pravatar.cc/150?img=15", "birth": "28/01/2006", "sexe": "M" },
-            { "name": "Arthur", "num": 7, "img": "https://i.pravatar.cc/150?img=16", "birth": "02/08/2006", "sexe": "M" },
-            { "name": "Teo", "num": 13, "img": "https://i.pravatar.cc/150?img=17", "birth": "27/01/2008", "sexe": "M" },
-            { "name": "Corentin", "num": 9, "img": "https://i.pravatar.cc/150?img=18", "birth": "19/11/2007", "sexe": "M" },
-            { "name": "Gaultier", "num": 10, "img": "https://i.pravatar.cc/150?img=19", "birth": "09/04/2006", "sexe": "M" },
-            { "name": "Luka", "num": 7, "img": "https://i.pravatar.cc/150?img=20", "birth": "13/03/2006", "sexe": "M" },
-            { "name": "Wa-il", "num": 12, "img": "https://i.pravatar.cc/150?img=21", "birth": "29/01/2007", "sexe": "M" },
-            { "name": "Romain", "num": 15, "img": "https://i.pravatar.cc/150?img=22", "birth": "23/07/2006", "sexe": "M" }
+            { "name": "Arthur", "num": 0, "img": "img/équipes/U21/arthur.jpg", "birth": "02/08/2006", "sexe": "M" },
+            { "name": "Teo", "num": 13, "img": "img/équipes/U21/teo.jpg", "birth": "27/01/2008", "sexe": "M" },
+            { "name": "Corentin", "num": 8, "img": "img/équipes/U21/corentin.jpg", "birth": "19/11/2007", "sexe": "M" },
+            { "name": "Gaultier", "num": 5, "img": "img/équipes/U21/gaultier.jpg", "birth": "09/04/2006", "sexe": "M" },
+            { "name": "Luka", "num": 7, "img": "img/équipes/U21/luka.jpg", "birth": "13/03/2006", "sexe": "M" },
+            { "name": "Wa-il", "num": 0, "img": "img/équipes/U21/wail.jpg", "birth": "29/01/2007", "sexe": "M" },
+            { "name": "Romain", "num": 15, "img": "img/équipes/U21/romain.jpg", "birth": "23/07/2006", "sexe": "M" }
         ]
     },
     "Seniors-F": {

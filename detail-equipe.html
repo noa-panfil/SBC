@@ -40,7 +40,7 @@
 
         <div class="lg:col-span-2">
             <h2 class="text-2xl font-bold border-b-2 border-gray-200 pb-2 mb-6 text-sbc-dark flex items-center gap-3">
-                <img src="img/logo.png" class="h-8 w-auto"> Effectif Joueurs
+                <img src="img/logo.png" alt="Logo Seclin Basket Club - SBC" class="h-8 w-auto"> Effectif Joueurs
             </h2>
                 <div id="team-players" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6"></div>
             <div id="scorenco-widget-mobile" class="block lg:hidden mt-6"></div>
@@ -67,7 +67,7 @@
 
                     document.getElementById('team-coaches').innerHTML = team.coaches.map(c => `
                         <div class="flex items-center gap-4 bg-white p-3 rounded shadow-sm">
-                            <img src="${c.img}" class="w-12 h-12 rounded-full object-cover border border-gray-200">
+                            <img src="${c.img}" alt="Coach ${c.name} - ${c.role} du Seclin Basket Club" class="w-12 h-12 rounded-full object-cover border border-gray-200">
                             <div>
                                 <p class="font-bold text-gray-800">${c.name}</p>
                                 <p class="text-xs text-sbc font-bold uppercase">${c.role}</p>
@@ -79,7 +79,7 @@
                         document.getElementById('team-players').innerHTML = team.players.map(p => `
                             <div class="text-center bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition border border-transparent hover:border-sbc">
                                 <div class="relative inline-block mb-3">
-                                    <img src="${p.img}" class="w-20 h-20 rounded-full object-cover border-2 border-gray-100">
+                                    <img src="${p.img}" alt="Joueur ${p.name} numéro ${p.num} de l'équipe ${team.name} du Seclin Basket Club" class="w-20 h-20 rounded-full object-cover border-2 border-gray-100">
                                     <span class="absolute bottom-0 right-0 bg-sbc text-white text-xs font-bold h-6 w-6 flex items-center justify-center rounded-full border-2 border-white">#${p.num}</span>
                                 </div>
                                 <p class="font-bold text-gray-800 text-sm">${p.name}</p>

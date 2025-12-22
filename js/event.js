@@ -74,6 +74,11 @@ document.addEventListener("DOMContentLoaded", function() {
                 // Récupérer les comptes depuis Google Sheets
                 eventRoles = event.roles || [];
                 let currentCounts = {};
+                
+                // AJOUT : Loader
+                const container = document.getElementById('participants-container');
+                container.innerHTML = `<div id="missions-loader" class="text-center p-4 text-sbc font-bold animate-pulse"><i class="fas fa-spinner fa-spin mr-2"></i> Chargement des places...</div>`;
+
                 try {
                     // On demande à Google : "Combien d'inscrits pour cet event ?"
                     const response = await fetch(`${scriptURL}?event=${encodeURIComponent(event.title)}`);
@@ -81,6 +86,10 @@ document.addEventListener("DOMContentLoaded", function() {
                 } catch (e) {
                     console.error("Erreur lecture quotas", e);
                 }
+
+                // RETRAIT : Loader
+                const loader = document.getElementById('missions-loader');
+                if(loader) loader.remove();
 
                 addBenevoleRow(currentCounts);
 

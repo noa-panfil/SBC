@@ -8,7 +8,16 @@
         "location": "Salle Jesse Owens",
         "time": "10h00",
         "mode": "joueur",
-        "allowed_teams": ["Baby Basket", "U9", "U11-A", "U11-B","U13F", "U13M-A", "U13M-B", "U15M"]
+        "allowed_teams": [
+            "Baby Basket",
+            "U9",
+            "U11-A",
+            "U11-B",
+            "U13F",
+            "U13M-A",
+            "U13M-B",
+            "U15M"
+        ]
     },
     "Aide3x3": {
         "date": "Week-end du 3 et 4 Janvier 2026",
@@ -17,30 +26,45 @@
         "image": "img/events/3x3.webp",
         "description": "Nous avons besoin de bénévoles sur les deux jours pour la réussite de l'événement (Tables, Buvette, Restauration).",
         "location": "Salle Jesse Owens",
-        "time": "08h00 - 18h00",
+        "time": "08h00 - 20h30",
         "mode": "benevole",
         "roles": [
-            { "name": "Samedi Matin - Table de marque", "max": 6 },
-            { "name": "Samedi Après-midi - Table de marque", "max": 6 },
-            { "name": "Dimanche Matin - Table de marque", "max": 6 },
-            { "name": "Dimanche Après-midi - Table de marque", "max": 6 },
-            
-            { "name": "Samedi Matin - Buvette", "max": 4 },
-            { "name": "Samedi Après-midi - Buvette", "max": 4 },
-            { "name": "Dimanche Matin - Buvette", "max": 4 },
-            { "name": "Dimanche Après-midi - Buvette", "max": 4 },
-            
-            { "name": "Samedi Matin - Sandwiches / Restauration", "max": 3 },
-            { "name": "Samedi Après-midi - Sandwiches / Restauration", "max": 3 },
-            { "name": "Dimanche Matin - Sandwiches / Restauration", "max": 3 },
-            { "name": "Dimanche Après-midi - Sandwiches / Restauration", "max": 3 },
-            
-            { "name": "Samedi Matin - Crêpes / Gaufres", "max": 2 },
-            { "name": "Samedi Après-midi - Crêpes / Gaufres", "max": 2 },
-            { "name": "Dimanche Matin - Crêpes / Gaufres", "max": 2 },
-            { "name": "Dimanche Après-midi - Crêpes / Gaufres", "max": 2 },
-
-            { "name": "Organisation Générale / Installation", "max": 10 }
+            {
+                "name": "Samedi Matin - Table de marque",
+                "max": 6
+            },
+            {
+                "name": "Samedi Après-midi - Table de marque",
+                "max": 6
+            },
+            {
+                "name": "Dimanche Matin - Table de marque",
+                "max": 6
+            },
+            {
+                "name": "Dimanche Après-midi - Table de marque",
+                "max": 6
+            },
+            {
+                "name": "Samedi Matin - Buvette",
+                "max": 5
+            },
+            {
+                "name": "Samedi Après-midi - Buvette",
+                "max": 5
+            },
+            {
+                "name": "Dimanche Matin - Buvette",
+                "max": 5
+            },
+            {
+                "name": "Dimanche Après-midi - Buvette",
+                "max": 5
+            },
+            {
+                "name": "Organisation Générale / Installation",
+                "max": 20
+            }
         ]
     }
 }

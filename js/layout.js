@@ -13,6 +13,15 @@ const headerHTML = `
             <a href="informations.html" class="hover:text-sbc-light transition pb-1 border-b-2 border-transparent hover:border-sbc-light">Infos</a>
             <a href="partenaires.html" class="hover:text-sbc-light transition pb-1 border-b-2 border-transparent hover:border-sbc-light">Partenaires</a>
             <a href="contact.html" class="bg-sbc hover:bg-sbc-light text-white px-4 py-2 rounded-full transition shadow-md">Contact</a>
+            
+            <div class="flex items-center gap-3 ml-2 pl-2 border-l border-gray-700">
+                <a href="https://www.facebook.com/share/1BfEPGLcYV/" target="_blank" class="text-gray-400 hover:text-[#1877F2] transition transform hover:scale-110">
+                    <i class="fab fa-facebook text-xl"></i>
+                </a>
+                <a href="https://www.instagram.com/seclinbasketclub/" target="_blank" class="text-gray-400 hover:text-[#E4405F] transition transform hover:scale-110">
+                    <i class="fab fa-instagram text-xl"></i>
+                </a>
+            </div>
         </div>
         
         <button id="burger-btn" class="lg:hidden text-white text-2xl focus:outline-none transition-transform duration-300">
@@ -31,6 +40,15 @@ const headerHTML = `
             <a href="informations.html" class="hover:text-sbc-light py-2 border-b border-green-800/30">Infos Pratiques</a>
             <a href="partenaires.html" class="hover:text-sbc-light py-2 border-b border-green-800/30">Partenaires</a>
             <a href="contact.html" class="text-sbc-light font-bold py-2 bg-green-900/30 rounded-lg mt-2">Nous Contacter</a>
+            
+            <div class="flex justify-center gap-6 pt-4 border-t border-green-800/30">
+                <a href="https://www.facebook.com/share/1BfEPGLcYV/" target="_blank" class="text-white hover:text-[#1877F2] transition">
+                    <i class="fab fa-facebook text-2xl"></i>
+                </a>
+                <a href="https://www.instagram.com/seclinbasketclub/" target="_blank" class="text-white hover:text-[#E4405F] transition">
+                    <i class="fab fa-instagram text-2xl"></i>
+                </a>
+            </div>
         </div>
     </div>
 </nav>
@@ -57,7 +75,16 @@ const footerHTML = `
         <div>
             <h4 class="text-xl font-bold mb-4 text-sbc-light">Contact</h4>
             <p class="text-gray-400 text-sm mb-2"><i class="fas fa-map-marker-alt mr-2"></i> 7 rue Joliot Curie, 59113 Seclin </p>
-            <p class="text-gray-400 text-sm"><i class="fas fa-envelope mr-2"></i> seclinbc@gmail.com </p>
+            <p class="text-gray-400 text-sm mb-4"><i class="fas fa-envelope mr-2"></i> seclinbc@gmail.com </p>
+            
+            <div class="flex space-x-4">
+                <a href="https://www.facebook.com/share/1BfEPGLcYV/" class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-blue-600 hover:text-white transition duration-300">
+                    <i class="fab fa-facebook-f"></i>
+                </a>
+                <a href="https://www.instagram.com/seclinbasketclub/" class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-pink-600 hover:text-white transition duration-300">
+                    <i class="fab fa-instagram"></i>
+                </a>
+            </div>
         </div>
     </div>
     <div class="text-center border-t border-gray-800 pt-6 text-gray-500 text-sm">

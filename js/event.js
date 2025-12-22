@@ -5,11 +5,11 @@ document.addEventListener("DOMContentLoaded", function() {
     const params = new URLSearchParams(window.location.search);
     const eventId = params.get('id');
     
-    let globalTeamsData = {}; 
     let allowedTeamsList = []; 
     let eventRoles = [];
     let eventTitle = "";
     let isBenevoleMode = false;
+    let currentCounts = {}; // Déplacer currentCounts ici pour qu'il soit global au scope
 
     // Si pas d'ID, retour forcé à l'accueil
     if (!eventId) { window.location.href = 'index.html'; return; }
@@ -65,7 +65,10 @@ document.addEventListener("DOMContentLoaded", function() {
                 
                 // Masquer le bouton "Ajouter un autre joueur"
                 const addBtn = document.getElementById('add-btn');
-                if(addBtn) addBtn.style.display = 'none';
+                // if(addBtn) addBtn.style.display = 'none'; // MODIF: On laisse le bouton affiché !
+                if(addBtn) {
+                    addBtn.innerHTML = '<i class="fas fa-plus-circle"></i> Ajouter une autre mission';
+                }
 
                 // Renommer les champs parents
                 const lblParent = document.querySelector('label[for="parent-name"]') || document.querySelectorAll('label')[0];
@@ -73,7 +76,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 // Récupérer les comptes depuis Google Sheets
                 eventRoles = event.roles || [];
-                let currentCounts = {};
+                // let currentCounts = {}; // SUPPRIMÉ ICI (déjà fait plus haut)
                 
                 // AJOUT : Loader
                 const container = document.getElementById('participants-container');
@@ -139,7 +142,8 @@ document.addEventListener("DOMContentLoaded", function() {
     // --- FONCTION LIGNE BÉNÉVOLE (Mise à jour avec Orange) ---
     function addBenevoleRow(counts) {
         const container = document.getElementById('participants-container');
-        
+        const index = container.children.length + 1; // Pour savoir si c'est le 1er ou non
+
         let optionsHtml = `<option value="" disabled selected>Choisir une mission</option>`;
         
         eventRoles.forEach(roleObj => {
@@ -161,6 +165,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         const rowHtml = `
         <div class="participant-row bg-yellow-50 p-4 rounded-lg border border-yellow-200 relative animate-fade-in-up">
+            ${index > 1 ? '<button type="button" onclick="this.parentElement.remove()" class="absolute top-2 right-2 text-red-500 hover:text-red-700 transition"><i class="fas fa-times"></i></button>' : ''}
             <p class="text-xs font-bold text-yellow-600 uppercase mb-2"><i class="fas fa-hand-holding-heart mr-1"></i> Votre Mission</p>
             <div class="space-y-3">
                 <select class="role-select w-full bg-white border border-yellow-300 rounded-lg p-2 text-sm focus:border-sbc focus:outline-none" required>
@@ -173,7 +178,13 @@ document.addEventListener("DOMContentLoaded", function() {
 
     const addBtn = document.getElementById('add-btn');
     if (addBtn) addBtn.addEventListener('click', () => {
-        if(!isBenevoleMode) addParticipantRow();
+        if(!isBenevoleMode) {
+            addParticipantRow();
+        } else {
+            // Mode Bénévole : on ajoute une ligne mission
+            // On utilise currentCounts qui a été remonté dans le scope
+            addBenevoleRow(currentCounts);
+        }
     });
 
     window.loadPlayers = function(selectElement) {

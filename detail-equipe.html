@@ -17,9 +17,9 @@
     <link rel="icon" href="img/logo.png?v=2" type="image/png">
     <link rel="apple-touch-icon" href="img/logo.png?v=2">
     <link rel="shortcut icon" href="img/logo.png?v=2" type="image/png">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2.0">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="tailwind-config.js"></script>
+    <script src="tailwind-config.js?v=2.0"></script>
 </head>
 
 <body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
@@ -64,7 +64,7 @@
     </main>
 
     <div id="footer-placeholder"></div>
-    <script src="js/layout.js?v=1.1"></script>
+    <script src="js/layout.js?v=2.0"></script>
 
     <script>
         const params = new URLSearchParams(window.location.search);
@@ -112,7 +112,7 @@
                         w.className = 'scorenco-widget';
                         w.setAttribute('data-widget-type', 'team');
                         w.setAttribute('data-widget-id', team.widgetId);
-                        w.style.cssText = 'background: #14532d; height: 500px; display: flex; align-items: center; justify-content: center; flex-direction: column; text-transform: uppercase; font-family: sans-serif; font-weight: bolder; gap: 9px; color:#1E457B;';
+                        w.style.css?v=2.0Text = 'background: #14532d; height: 500px; display: flex; align-items: center; justify-content: center; flex-direction: column; text-transform: uppercase; font-family: sans-serif; font-weight: bolder; gap: 9px; color:#1E457B;';
 
                         const styleTag = document.createElement('style');
                         styleTag.textContent = ".ldsdr{display:inline-block;width:80px;height:80px}.ldsdr:after{content:\" \";display:block;width:64px;height:64px;margin:8px;border-radius:50%;border:6px solid #1E457B;border-color:#1E457B transparent;animation:ldsdr 1.2s linear infinite}@keyframes ldsdr{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}";

@@ -1,14 +1,28 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SBC - Nos Équipes</title>
-    <link rel="icon" href="img/logo.png" type="image/png">
-    <link rel="stylesheet" href="style.css">
+    <meta name="description"
+        content="Découvrez toutes les équipes du Seclin Basket Club pour la saison 2024-2025. Seniors, Jeunes, École de basket... Retrouvez nos effectifs.">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://seclinbasketclub.fr/equipes.html">
+    <meta property="og:title" content="Les Équipes du SBC">
+    <meta property="og:description" content="Saison 2024-2025 : Découvrez nos joueurs et joueuses.">
+    <meta property="og:image" content="https://seclinbasketclub.fr/img/logo.png">
+
+    <link rel="canonical" href="https://seclinbasketclub.fr/equipes.html">
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" href="img/logo.png?v=2">
+    <link rel="stylesheet" href="style.css?v=2.0">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="tailwind-config.js"></script>
+    <script src="tailwind-config.js?v=2.0"></script>
 </head>
+
 <body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
 
     <div id="header-placeholder"></div>
@@ -19,13 +33,13 @@
     </div>
 
     <main class="container mx-auto px-4 py-12 flex-grow fade-in">
-        
+
         <section id="favorites-section" class="hidden mb-16 border-b border-gray-200 pb-12">
             <h2 class="text-2xl font-bold text-yellow-600 mb-6 flex items-center gap-2">
                 <i class="fas fa-star"></i> Mes Favoris
             </h2>
             <div id="favorites-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                </div>
+            </div>
         </section>
 
         <section>
@@ -40,7 +54,7 @@
     </main>
 
     <div id="footer-placeholder"></div>
-    <script src="layout.js?v=1.1"></script>
+    <script src="js/layout.js?v=2.0"></script>
 
     <script>
         let teamsData = {};
@@ -52,11 +66,11 @@
 
         function createCardHTML(id, team, isFav) {
             const starClass = isFav ? "fas fa-star text-yellow-400" : "far fa-star text-white hover:text-yellow-300";
-            
+
             return `
                 <a href="detail-equipe.html?id=${id}" class="group block bg-white rounded-xl shadow-md overflow-hidden hover:shadow-2xl transition relative fade-in">
                     <div class="h-56 overflow-hidden relative">
-                        <img src="${team.image}" alt="${team.name}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
+                        <img src="${team.image}" alt="${team.name} - Équipe Seclin Basket Club" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
                         
                         <div class="absolute top-0 left-0 bg-sbc text-white font-bold px-3 py-1 text-sm rounded-br-lg shadow-sm">
                             ${team.category}
@@ -103,7 +117,6 @@
                 }
             }
 
-            //montrer ou cacher la section favoris
             if (hasFavorites) {
                 favSection.classList.remove('hidden');
                 document.getElementById('all-teams-title').innerText = "Autres équipes"; // Petit détail sympa
@@ -113,8 +126,7 @@
             }
         }
 
-        //action du favoris
-        window.toggleFavorite = function(e, id) {
+        window.toggleFavorite = function (e, id) {
             e.preventDefault();
             e.stopPropagation();
 
@@ -127,12 +139,11 @@
                 favorites.splice(index, 1);
             }
             localStorage.setItem('sbc_favorites', JSON.stringify(favorites));
-            
+
             renderTeams();
         };
 
-        //Chargement initial
-        fetch('teams.json')
+        fetch('json/teams.json')
             .then(response => response.json())
             .then(data => {
                 teamsData = data;
@@ -144,4 +155,5 @@
             });
     </script>
 </body>
+
 </html>

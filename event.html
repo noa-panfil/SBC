@@ -1,21 +1,26 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SBC - Inscription Événement</title>
     <link rel="canonical" href="https://seclinbasketclub.fr/event.html">
-    <link rel="icon" href="img/logo.png?v=2" type="image/png">
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" href="img/logo.png?v=2">
     <link rel="stylesheet" href="style.css?v=2.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="tailwind-config.js?v=2.0"></script>
 </head>
+
 <body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
 
     <div id="header-placeholder"></div>
 
     <div class="relative h-64 md:h-80 w-full overflow-hidden">
-        <img id="event-bg" src="" alt="Image de fond événement Seclin Basket Club - SBC" class="w-full h-full object-cover blur-sm brightness-50">
+        <img id="event-bg" src="" alt="Image de fond événement Seclin Basket Club - SBC"
+            class="w-full h-full object-cover blur-sm brightness-50">
         <div class="absolute inset-0 flex items-center justify-center">
             <div class="text-center text-white px-4 fade-in">
                 <h1 id="event-title" class="text-4xl md:text-5xl font-bold mb-2">Chargement...</h1>
@@ -25,22 +30,27 @@
     </div>
 
     <main class="container mx-auto px-4 py-12 flex-grow fade-in -mt-16 relative z-10">
-        
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
+
             <div class="lg:col-span-2">
                 <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
                     <h2 class="text-2xl font-bold text-sbc-dark mb-6 flex items-center gap-2">
                         <i class="fas fa-info-circle"></i> Détails de l'événement
                     </h2>
-                    
-                    <img id="event-img" src="" alt="Photo événement basket Seclin Basket Club - SBC" class="w-full rounded-xl mb-6 shadow-md object-cover max-h-96">
+
+                    <img id="event-img" src="" alt="Photo événement basket Seclin Basket Club - SBC"
+                        class="w-full rounded-xl mb-6 shadow-md object-cover max-h-96">
                     <p id="event-desc" class="text-gray-700 leading-relaxed text-lg mb-6"></p>
-                    
-                    <div class="flex flex-wrap gap-4 text-sm font-bold text-gray-600 bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        <span class="flex items-center gap-2"><i class="fas fa-calendar text-sbc"></i> <span id="event-date-detail">...</span></span>
-                        <span class="flex items-center gap-2"><i class="fas fa-clock text-sbc"></i> <span id="event-time">...</span></span>
-                        <span class="flex items-center gap-2"><i class="fas fa-map-marker-alt text-sbc"></i> <span id="event-loc">...</span></span>
+
+                    <div
+                        class="flex flex-wrap gap-4 text-sm font-bold text-gray-600 bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <span class="flex items-center gap-2"><i class="fas fa-calendar text-sbc"></i> <span
+                                id="event-date-detail">...</span></span>
+                        <span class="flex items-center gap-2"><i class="fas fa-clock text-sbc"></i> <span
+                                id="event-time">...</span></span>
+                        <span class="flex items-center gap-2"><i class="fas fa-map-marker-alt text-sbc"></i> <span
+                                id="event-loc">...</span></span>
                     </div>
                 </div>
             </div>
@@ -48,17 +58,22 @@
             <div class="lg:col-span-1">
                 <div class="bg-white rounded-2xl shadow-xl p-8 sticky top-24 border-t-4 border-sbc">
                     <h2 class="text-2xl font-bold text-gray-800 mb-2">Inscription pour l'événement</h2>
-                    <p class="text-gray-500 mb-6 text-sm">Sélectionnez l'équipe et le joueur pour valider la présence.</p>
+                    <p class="text-gray-500 mb-6 text-sm">Sélectionnez l'équipe et le joueur pour valider la présence.
+                    </p>
 
                     <form id="eventForm">
                         <div class="space-y-4 mb-6">
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-1">Parent (Nom Prénom)</label>
-                                <input type="text" id="parent-name" required class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:border-sbc" placeholder="Responsable">
+                                <input type="text" id="parent-name" required
+                                    class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:border-sbc"
+                                    placeholder="Responsable">
                             </div>
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-1">Email de contact</label>
-                                <input type="email" id="parent-email" required class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:border-sbc" placeholder="Pour confirmation">
+                                <input type="email" id="parent-email" required
+                                    class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:border-sbc"
+                                    placeholder="Pour confirmation">
                             </div>
                         </div>
 
@@ -66,14 +81,16 @@
 
                         <div id="participants-container" class="space-y-4 mb-4"></div>
 
-                        <button type="button" id="add-btn" class="text-sm text-sbc font-bold hover:underline mb-6 flex items-center gap-1">
+                        <button type="button" id="add-btn"
+                            class="text-sm text-sbc font-bold hover:underline mb-6 flex items-center gap-1">
                             <i class="fas fa-plus-circle"></i> Ajouter un autre joueur
                         </button>
 
-                        <button type="submit" id="submitBtn" class="w-full bg-sbc hover:bg-sbc-dark text-white font-bold py-4 rounded-xl shadow-lg transform hover:-translate-y-1 transition duration-300">
+                        <button type="submit" id="submitBtn"
+                            class="w-full bg-sbc hover:bg-sbc-dark text-white font-bold py-4 rounded-xl shadow-lg transform hover:-translate-y-1 transition duration-300">
                             Valider l'inscription
                         </button>
-                        
+
                         <div id="form-result" class="mt-4 hidden"></div>
                     </form>
                 </div>
@@ -84,9 +101,10 @@
     </main>
 
     <div id="footer-placeholder"></div>
-    
+
     <script src="js/layout.js?v=2.0"></script>
     <script src="js/event.js?v=2.0"></script>
 
 </body>
+
 </html>

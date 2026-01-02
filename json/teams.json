@@ -1309,7 +1309,7 @@
             {
                 "name": "Wilfried",
                 "role": "Coach",
-                "img": "https://plus.unsplash.com/premium_vector-1727952231217-e8832b15fee4?q=80&w=880&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+                "img": "img/équipes/U21/Wilfried.webp",
                 "birth": "20/04/1981",
                 "sexe": "M"
             }
@@ -1331,8 +1331,8 @@
             },
             {
                 "name": "Teo",
-                "num": 6,
-                "img": "https://plus.unsplash.com/premium_vector-1727952231217-e8832b15fee4?q=80&w=880&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+                "num": 13,
+                "img": "img/équipes/U21/teo.webp",
                 "birth": "27/01/2008",
                 "sexe": "M"
             },
@@ -1352,8 +1352,8 @@
             },
             {
                 "name": "Pierre-charles",
-                "num": 9,
-                "img": "https://plus.unsplash.com/premium_vector-1727952231217-e8832b15fee4?q=80&w=880&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+                "num": 17,
+                "img": "img/équipes/S1/PC.webp",
                 "birth": "17/01/1992",
                 "sexe": "M"
             },
@@ -1366,8 +1366,8 @@
             },
             {
                 "name": "Jean-philippe",
-                "num": 11,
-                "img": "https://plus.unsplash.com/premium_vector-1727952231217-e8832b15fee4?q=80&w=880&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+                "num": 9,
+                "img": "img/équipes/S1/JP.webp",
                 "birth": "08/03/1986",
                 "sexe": "M"
             },
@@ -1380,8 +1380,8 @@
             },
             {
                 "name": "Gerald",
-                "num": 13,
-                "img": "https://plus.unsplash.com/premium_vector-1727952231217-e8832b15fee4?q=80&w=880&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+                "num": 17,
+                "img": "img/équipes/S1/Gerald.webp",
                 "birth": "22/06/1984",
                 "sexe": "M"
             },
@@ -1395,7 +1395,7 @@
             {
                 "name": "Hugo",
                 "num": 15,
-                "img": "https://plus.unsplash.com/premium_vector-1727952231217-e8832b15fee4?q=80&w=880&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+                "img": "img/équipes/S1/Hugo.webp",
                 "birth": "27/12/2002",
                 "sexe": "M"
             }

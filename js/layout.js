@@ -2,7 +2,7 @@ const headerHTML = `
 <nav class="bg-sbc-dark text-white shadow-lg sticky top-0 z-50">
     <div class="container mx-auto px-4 py-4 flex justify-between items-center relative z-50 bg-sbc-dark">
         <a href="index.html" class="flex items-center gap-3">
-            <img src="img/logo.png" alt="Logo SBC" class="h-10 md:h-12 w-auto">
+            <img src="/img/logo.png" alt="Logo SBC" class="h-10 md:h-12 w-auto">
             <span class="text-lg md:text-2xl font-bold tracking-wider whitespace-nowrap">SECLIN BASKET CLUB</span>
         </a>
 
@@ -59,7 +59,7 @@ const footerHTML = `
     <div class="container mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
         <div>
             <h4 class="text-xl font-bold mb-4 text-sbc-light flex items-center gap-2">
-                <img src="img/logo.png" class="h-8 w-auto"> SBC Seclin
+                <img src="/img/logo.png" class="h-8 w-auto"> SBC Seclin
             </h4>
             <p class="text-gray-400 text-sm">Le club de basket historique de la ville.<br>Formation, Passion, Compétition.</p>
         </div>
@@ -88,7 +88,7 @@ const footerHTML = `
         </div>
     </div>
     <div class="text-center border-t border-gray-800 pt-6 text-gray-500 text-sm">
-        &copy; 2025 Seclin Basket Club. Tous droits réservés.
+        &copy; 2025 Seclin Basket Club. Tous droits réservés. - <a href="mentions-legales.html" class="hover:text-gray-300">Mentions Légales</a>
     </div>
 </footer>
 `;

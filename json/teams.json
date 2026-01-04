@@ -239,7 +239,7 @@
             },
             {
                 "name": "Noa",
-                "role": "Coach Assistant",
+                "role": "Coach",
                 "img": "img/équipes/U11B/noa.webp",
                 "birth": "28/01/2006",
                 "sexe": "M"
@@ -255,14 +255,14 @@
             },
             {
                 "name": "Rania",
-                "num": 0,
+                "num": 6,
                 "img": "img/équipes/U11B/rania.webp",
                 "birth": "13/04/2016",
                 "sexe": "F"
             },
             {
                 "name": "Lino",
-                "num": 0,
+                "num": 15,
                 "img": "img/équipes/U11B/lino.webp",
                 "birth": "23/09/2016",
                 "sexe": "M"
@@ -283,7 +283,7 @@
             },
             {
                 "name": "Elio",
-                "num": 0,
+                "num": 9,
                 "img": "img/équipes/U11B/elio2.webp",
                 "birth": "26/09/2016",
                 "sexe": "M"
@@ -311,7 +311,7 @@
             },
             {
                 "name": "Maé",
-                "num": 0,
+                "num": 12,
                 "img": "img/équipes/U11B/mae.webp",
                 "birth": "13/01/2016",
                 "sexe": "M"

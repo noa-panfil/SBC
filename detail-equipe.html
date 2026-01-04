@@ -44,8 +44,10 @@
                     Horaires d'entraînement</h3>
                 <p id="team-schedule" class="text-gray-700 font-medium">...</p>
             </div>
-            <div class="bg-gray-100 p-6 rounded-xl">
-                <h3 class="text-xl font-bold mb-4">Coachs</h3>
+            <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
+                <h3 class="text-xl font-bold mb-6 text-sbc-dark flex items-center gap-2">
+                    <i class="fas fa-user-tie"></i> Coachs
+                </h3>
                 <div id="team-coaches" class="space-y-4"></div>
             </div>
             <div id="scorenco-widget-desktop" class="hidden lg:block lg:col-span-1 lg:col-start-1 lg:row-start-2 mt-6">
@@ -82,11 +84,25 @@
                     document.getElementById('team-schedule').innerText = team.schedule;
 
                     document.getElementById('team-coaches').innerHTML = team.coaches.map(c => `
-                        <div class="flex items-center gap-4 bg-white p-3 rounded shadow-sm">
-                            <img src="${c.img}" alt="Coach ${c.name} - ${c.role} du Seclin Basket Club" class="w-12 h-12 rounded-full object-cover border border-gray-200">
-                            <div>
-                                <p class="font-bold text-gray-800">${c.name}</p>
-                                <p class="text-xs text-sbc font-bold uppercase">${c.role}</p>
+                        <div class="relative overflow-hidden flex items-center gap-5 p-4 rounded-xl bg-sbc-dark text-white shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group">
+                            <div class="absolute right-0 top-0 w-24 h-full bg-white/5 skew-x-12 translate-x-12 group-hover:translate-x-8 transition-transform"></div>
+                            
+                            <div class="relative flex-shrink-0">
+                                <div class="absolute inset-0 bg-sbc-light rounded-full blur-md opacity-20 group-hover:opacity-40 transition-opacity"></div>
+                                <img src="${c.img}" alt="Coach ${c.name} - ${c.role} du Seclin Basket Club" 
+                                     class="relative w-16 h-16 rounded-full object-cover border-2 border-sbc-light/30 shadow-sm">
+                            </div>
+                            
+                            <div class="relative z-10 flex-grow">
+                                <h4 class="font-bold text-lg leading-tight tracking-wide group-hover:text-sbc-light transition-colors">
+                                    ${c.name.toUpperCase()}
+                                </h4>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="w-2 h-2 rounded-full bg-sbc-light animate-pulse"></span>
+                                    <p class="text-xs font-semibold text-gray-300 uppercase tracking-wider">
+                                        ${c.role}
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     `).join('');

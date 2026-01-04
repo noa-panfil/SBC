@@ -93,12 +93,19 @@
 
                     if (team.players && team.players.length > 0) {
                         document.getElementById('team-players').innerHTML = team.players.map(p => `
-                            <div class="text-center bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition border border-transparent hover:border-sbc">
-                                <div class="relative inline-block mb-3">
-                                    <img src="${p.img}" alt="Joueur ${p.name} numéro ${p.num} de l'équipe ${team.name} du Seclin Basket Club" class="w-20 h-20 rounded-full object-cover border-2 border-gray-100">
-                                    <span class="absolute bottom-0 right-0 bg-sbc text-white text-xs font-bold h-6 w-6 flex items-center justify-center rounded-full border-2 border-white">#${p.num}</span>
+                            <div class="group relative bg-white p-6 rounded-2xl shadow hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 overflow-hidden text-center">
+                                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sbc to-sbc-light"></div>
+                                <div class="relative inline-block mb-4">
+                                    <div class="absolute inset-0 bg-sbc rounded-full blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
+                                    <img src="${p.img}" alt="Joueur ${p.name} numéro ${p.num} de l'équipe ${team.name} du Seclin Basket Club" 
+                                         class="relative w-24 h-24 rounded-full object-cover border-4 border-white shadow-md group-hover:scale-105 transition-transform duration-300">
+                                    <span class="absolute -bottom-2 -right-2 bg-gradient-to-br from-sbc to-sbc-dark text-white text-sm font-bold h-8 w-8 flex items-center justify-center rounded-full border-2 border-white shadow-lg transform group-hover:rotate-12 transition-transform">
+                                        #${p.num}
+                                    </span>
                                 </div>
-                                <p class="font-bold text-gray-800 text-sm">${p.name}</p>
+                                <h4 class="font-bold text-gray-800 text-lg group-hover:text-sbc transition-colors leading-tight">
+                                    ${p.name}
+                                </h4>
                             </div>
                         `).join('');
                     } else {

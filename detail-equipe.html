@@ -85,8 +85,13 @@
 
                     document.getElementById('team-coaches').innerHTML = team.coaches.map(c => `
                         <div class="relative overflow-hidden flex items-center gap-5 p-4 rounded-xl bg-sbc-dark text-white shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group">
+                            <!-- Background decoration -->
                             <div class="absolute right-0 top-0 w-24 h-full bg-white/5 skew-x-12 translate-x-12 group-hover:translate-x-8 transition-transform"></div>
                             
+                            <!-- Watermark Logo -->
+                            <img src="img/logo.png" alt="" class="absolute -right-6 -bottom-6 w-24 opacity-10 grayscale rotate-12 group-hover:rotate-0 transition-all duration-500">
+
+                            <!-- Image container -->
                             <div class="relative flex-shrink-0">
                                 <div class="absolute inset-0 bg-sbc-light rounded-full blur-md opacity-20 group-hover:opacity-40 transition-opacity"></div>
                                 <img src="${c.img}" alt="Coach ${c.name} - ${c.role} du Seclin Basket Club" 

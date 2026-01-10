@@ -215,7 +215,7 @@ function BirthdaySection() {
         const monthNames = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
         setMonthName(monthNames[currentMonth]);
 
-        fetch('/json/teams.json')
+        fetch('/api/teams')
             .then(res => res.json())
             .then(data => {
                 const uniquePeople: Record<string, Person> = {};

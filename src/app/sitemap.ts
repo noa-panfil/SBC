@@ -1,8 +1,8 @@
 import { MetadataRoute } from 'next'
-import fs from 'fs'
-import path from 'path'
+import pool from '@/lib/db'
+import { RowDataPacket } from 'mysql2'
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = 'https://seclinbasketclub.fr'
 
     // 1. Static Routes
@@ -24,11 +24,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // 2. Dynamic Routes: Teams
     let teamRoutes: MetadataRoute.Sitemap = []
     try {
-        const teamsPath = path.join(process.cwd(), 'public/json/teams.json')
-        const teamsData = JSON.parse(fs.readFileSync(teamsPath, 'utf8'))
-
-        teamRoutes = Object.keys(teamsData).map((id) => ({
-            url: `${baseUrl}/equipe/${encodeURIComponent(id)}`,
+        const [rows] = await pool.query<RowDataPacket[]>('SELECT id FROM teams')
+        teamRoutes = rows.map((row) => ({
+            url: `${baseUrl}/equipe/${encodeURIComponent(row.id)}`,
             lastModified: new Date(),
             changeFrequency: 'weekly' as const,
             priority: 0.7,
@@ -40,11 +38,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // 3. Dynamic Routes: Events
     let eventRoutes: MetadataRoute.Sitemap = []
     try {
-        const eventsPath = path.join(process.cwd(), 'public/json/events.json')
-        const eventsData = JSON.parse(fs.readFileSync(eventsPath, 'utf8'))
-
-        eventRoutes = Object.keys(eventsData).map((id) => ({
-            url: `${baseUrl}/event/${encodeURIComponent(id)}`,
+        const [rows] = await pool.query<RowDataPacket[]>('SELECT id FROM events')
+        eventRoutes = rows.map((row) => ({
+            url: `${baseUrl}/event/${encodeURIComponent(row.id)}`,
             lastModified: new Date(),
             changeFrequency: 'monthly' as const,
             priority: 0.6,

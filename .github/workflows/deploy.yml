@@ -35,5 +35,8 @@ jobs:
             # /usr/bin/php8.1 /usr/local/bin/composer install --no-dev --optimize-autoloader
             
             # Pour un site Node.js / React / Vue :
-            # npm install
-            # npm run build
+            npm install
+            npm run build
+            
+            # Redémarrage du serveur Node
+            npm run start:prod || npm run start

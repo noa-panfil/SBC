@@ -151,7 +151,7 @@ export default async function AdminDashboard() {
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 border-l-4 border-blue-500 hover:shadow-md transition">
+                <Link href="/admin/players" className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 border-l-4 border-blue-500 hover:shadow-md transition cursor-pointer">
                     <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-2xl">
                         <i className="fas fa-users"></i>
                     </div>
@@ -159,7 +159,7 @@ export default async function AdminDashboard() {
                         <p className="text-gray-500 text-sm font-medium">Joueurs</p>
                         <p className="text-2xl font-bold text-gray-800">{stats.players}</p>
                     </div>
-                </div>
+                </Link>
 
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 border-l-4 border-sbc hover:shadow-md transition">
                     <div className="w-12 h-12 rounded-full bg-sbc-light text-sbc flex items-center justify-center text-2xl">

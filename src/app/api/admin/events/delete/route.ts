@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
+import { getServerSession } from "next-auth";
 
 export async function POST(request: Request) {
+    const session = await getServerSession();
+    if (!session) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     try {
         const body = await request.json();
         const { id } = body;

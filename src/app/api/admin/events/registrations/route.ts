@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { RowDataPacket } from 'mysql2';
+import { getServerSession } from "next-auth";
 
 export async function POST(request: Request) {
+    const session = await getServerSession();
+    if (!session) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     try {
         const { eventId } = await request.json();
 

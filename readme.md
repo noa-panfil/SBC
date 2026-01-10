@@ -1,6 +1,6 @@
 # Seclin Basket Club (SBC) - Site Officiel 🏀
 
-![SBC Banner](img/logo.png)
+![SBC Banner](public/img/logo.png)
 
 > **Bienvenue sur le dépôt officiel du Seclin Basket Club (SBC).**  
 > 🌐 **Site accessible sur : [seclinbasketclub.fr](https://seclinbasketclub.fr)**  

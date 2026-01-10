@@ -20,23 +20,37 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script: |
-            # On navigue vers le dossier (ajuste le nom du domaine si besoin)
+            # Charger l'environnement Node.js (NVM)
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            
+            # Naviguer vers le dossier
             cd /home/${{ secrets.USERNAME }}/htdocs/seclinbasketclub.fr
             
-            # Commande de sécurité pour git
-            git config --global --add safe.directory "*"
+            # Vérifier si c'est un dépôt git, sinon l'initialiser
+            if [ ! -d ".git" ]; then
+              echo "Initialisation du dépôt Git..."
+              git init
+              git remote add origin https://github.com/noa-panfil/SBC.git
+              git fetch
+              git reset --hard origin/main
+            else
+              echo "Pull des modifications..."
+              git config --global --add safe.directory "*"
+              git fetch origin
+              git reset --hard origin/main
+            fi
             
-            # On récupère les modifs
-            git pull origin main
-            
-            # --- COMMANDES DE BUILD (Décommente ce dont tu as besoin) ---
-            
-            # Pour un site PHP / Laravel / Symfony :
-            # /usr/bin/php8.1 /usr/local/bin/composer install --no-dev --optimize-autoloader
-            
-            # Pour un site Node.js / React / Vue :
+            # Installation et Build
+            echo "Installation des dépendances..."
             npm install
+            
+            echo "Construction du projet..."
             npm run build
             
-            # Redémarrage du serveur Node
-            npm run start:prod || npm run start
+            # Redémarrage (Si PM2 est utilisé sur le serveur)
+            if command -v pm2 &> /dev/null; then
+                pm2 reload all || pm2 start npm --name "next-app" -- start
+            else
+                echo "PM2 non trouvé. Assurez-vous que le site Node.js est bien démarré dans CloudPanel."
+            fi

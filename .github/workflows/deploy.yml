@@ -34,11 +34,11 @@ jobs:
               git remote add origin https://github.com/noa-panfil/SBC.git
               git fetch
               git reset --hard origin/main
-            else
-              echo "Pull des modifications..."
-              git config --global --add safe.directory "*"
+              echo "Mise à jour du dépôt..."
+              # Reset pour être sûr d'avoir la version propre
               git fetch origin
               git reset --hard origin/main
+              git clean -fd
             fi
             
             # Installation et Build
@@ -48,9 +48,11 @@ jobs:
             echo "Construction du projet..."
             npm run build
             
-            # Redémarrage (Si PM2 est utilisé sur le serveur)
+            # Redémarrage propre pour CloudPanel (qui relancera via 'npm start')
             if command -v pm2 &> /dev/null; then
                 pm2 reload all || pm2 start npm --name "next-app" -- start
             else
-                echo "PM2 non trouvé. Assurez-vous que le site Node.js est bien démarré dans CloudPanel."
+                # Fallback: essaye de tuer les nœuds existants pour forcer le redémarrage propre
+                pkill -f node || true
+                echo "Redémarrage initié. CloudPanel devrait relancer le service automatiquement."
             fi

@@ -2,11 +2,23 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Header() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [logoUrl, setLogoUrl] = useState("/img/logo.png");
     const pathname = usePathname();
+
+    useEffect(() => {
+        fetch('/api/settings')
+            .then(res => res.json())
+            .then(data => {
+                if (data.site_logo_id) {
+                    setLogoUrl(`/api/image/${data.site_logo_id}`);
+                }
+            })
+            .catch(console.error);
+    }, []);
 
     const toggleMenu = () => {
         setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -30,7 +42,7 @@ export default function Header() {
         <nav className="bg-sbc-dark text-white shadow-lg sticky top-0 z-50">
             <div className="container mx-auto px-4 py-4 flex justify-between items-center relative z-50 bg-sbc-dark">
                 <Link href="/" className="flex items-center gap-3">
-                    <img src="/img/logo.png" alt="Logo SBC" className="h-10 md:h-12 w-auto" />
+                    <img src={logoUrl} alt="Logo SBC" className="h-10 md:h-12 w-auto" />
                     <span className="text-lg md:text-2xl font-extrabold tracking-wider whitespace-nowrap">SECLIN BASKET CLUB</span>
                 </Link>
 

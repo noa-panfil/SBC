@@ -165,7 +165,7 @@ function EventCard({ event, isPast }: { event: Event, isPast: boolean }) {
     const CardContent = (
         <>
             <div className="relative w-full h-64 bg-gray-100">
-                <img src={`/${event.image}`} alt={event.title} className="w-full h-full object-cover transition duration-500 hover:scale-105" />
+                <img src={event.image || "/img/event-placeholder.jpg"} alt={event.title} className="w-full h-full object-cover transition duration-500 hover:scale-105" />
                 <div className="absolute top-4 right-4 bg-white/90 backdrop-blur text-sbc-dark font-bold px-3 py-1 rounded-lg shadow text-sm border border-gray-100">
                     <i className="far fa-calendar mr-1"></i> {event.date}
                 </div>
@@ -215,7 +215,7 @@ function BirthdaySection() {
         const monthNames = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
         setMonthName(monthNames[currentMonth]);
 
-        fetch('/json/teams.json')
+        fetch('/api/teams')
             .then(res => res.json())
             .then(data => {
                 const uniquePeople: Record<string, Person> = {};
@@ -320,9 +320,21 @@ function BirthdaySection() {
 }
 
 function PartnerCarousel() {
+    const [partners, setPartners] = useState<{ name: string; img: string }[]>([]);
     const [modalOpen, setModalOpen] = useState(false);
     const [modalImage, setModalImage] = useState("");
     const [modalTitle, setModalTitle] = useState("");
+
+    useEffect(() => {
+        fetch('/api/partners')
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    setPartners(data);
+                }
+            })
+            .catch(console.error);
+    }, []);
 
     const openModal = (src: string, title: string) => {
         setModalImage(src);
@@ -330,16 +342,6 @@ function PartnerCarousel() {
         setModalOpen(true);
     };
 
-    const partners = [
-        { name: "Génération Lulu", img: "img/partenaires/generation-lulu.webp" },
-        { name: "Hippopotamus", img: "img/partenaires/hippopotamus.webp" },
-        { name: "David Parsy", img: "img/partenaires/david-parsy.webp" },
-        { name: "La Pause Déj", img: "img/partenaires/la-pause-dej.webp" },
-        { name: "Neo Kebab", img: "img/partenaires/neo-kebab.webp" },
-        { name: "M-tech", img: "img/partenaires/m-tech.webp" },
-        { name: "Volfoni", img: "img/partenaires/volfoni.webp" },
-        { name: "Ineo", img: "img/partenaires/ineo.webp" },
-    ];
     // Repetition for continuous scroll
     const allPartners = [...partners, ...partners];
 

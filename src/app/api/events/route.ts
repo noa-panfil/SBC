@@ -5,7 +5,7 @@ import { RowDataPacket } from 'mysql2';
 export async function GET() {
     try {
         const [eventRows] = await pool.query<RowDataPacket[]>(
-            'SELECT id, title, event_date, description, location, time_info, mode, image_id FROM events'
+            'SELECT id, title, event_date, date_display, description, location, time_info, mode, image_id FROM events'
         );
 
         const [allowedTeamRows] = await pool.query<RowDataPacket[]>(
@@ -42,6 +42,7 @@ export async function GET() {
                 location: event.location,
                 time: event.time_info,
                 mode: event.mode,
+                date_display: event.date_display,
                 allowed_teams: allowed.length > 0 ? allowed : undefined,
                 roles: roles.length > 0 ? roles : undefined
             };

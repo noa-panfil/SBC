@@ -1,6 +1,20 @@
 import { MetadataRoute } from 'next'
+import pool from '@/lib/db'
+import { RowDataPacket } from 'mysql2'
 
-export default function manifest(): MetadataRoute.Manifest {
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+    let logoUrl = '/img/logo.png';
+    try {
+        const [rows] = await pool.query<RowDataPacket[]>(
+            "SELECT value FROM settings WHERE key_name = 'site_logo_id'"
+        );
+        if (rows.length > 0) {
+            logoUrl = `/api/image/${rows[0].value}`;
+        }
+    } catch (e) {
+        console.error("Error fetching manifest logo:", e);
+    }
+
     return {
         name: 'Seclin Basket Club',
         short_name: 'SBC',
@@ -16,12 +30,12 @@ export default function manifest(): MetadataRoute.Manifest {
                 type: 'image/x-icon',
             },
             {
-                src: '/img/logo.png',
+                src: logoUrl,
                 sizes: '192x192',
                 type: 'image/png',
             },
             {
-                src: '/img/logo.png',
+                src: logoUrl,
                 sizes: '512x512',
                 type: 'image/png',
             },

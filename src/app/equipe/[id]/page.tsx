@@ -18,6 +18,7 @@ export default function EquipeDetail({ params }: { params: Promise<{ id: string 
     const { id } = use(params);
 
     const [team, setTeam] = useState<Team | null>(null);
+    const [logoUrl, setLogoUrl] = useState("/img/logo.png");
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -35,6 +36,15 @@ export default function EquipeDetail({ params }: { params: Promise<{ id: string 
                     setLoading(false);
                 });
         }
+
+        fetch('/api/settings')
+            .then(res => res.json())
+            .then(data => {
+                if (data.site_logo_id) {
+                    setLogoUrl(`/api/image/${data.site_logo_id}`);
+                }
+            })
+            .catch(console.error);
     }, [id]);
 
     useEffect(() => {
@@ -118,7 +128,7 @@ export default function EquipeDetail({ params }: { params: Promise<{ id: string 
                             {team.coaches.map((c, i) => (
                                 <div key={i} className="relative overflow-hidden flex items-center gap-5 p-4 rounded-xl bg-sbc-dark text-white shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group">
                                     <div className="absolute right-0 top-0 w-24 h-full bg-white/5 skew-x-12 translate-x-12 group-hover:translate-x-8 transition-transform"></div>
-                                    <img src="/img/logo.png" alt="" className="absolute -right-6 -bottom-6 w-24 opacity-10 grayscale rotate-12 group-hover:rotate-0 transition-all duration-500" />
+                                    <img src={logoUrl} alt="" className="absolute -right-6 -bottom-6 w-24 opacity-10 grayscale rotate-12 group-hover:rotate-0 transition-all duration-500" />
 
                                     <div className="relative flex-shrink-0">
                                         <div className="absolute inset-0 bg-sbc-light rounded-full blur-md opacity-20 group-hover:opacity-40 transition-opacity"></div>
@@ -145,7 +155,7 @@ export default function EquipeDetail({ params }: { params: Promise<{ id: string 
 
                 <div className="lg:col-span-2">
                     <h2 className="text-2xl font-bold border-b-2 border-gray-200 pb-2 mb-6 text-sbc-dark flex items-center gap-3">
-                        <img src="/img/logo.png" alt="Logo Seclin Basket Club - SBC" className="h-8 w-auto" /> Effectif Joueurs
+                        <img src={logoUrl} alt="Logo Seclin Basket Club - SBC" className="h-8 w-auto" /> Effectif Joueurs
                     </h2>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
                         {team.players && team.players.length > 0 ? team.players.map((p, i) => (

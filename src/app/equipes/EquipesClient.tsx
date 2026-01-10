@@ -87,8 +87,49 @@ export default function Equipes() {
         )
     }
 
-    const favoriteTeams = Object.entries(teamsData).filter(([id]) => favorites.includes(id));
-    const displayedMainTeams = favorites.length > 0 ? Object.entries(teamsData).filter(([id]) => !favorites.includes(id)) : Object.entries(teamsData);
+    // Sorting Logic (Same as Admin)
+    const getTeamWeight = (name: string) => {
+        let score = 0;
+        const n = name.toUpperCase();
+
+        // 1. Age Category (Base Score)
+        if (n.includes('BABY')) score = 100;
+        else if (n.includes('U7') || n.includes('MINI')) score = 200;
+        else if (n.includes('U9') || n.includes('POUSSIN')) score = 300;
+        else if (n.includes('U11') || n.includes('BENJAMIN')) score = 400;
+        else if (n.includes('U13') || n.includes('MINIME')) score = 500;
+        else if (n.includes('U15') || n.includes('CADET')) score = 600;
+        else if (n.includes('U17')) score = 700;
+        else if (n.includes('U18')) score = 800;
+        else if (n.includes('U20') || n.includes('JUNIOR')) score = 900;
+        else if (n.includes('SENIOR')) score = 1000;
+        else if (n.includes('LOISIR')) score = 1100;
+        else score = 9999;
+
+        // 2. Gender Priority (Same level: F < M)
+        const isFemale = n.includes(' F') || n.includes('-F') || n.endsWith(' F') || n.includes('FILLE');
+        const isMale = n.includes(' M') || n.includes('-M') || n.endsWith(' M') || n.includes('GARCON') || n.includes(' MASC');
+
+        if (isFemale) score += 0;
+        else if (isMale) score += 5;
+        else score += 2;
+
+        // 3. Team Level (1 < 2 < 3)
+        if (n.includes(' 2') || n.includes('-2')) score += 1;
+        else if (n.includes(' 3') || n.includes('-3')) score += 2;
+        else if (n.includes(' 4') || n.includes('-4')) score += 3;
+
+        return score;
+    };
+
+    const favoriteTeams = Object.entries(teamsData)
+        .filter(([id]) => favorites.includes(id))
+        .sort(([, a], [, b]) => getTeamWeight(a.name) - getTeamWeight(b.name));
+
+    const displayedMainTeams = (favorites.length > 0
+        ? Object.entries(teamsData).filter(([id]) => !favorites.includes(id))
+        : Object.entries(teamsData)
+    ).sort(([, a], [, b]) => getTeamWeight(a.name) - getTeamWeight(b.name));
 
     return (
         <>

@@ -4,9 +4,19 @@ import { useEffect, useState } from "react";
 
 export default function Contact() {
     const [redirectUrl, setRedirectUrl] = useState("");
+    const [logoUrl, setLogoUrl] = useState("/img/logo.png");
 
     useEffect(() => {
         setRedirectUrl(window.location.origin + "/merci");
+
+        fetch('/api/settings')
+            .then(res => res.json())
+            .then(data => {
+                if (data.site_logo_id) {
+                    setLogoUrl(`/api/image/${data.site_logo_id}`);
+                }
+            })
+            .catch(console.error);
     }, []);
 
     return (
@@ -38,7 +48,7 @@ export default function Contact() {
                             </div>
                         </div>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src="/img/logo.png" alt="Logo Seclin Basket Club - SBC"
+                        <img src={logoUrl} alt="Logo Seclin Basket Club - SBC"
                             className="absolute -bottom-10 -right-10 w-64 opacity-10" />
                     </div>
 

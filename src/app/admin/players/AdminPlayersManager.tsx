@@ -43,8 +43,9 @@ export default function AdminPlayersManager({ initialPlayers }: { initialPlayers
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <table className="w-full text-left border-collapse">
+            <div className="bg-white md:rounded-xl md:shadow-sm md:border border-gray-100 overflow-hidden">
+                {/* Desktop Table View */}
+                <table className="w-full text-left border-collapse hidden md:table">
                     <thead>
                         <tr className="bg-gray-50 border-bottom border-gray-100">
                             <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Joueur</th>
@@ -97,22 +98,57 @@ export default function AdminPlayersManager({ initialPlayers }: { initialPlayers
                                     </td>
                                 </tr>
                             ))
-                        ) : (
-                            <tr>
-                                <td colSpan={4} className="px-6 py-12 text-center text-gray-500 italic">
-                                    Aucun joueur trouvé pour "{search}"
-                                </td>
-                            </tr>
-                        )}
-                        {filteredPlayers.length > 100 && (
-                            <tr>
-                                <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-400 bg-gray-50">
-                                    Affichage limité aux 100 premiers résultats (utilisez la recherche pour affiner)
-                                </td>
-                            </tr>
-                        )}
+                        ) : null}
                     </tbody>
                 </table>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden divide-y divide-gray-100">
+                    {filteredPlayers.length > 0 ? (
+                        filteredPlayers.slice(0, 100).map((player) => (
+                            <div key={player.id} className="p-4 flex items-center justify-between gap-4 active:bg-gray-50 transition">
+                                <div className="flex items-center gap-4 min-w-0">
+                                    <div className="w-12 h-12 rounded-full bg-gray-100 flex-shrink-0 overflow-hidden">
+                                        {player.image_id ? (
+                                            <img src={`/api/image/${player.image_id}`} alt="" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                                <i className="fas fa-user text-xl"></i>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="font-bold text-gray-900 truncate tracking-tight">{player.lastname.toUpperCase()} {player.firstname}</p>
+                                        <div className="flex items-center gap-2 mt-0.5">
+                                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${player.gender === 'F' ? 'bg-pink-50 text-pink-500' : 'bg-blue-50 text-blue-500'}`}>
+                                                {player.gender}
+                                            </span>
+                                            <p className="text-xs text-gray-400 italic truncate max-w-[120px]">
+                                                {player.teams || "Sans équipe"}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <Link
+                                    href={`/admin/players/${player.id}`}
+                                    className="w-10 h-10 rounded-full bg-sbc/10 text-sbc flex items-center justify-center flex-shrink-0"
+                                >
+                                    <i className="fas fa-chevron-right"></i>
+                                </Link>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="p-12 text-center text-gray-500 italic">
+                            Aucun joueur trouvé
+                        </div>
+                    )}
+                </div>
+
+                {filteredPlayers.length > 100 && (
+                    <div className="px-6 py-4 text-center text-[10px] uppercase font-bold tracking-widest text-gray-400 bg-gray-50 border-t border-gray-100">
+                        Limite de 100 résultats
+                    </div>
+                )}
             </div>
         </div>
     );

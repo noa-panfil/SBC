@@ -356,7 +356,8 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
                         </div>
 
                         <div className="p-0 overflow-auto flex-grow custom-scrollbar">
-                            <table className="w-full text-left border-collapse">
+                            {/* Desktop Table */}
+                            <table className="w-full text-left border-collapse hidden md:table">
                                 <thead className="bg-gray-50 sticky top-0 shadow-sm z-10">
                                     <tr>
                                         <th onClick={() => handleSort('lastname')} className="p-4 font-bold text-gray-600 cursor-pointer hover:bg-gray-100 transition select-none">
@@ -387,19 +388,38 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
                                                 {reg.role_name && <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">{reg.role_name}</span>}
                                             </td>
                                             <td className="p-4 text-gray-400 text-sm text-right">
-                                                {new Date(reg.created_at).toLocaleDateString('fr-FR')} {new Date(reg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                                {new Date(reg.created_at).toLocaleDateString('fr-FR')}
                                             </td>
                                         </tr>
                                     ))}
-                                    {sortedRegistrations.length === 0 && (
-                                        <tr>
-                                            <td colSpan={5} className="p-8 text-center text-gray-400 italic">
-                                                Aucune inscription pour le moment.
-                                            </td>
-                                        </tr>
-                                    )}
                                 </tbody>
                             </table>
+
+                            {/* Mobile List View */}
+                            <div className="md:hidden divide-y divide-gray-100">
+                                {sortedRegistrations.map((reg: Registration) => (
+                                    <div key={reg.id} className="p-4 space-y-2">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <p className="font-extrabold text-gray-900 uppercase">{reg.lastname} {reg.firstname}</p>
+                                                <p className="text-xs text-gray-400 font-bold tracking-tight">{reg.email}</p>
+                                            </div>
+                                            <span className="text-[10px] text-gray-400 font-black uppercase">
+                                                {new Date(reg.created_at).toLocaleDateString('fr-FR')}
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {reg.team_name && <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-[10px] font-black uppercase border border-blue-100">{reg.team_name}</span>}
+                                            {reg.role_name && <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-[10px] font-black uppercase border border-emerald-100">{reg.role_name}</span>}
+                                        </div>
+                                    </div>
+                                ))}
+                                {sortedRegistrations.length === 0 && (
+                                    <div className="p-12 text-center text-gray-400 italic">
+                                        Aucune inscription.
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         <div className="p-4 border-t border-gray-100 bg-gray-50 text-right">
                             <button className="text-sbc font-bold text-sm hover:underline">

@@ -134,12 +134,12 @@ export default function AdminCoachesManager({ teams: initialTeams }: { teams: an
     };
 
     return (
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8 relative">
-            <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                <i className="fas fa-random text-sbc"></i> Mouvements des Coachs
+        <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100 mb-8 relative overflow-hidden">
+            <h2 className="text-xl font-black text-gray-900 mb-2 flex items-center gap-2 uppercase tracking-tight">
+                <i className="fas fa-random text-sbc"></i> Staff Technique
             </h2>
-            <p className="text-gray-500 mb-6 text-sm">
-                Glissez-déposez les coachs (PC) ou <strong>cliquez sur un coach puis sur sa nouvelle équipe</strong> (Mobile).
+            <p className="text-gray-400 mb-6 text-xs font-bold uppercase tracking-widest leading-relaxed">
+                Glissez-déposez les coachs ou cliquez sur un coach puis sur sa nouvelle équipe.
             </p>
 
             {/* Notification Toast */}

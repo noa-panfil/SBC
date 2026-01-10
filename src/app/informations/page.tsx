@@ -1,11 +1,26 @@
 import { Metadata } from "next";
+import pool from "@/lib/db";
+import { RowDataPacket } from "mysql2";
 
 export const metadata: Metadata = {
     title: "Informations Pratiques - Seclin Basket Club",
     description: "Tarifs des licences, organigramme, salle Jesse Owens... Retrouvez toutes les infos pratiques du SBC.",
 };
 
-export default function Informations() {
+export default async function Informations() {
+    // Fetch gym image from settings
+    let gymImageUrl = "/img/salle/arena.webp";
+    try {
+        const [rows] = await pool.query<RowDataPacket[]>(
+            "SELECT value FROM settings WHERE key_name = 'gym_image_id'"
+        );
+        if (rows.length > 0) {
+            gymImageUrl = `/api/image/${rows[0].value}`;
+        }
+    } catch (e) {
+        console.error("Error fetching gym image:", e);
+    }
+
     return (
         <>
             <header className="bg-white py-12 shadow-sm text-center relative overflow-hidden">
@@ -144,7 +159,7 @@ export default function Informations() {
                                 <div className="w-16 h-16 rounded-full bg-sbc text-white flex items-center justify-center text-2xl flex-shrink-0">
                                     <i className="fas fa-pen-fancy"></i>
                                 </div>
-                                <div>
+                                <div className="min-w-0">
                                     <h3 className="font-bold text-lg leading-tight">Marie<br />Duponchel</h3>
                                     <p className="text-gray-500 font-medium text-sm">Secrétaire</p>
                                 </div>
@@ -173,7 +188,7 @@ export default function Informations() {
                     </h2>
                     <div className="max-w-4xl mx-auto">
                         <div className="bg-white rounded-xl overflow-hidden shadow-md flex flex-col md:flex-row">
-                            <img src="/img/salle/arena.webp" className="w-full md:w-2/5 object-cover h-64 md:h-auto" alt="Salle Jesse Owens - Seclin Basket Club" />
+                            <img src={gymImageUrl} className="w-full md:w-2/5 object-cover h-64 md:h-auto" alt="Salle Jesse Owens - Seclin Basket Club" />
                             <div className="p-8 flex flex-col justify-center">
                                 <h3 className="font-bold text-2xl mb-4">Salle Jesse Owens</h3>
                                 <div className="space-y-4 mb-6 text-gray-600">

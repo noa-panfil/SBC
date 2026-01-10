@@ -1,7 +1,21 @@
 import HomeClient from "@/components/HomeClient";
 import Link from "next/link";
+import pool from "@/lib/db";
+import { RowDataPacket } from "mysql2";
 
-export default function Home() {
+export default async function Home() {
+  let logoUrl = "/img/logo.png";
+  try {
+    const [rows] = await pool.query<RowDataPacket[]>(
+      "SELECT value FROM settings WHERE key_name = 'site_logo_id'"
+    );
+    if (rows.length > 0) {
+      logoUrl = `/api/image/${rows[0].value}`;
+    }
+  } catch (e) {
+    console.error("Error fetching home logo:", e);
+  }
+
   return (
     <>
       <header className="relative h-screen flex items-center justify-center bg-gray-900 text-white">
@@ -10,7 +24,7 @@ export default function Home() {
             alt="Terrain de basket - Seclin Basket Club" className="w-full h-full object-cover opacity-50" />
         </div>
         <div className="relative z-10 text-center px-4 max-w-4xl fade-in">
-          <img src="/img/logo.png" alt="Logo Seclin Basket Club - SBC" className="h-32 w-auto mx-auto mb-6 drop-shadow-lg" />
+          <img src={logoUrl} alt="Logo Seclin Basket Club - SBC" className="h-32 w-auto mx-auto mb-6 drop-shadow-lg" />
           <h1 className="text-5xl md:text-7xl font-extrabold mb-6">SECLIN <span className="text-sbc-light">BASKET</span> CLUB</h1>
           <p className="text-xl md:text-2xl mb-8 text-gray-200">Rejoignez la passion verte et blanche.</p>
           <Link href="/equipes"

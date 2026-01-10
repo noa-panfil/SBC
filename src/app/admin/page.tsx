@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import pool from "@/lib/db";
 import { RowDataPacket } from "mysql2";
 import AdminTeamsClient from "./AdminTeamsClient";
+import AdminCoachesManager from "./AdminCoachesManager";
+import AdminEventsManager from "./AdminEventsManager";
 
 async function getStats() {
     try {
@@ -72,7 +74,48 @@ async function getTeams() {
             };
         });
 
-        return teams;
+        // Helper to determine sort weight
+        const getTeamWeight = (name: string) => {
+            let score = 0;
+            const n = name.toUpperCase();
+
+            // 1. Age Category (Base Score)
+            if (n.includes('BABY')) score = 100;
+            else if (n.includes('U7') || n.includes('MINI')) score = 200;
+            else if (n.includes('U9') || n.includes('POUSSIN')) score = 300;
+            else if (n.includes('U11') || n.includes('BENJAMIN')) score = 400;
+            else if (n.includes('U13') || n.includes('MINIME')) score = 500;
+            else if (n.includes('U15') || n.includes('CADET')) score = 600;
+            else if (n.includes('U17')) score = 700;
+            else if (n.includes('U18')) score = 800;
+            else if (n.includes('U20') || n.includes('JUNIOR')) score = 900;
+            else if (n.includes('SENIOR')) score = 1000;
+            else if (n.includes('LOISIR')) score = 1100;
+            else score = 9999; // Others at the end
+
+            // 2. Gender Priority (Same level: F < M)
+            // If it contains "F" (and not just in "Enfant" or generic words), give small bonus
+            // Actually, let's look for specific patterns like "U11 F", "SF", "Seniors F"
+            const isFemale = n.includes(' F') || n.includes('-F') || n.endsWith(' F') || n.includes('FILLE');
+            const isMale = n.includes(' M') || n.includes('-M') || n.endsWith(' M') || n.includes('GARCON') || n.includes(' MASC');
+
+            if (isFemale) score += 0;
+            else if (isMale) score += 5;
+            else score += 2; // Mixed/Undefined in between or after female? Usually Baby is mixed (0+2=102). U11F(400) < U11M(405).
+
+            // 3. Team Level (1 < 2 < 3)
+            if (n.includes(' 2') || n.includes('-2')) score += 1;
+            else if (n.includes(' 3') || n.includes('-3')) score += 2;
+            else if (n.includes(' 4') || n.includes('-4')) score += 3;
+
+            return score;
+        };
+
+        const sortedTeams = teams.sort((a: any, b: any) => {
+            return getTeamWeight(a.name) - getTeamWeight(b.name);
+        });
+
+        return sortedTeams;
     } catch (e) {
         console.error(e);
         return [];
@@ -133,7 +176,17 @@ export default async function AdminDashboard() {
                 </div>
             </div>
 
+
+
             <AdminTeamsClient teams={teams} />
+
+            <div className="my-8">
+                <AdminCoachesManager teams={teams} />
+            </div>
+
+            <div className="my-8">
+                <AdminEventsManager teams={teams} />
+            </div>
 
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                 <h2 className="text-xl font-bold text-gray-800 mb-4">Actions Rapides</h2>

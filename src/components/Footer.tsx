@@ -1,12 +1,26 @@
 import Link from "next/link";
+import pool from "@/lib/db";
+import { RowDataPacket } from "mysql2";
 
-export default function Footer() {
+export default async function Footer() {
+    let logoUrl = "/img/logo.png";
+    try {
+        const [rows] = await pool.query<RowDataPacket[]>(
+            "SELECT value FROM settings WHERE key_name = 'site_logo_id'"
+        );
+        if (rows.length > 0) {
+            logoUrl = `/api/image/${rows[0].value}`;
+        }
+    } catch (e) {
+        console.error("Error fetching footer logo:", e);
+    }
+
     return (
         <footer className="bg-gray-900 text-white pt-12 pb-6 mt-auto">
             <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
                 <div>
                     <h4 className="text-xl font-bold mb-4 text-sbc-light flex items-center gap-2">
-                        <img src="/img/logo.png" className="h-8 w-auto" alt="Logo" /> SBC Seclin
+                        <img src={logoUrl} className="h-8 w-auto" alt="Logo" /> SBC Seclin
                     </h4>
                     <p className="text-gray-400 text-sm">Le club de basket historique de la ville.<br />Formation, Passion, Compétition.</p>
                 </div>

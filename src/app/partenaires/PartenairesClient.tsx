@@ -1,28 +1,39 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Partenaires() {
+    const [partners, setPartners] = useState<{ name: string; img: string }[]>([]);
+    const [logoUrl, setLogoUrl] = useState("/img/logo.png");
     const [modalOpen, setModalOpen] = useState(false);
     const [modalImage, setModalImage] = useState("");
     const [modalTitle, setModalTitle] = useState("");
+
+    useEffect(() => {
+        fetch('/api/partners')
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    setPartners(data);
+                }
+            })
+            .catch(console.error);
+
+        fetch('/api/settings')
+            .then(res => res.json())
+            .then(data => {
+                if (data.site_logo_id) {
+                    setLogoUrl(`/api/image/${data.site_logo_id}`);
+                }
+            })
+            .catch(console.error);
+    }, []);
 
     const openModal = (src: string, title: string) => {
         setModalImage(src);
         setModalTitle(title);
         setModalOpen(true);
     };
-
-    const partners = [
-        { name: "Génération Lulu", img: "/img/partenaires/generation-lulu.webp" },
-        { name: "Hippopotamus", img: "/img/partenaires/hippopotamus.webp" },
-        { name: "David Parsy", img: "/img/partenaires/david-parsy.webp" },
-        { name: "La Pause Déj", img: "/img/partenaires/la-pause-dej.webp" },
-        { name: "Neo Kebab", img: "/img/partenaires/neo-kebab.webp" },
-        { name: "M-tech", img: "/img/partenaires/m-tech.webp" },
-        { name: "Volfoni", img: "/img/partenaires/volfoni.webp" },
-        { name: "Ineo", img: "/img/partenaires/ineo.webp" },
-    ];
 
     return (
         <>

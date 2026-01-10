@@ -1,0 +1,586 @@
+"use client";
+
+import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
+
+interface EventRole {
+    name: string;
+    max: number;
+}
+
+interface Event {
+    id: number;
+    title: string;
+    event_date: string; // Technical ISO date
+    formatted_date?: string; // Tech date formatted
+    date_display?: string; // "Week-end du..."
+    description: string;
+    location: string;
+    time_info: string;
+    mode: 'joueur' | 'benevole' | 'public';
+    image_id?: number | null;
+    image?: string | null;
+    allowed_teams?: string[];
+    roles?: EventRole[];
+}
+
+interface Registration {
+    id: number;
+    event_id: number;
+    user_id: number;
+    firstname: string;
+    lastname: string;
+    email: string;
+    team_id?: string;
+    team_name?: string;
+    role_id?: number;
+    role_name?: string;
+    created_at: string;
+}
+
+export default function AdminEventsManager({ teams }: { teams: any[] }) {
+    const router = useRouter();
+    const [events, setEvents] = useState<Event[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Modal State
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    // State for Viewing Registrations
+    const [registrationsModal, setRegistrationsModal] = useState<{ isOpen: boolean, eventTitle: string, data: Registration[] }>({ isOpen: false, eventTitle: '', data: [] });
+    const [sortConfig, setSortConfig] = useState<{ key: keyof Registration, direction: 'asc' | 'desc' }>({ key: 'created_at', direction: 'desc' });
+
+    // Empty Event Template
+    const emptyEvent: Partial<Event> = {
+        title: "",
+        event_date: new Date().toISOString().split('T')[0],
+        date_display: "",
+        description: "",
+        location: "Salle Jesse Owens",
+        time_info: "20h00",
+        mode: "public",
+        allowed_teams: [],
+        roles: []
+    };
+
+    const [editingEvent, setEditingEvent] = useState<Partial<Event>>(emptyEvent);
+    const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+
+    const imageInputRef = useRef<HTMLInputElement>(null);
+
+    const showNotification = (message: string, type: 'success' | 'error') => {
+        setNotification({ message, type });
+        setTimeout(() => setNotification(null), 3000);
+    };
+
+    // Fetch Events on Mount
+    useEffect(() => {
+        fetchEvents();
+    }, []);
+
+    const fetchEvents = async () => {
+        setIsLoading(true);
+        try {
+            const res = await fetch('/api/events');
+            const data = await res.json();
+
+            const eventsArray = Object.values(data).map((e: any) => ({
+                ...e,
+                event_date: e.date_iso || new Date().toISOString().split('T')[0],
+                formatted_date: e["format-date"],
+                date_display: e.date_display || "",
+                allowed_teams: e.allowed_teams || [],
+                roles: e.roles || []
+            }));
+
+            setEvents(eventsArray);
+        } catch (e) {
+            console.error(e);
+            showNotification("Erreur chargement événements", 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const convertFrDateToIso = (frDate: string) => {
+        if (!frDate) return "";
+        const parts = frDate.split('/');
+        if (parts.length !== 3) return "";
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    };
+
+    const handleEdit = (event: Event) => {
+        setEditingEvent({
+            ...event,
+            event_date: event.formatted_date ? convertFrDateToIso(event.formatted_date) : event.event_date,
+            date_display: event.date_display || "",
+            allowed_teams: event.allowed_teams || [],
+            roles: event.roles || []
+        });
+        setIsModalOpen(true);
+    };
+
+    const handleCreate = () => {
+        setEditingEvent(emptyEvent);
+        setIsModalOpen(true);
+    };
+
+    const handleUpload = async (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            const res = await fetch('/api/admin/upload', { method: 'POST', body: formData });
+            if (!res.ok) throw new Error("Upload failed");
+            const data = await res.json();
+            return data.id as number;
+        } catch (e) {
+            showNotification("Erreur upload image", 'error');
+            return null;
+        }
+    };
+
+    const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files?.[0]) return;
+        const file = e.target.files[0];
+        const previewUrl = URL.createObjectURL(file);
+
+        setEditingEvent(prev => ({ ...prev, image: previewUrl }));
+
+        const newId = await handleUpload(file);
+        if (newId) {
+            setEditingEvent(prev => ({ ...prev, image_id: newId }));
+        }
+    };
+
+    const handleSave = async () => {
+        try {
+            const payload = {
+                id: editingEvent.id,
+                title: editingEvent.title,
+                date: editingEvent.event_date,
+                dateDisplay: editingEvent.date_display,
+                description: editingEvent.description,
+                location: editingEvent.location,
+                time: editingEvent.time_info,
+                mode: editingEvent.mode,
+                imageId: editingEvent.image_id,
+                allowedTeams: editingEvent.mode === 'joueur' ? editingEvent.allowed_teams : [],
+                roles: editingEvent.mode === 'benevole' ? editingEvent.roles : []
+            };
+
+            const res = await fetch('/api/admin/events/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                showNotification("Événement enregistré !", 'success');
+                setIsModalOpen(false);
+                fetchEvents();
+                router.refresh();
+            } else {
+                throw new Error("Save failed");
+            }
+        } catch (e) {
+            showNotification("Erreur lors de la sauvegarde", 'error');
+        }
+    };
+
+    const handleDelete = async (id: number) => {
+        if (!confirm("Supprimer cet événement définitivement ?")) return;
+
+        try {
+            const res = await fetch('/api/admin/events/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            });
+
+            if (res.ok) {
+                showNotification("Événement supprimé", 'success');
+                fetchEvents();
+                router.refresh();
+            } else {
+                throw new Error("Delete failed");
+            }
+        } catch (e) {
+            showNotification("Erreur lors de la suppression", 'error');
+        }
+    };
+
+    const handleViewRegistrations = async (event: Event) => {
+        try {
+            const res = await fetch('/api/admin/events/registrations', {
+                method: 'POST', // Using POST to send ID easily, usually GET with params is cleaner but this works fine
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ eventId: event.id })
+            });
+            const data: Registration[] = await res.json();
+            setRegistrationsModal({ isOpen: true, eventTitle: event.title, data: Array.isArray(data) ? data : [] });
+        } catch (e) {
+            showNotification("Erreur chargement inscrits", 'error');
+        }
+    };
+
+    const handleSort = (key: keyof Registration) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const sortedRegistrations = [...registrationsModal.data].sort((a, b) => {
+        const aValue = a[sortConfig.key];
+        const bValue = b[sortConfig.key];
+
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+            if (aValue < bValue) {
+                return sortConfig.direction === 'asc' ? -1 : 1;
+            }
+            if (aValue > bValue) {
+                return sortConfig.direction === 'asc' ? 1 : -1;
+            }
+        } else if (typeof aValue === 'number' && typeof bValue === 'number') {
+            if (aValue < bValue) {
+                return sortConfig.direction === 'asc' ? -1 : 1;
+            }
+            if (aValue > bValue) {
+                return sortConfig.direction === 'asc' ? 1 : -1;
+            }
+        }
+        return 0;
+    });
+
+    const addRole = () => {
+        setEditingEvent(prev => ({
+            ...prev,
+            roles: [...(prev.roles || []), { name: "", max: 5 }]
+        }));
+    };
+
+    const updateRole = (index: number, field: 'name' | 'max', value: string | number) => {
+        setEditingEvent(prev => {
+            const newRoles = [...(prev.roles || [])];
+            newRoles[index] = { ...newRoles[index], [field]: value };
+            return { ...prev, roles: newRoles };
+        });
+    };
+
+    const removeRole = (index: number) => {
+        setEditingEvent(prev => ({
+            ...prev,
+            roles: (prev.roles || []).filter((_, i) => i !== index)
+        }));
+    };
+
+    const toggleTeam = (teamId: string) => {
+        setEditingEvent(prev => {
+            const current = (prev.allowed_teams || []) as string[];
+            if (current.includes(teamId)) {
+                return { ...prev, allowed_teams: current.filter(id => id !== teamId) };
+            } else {
+                return { ...prev, allowed_teams: [...current, teamId] };
+            }
+        });
+    };
+
+    return (
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8 relative">
+            {notification && (
+                <div className={`fixed bottom-8 right-8 px-6 py-4 rounded-xl shadow-2xl text-white font-bold transition-all transform animate-bounce-in z-[100] flex items-center gap-3 ${notification.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
+                    <i className={`fas ${notification.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'} text-xl`}></i>
+                    {notification.message}
+                </div>
+            )}
+
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <i className="fas fa-calendar-alt text-sbc"></i> Gestion des Événements
+                </h2>
+                <button onClick={handleCreate} className="bg-sbc text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-sbc-dark transition transform hover:scale-105">
+                    <i className="fas fa-plus mr-2"></i> Ajouter
+                </button>
+            </div>
+
+            {isLoading ? (
+                <div className="text-center py-8 text-gray-400">Chargement...</div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {events.map((event) => (
+                        <div key={event.id} className="border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition bg-white flex flex-col group relative">
+                            <div className="h-40 overflow-hidden relative bg-gray-100">
+                                <img src={event.image || "/img/event-placeholder.jpg"} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" alt={event.title} />
+                                <div className="absolute top-2 right-2 flex gap-2">
+                                    <button onClick={() => handleViewRegistrations(event)} className="bg-white/90 text-sbc w-8 h-8 rounded-full flex items-center justify-center hover:bg-sbc hover:text-white transition shadow-sm" title="Voir les inscrits">
+                                        <i className="fas fa-users"></i>
+                                    </button>
+                                    <button onClick={() => handleDelete(event.id)} className="bg-white/90 text-red-500 w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white transition shadow-sm">
+                                        <i className="fas fa-trash"></i>
+                                    </button>
+                                    <button onClick={() => handleEdit(event)} className="bg-white/90 text-blue-500 w-8 h-8 rounded-full flex items-center justify-center hover:bg-blue-500 hover:text-white transition shadow-sm">
+                                        <i className="fas fa-pen"></i>
+                                    </button>
+                                </div>
+                                <div className="absolute bottom-2 left-2 bg-sbc text-white text-xs font-bold px-2 py-1 rounded shadow">
+                                    {event.mode === 'benevole' ? 'Bénévoles' : event.mode === 'joueur' ? 'Joueurs' : 'Public'}
+                                </div>
+                            </div>
+                            <div className="p-4 flex-grow flex flex-col">
+                                <div className="text-xs font-bold text-sbc uppercase mb-1">{event.date_display || event.formatted_date || event.event_date}</div>
+                                <h3 className="font-bold text-gray-800 text-lg leading-tight mb-2">{event.title}</h3>
+                                <p className="text-sm text-gray-500 line-clamp-2">{event.description}</p>
+                            </div>
+                        </div>
+                    ))}
+                    {events.length === 0 && (
+                        <div className="col-span-full text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                            <p className="text-gray-400 mb-4">Aucun événement planifié.</p>
+                            <button onClick={handleCreate} className="text-sbc font-bold hover:underline">Créer le premier événement</button>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Registrations Modal */}
+            {registrationsModal.isOpen && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col animate-fade-in-up">
+                        <div className="bg-sbc p-4 flex justify-between items-center text-white rounded-t-xl">
+                            <div>
+                                <h3 className="font-bold text-xl">Inscriptions Reçues</h3>
+                                <p className="text-sm text-white/80">{registrationsModal.eventTitle} - {registrationsModal.data.length} inscrit(s)</p>
+                            </div>
+                            <button onClick={() => setRegistrationsModal({ ...registrationsModal, isOpen: false })} className="text-white/80 hover:text-white text-2xl">&times;</button>
+                        </div>
+
+                        <div className="p-0 overflow-auto flex-grow custom-scrollbar">
+                            <table className="w-full text-left border-collapse">
+                                <thead className="bg-gray-50 sticky top-0 shadow-sm z-10">
+                                    <tr>
+                                        <th onClick={() => handleSort('lastname')} className="p-4 font-bold text-gray-600 cursor-pointer hover:bg-gray-100 transition select-none">
+                                            Nom {sortConfig.key === 'lastname' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
+                                        </th>
+                                        <th onClick={() => handleSort('firstname')} className="p-4 font-bold text-gray-600 cursor-pointer hover:bg-gray-100 transition select-none">
+                                            Prénom {sortConfig.key === 'firstname' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
+                                        </th>
+                                        <th onClick={() => handleSort('email')} className="p-4 font-bold text-gray-600 cursor-pointer hover:bg-gray-100 transition select-none">
+                                            Email {sortConfig.key === 'email' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
+                                        </th>
+                                        <th onClick={() => handleSort('team_name')} className="p-4 font-bold text-gray-600 cursor-pointer hover:bg-gray-100 transition select-none">
+                                            Info (Équipe/Rôle) {sortConfig.key === 'team_name' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
+                                        </th>
+                                        <th onClick={() => handleSort('created_at')} className="p-4 font-bold text-gray-600 cursor-pointer hover:bg-gray-100 transition select-none text-right">
+                                            Date {sortConfig.key === 'created_at' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                    {sortedRegistrations.map((reg: Registration) => (
+                                        <tr key={reg.id} className="hover:bg-gray-50 transition">
+                                            <td className="p-4 font-bold text-gray-800">{reg.lastname}</td>
+                                            <td className="p-4 text-gray-700">{reg.firstname}</td>
+                                            <td className="p-4 text-gray-500 text-sm">{reg.email}</td>
+                                            <td className="p-4">
+                                                {reg.team_name && <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold mr-2">{reg.team_name}</span>}
+                                                {reg.role_name && <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">{reg.role_name}</span>}
+                                            </td>
+                                            <td className="p-4 text-gray-400 text-sm text-right">
+                                                {new Date(reg.created_at).toLocaleDateString('fr-FR')} {new Date(reg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {sortedRegistrations.length === 0 && (
+                                        <tr>
+                                            <td colSpan={5} className="p-8 text-center text-gray-400 italic">
+                                                Aucune inscription pour le moment.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="p-4 border-t border-gray-100 bg-gray-50 text-right">
+                            <button className="text-sbc font-bold text-sm hover:underline">
+                                <i className="fas fa-download mr-1"></i> Exporter CSV (Bientôt)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit / Create Modal (Existing) */}
+            {isModalOpen && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-fade-in-up custom-scrollbar">
+                        <div className="bg-sbc p-4 flex justify-between items-center text-white sticky top-0 z-10">
+                            <h3 className="font-bold text-xl">{editingEvent.id ? "Modifier l'événement" : "Nouvel Événement"}</h3>
+                            <button onClick={() => setIsModalOpen(false)} className="text-white/80 hover:text-white text-2xl">&times;</button>
+                        </div>
+
+                        <div className="p-6 space-y-6">
+                            <div className="flex justify-center">
+                                <div className="relative group cursor-pointer w-full h-40 bg-gray-100 rounded-lg overflow-hidden border-2 border-dashed border-gray-300 hover:border-sbc transition"
+                                    onClick={() => imageInputRef.current?.click()}>
+                                    {editingEvent.image ? (
+                                        <img src={editingEvent.image} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                                            <i className="fas fa-image text-3xl mb-2"></i>
+                                            <span>Ajouter une image (Bannière)</span>
+                                        </div>
+                                    )}
+                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition">
+                                        <i className="fas fa-camera text-2xl mr-2"></i> Changer l'image
+                                    </div>
+                                    <input type="file" ref={imageInputRef} className="hidden" accept="image/*" onChange={handleImageChange} />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">Titre</label>
+                                    <input
+                                        className="w-full p-2 border border-gray-300 rounded focus:border-sbc outline-none"
+                                        value={editingEvent.title || ''}
+                                        onChange={e => setEditingEvent({ ...editingEvent, title: e.target.value })}
+                                        placeholder="Ex: Tournoi de Noël"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">Date Technique (Tri)</label>
+                                        <input
+                                            type="date"
+                                            className="w-full p-2 border border-gray-300 rounded focus:border-sbc outline-none"
+                                            value={editingEvent.event_date || ''}
+                                            onChange={e => setEditingEvent({ ...editingEvent, event_date: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">Date d'affichage</label>
+                                        <input
+                                            type="text"
+                                            className="w-full p-2 border border-gray-300 rounded focus:border-sbc outline-none"
+                                            value={editingEvent.date_display || ''}
+                                            onChange={e => setEditingEvent({ ...editingEvent, date_display: e.target.value })}
+                                            placeholder="Ex: Week-end du 20 Décembre"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">Lieu</label>
+                                    <input
+                                        className="w-full p-2 border border-gray-300 rounded focus:border-sbc outline-none"
+                                        value={editingEvent.location || ''}
+                                        onChange={e => setEditingEvent({ ...editingEvent, location: e.target.value })}
+                                        placeholder="Ex: Salle J. Owens"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">Heure</label>
+                                    <input
+                                        className="w-full p-2 border border-gray-300 rounded focus:border-sbc outline-none"
+                                        value={editingEvent.time_info || ''}
+                                        onChange={e => setEditingEvent({ ...editingEvent, time_info: e.target.value })}
+                                        placeholder="Ex: 20h00"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">Description</label>
+                                <textarea
+                                    rows={3}
+                                    className="w-full p-2 border border-gray-300 rounded focus:border-sbc outline-none"
+                                    value={editingEvent.description || ''}
+                                    onChange={e => setEditingEvent({ ...editingEvent, description: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="border-t border-gray-200 pt-4">
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Type d'Événements</label>
+                                <div className="flex gap-4 mb-4">
+                                    <label className={`flex-1 p-3 rounded border text-center cursor-pointer transition ${editingEvent.mode === 'public' ? 'bg-sbc text-white border-sbc' : 'bg-white border-gray-200 hover:border-sbc'}`}>
+                                        <input type="radio" name="mode" value="public" checked={editingEvent.mode === 'public'} onChange={() => setEditingEvent({ ...editingEvent, mode: 'public', allowed_teams: [], roles: [] })} className="hidden" />
+                                        <i className="fas fa-globe mr-2"></i> Public
+                                    </label>
+                                    <label className={`flex-1 p-3 rounded border text-center cursor-pointer transition ${editingEvent.mode === 'joueur' ? 'bg-sbc text-white border-sbc' : 'bg-white border-gray-200 hover:border-sbc'}`}>
+                                        <input type="radio" name="mode" value="joueur" checked={editingEvent.mode === 'joueur'} onChange={() => setEditingEvent({ ...editingEvent, mode: 'joueur', roles: [] })} className="hidden" />
+                                        <i className="fas fa-user mr-2"></i> Joueurs
+                                    </label>
+                                    <label className={`flex-1 p-3 rounded border text-center cursor-pointer transition ${editingEvent.mode === 'benevole' ? 'bg-sbc text-white border-sbc' : 'bg-white border-gray-200 hover:border-sbc'}`}>
+                                        <input type="radio" name="mode" value="benevole" checked={editingEvent.mode === 'benevole'} onChange={() => setEditingEvent({ ...editingEvent, mode: 'benevole', allowed_teams: [] })} className="hidden" />
+                                        <i className="fas fa-hands-helping mr-2"></i> Bénévoles
+                                    </label>
+                                </div>
+
+                                {editingEvent.mode === 'joueur' && teams && (
+                                    <div className="bg-gray-50 p-4 rounded-lg">
+                                        <h4 className="text-sm font-bold text-gray-700 mb-3">Équipes concernées</h4>
+                                        <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto custom-scrollbar">
+                                            {teams.map(team => (
+                                                <label key={team.id} className={`px-3 py-1 rounded-full text-xs font-bold border cursor-pointer select-none transition ${editingEvent.allowed_teams?.includes(team.id) ? 'bg-sbc text-white border-sbc' : 'bg-white text-gray-500 border-gray-300'}`}>
+                                                    <input type="checkbox" className="hidden" checked={editingEvent.allowed_teams?.includes(team.id) || false} onChange={() => toggleTeam(team.id)} />
+                                                    {team.name}
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {editingEvent.mode === 'benevole' && (
+                                    <div className="bg-gray-50 p-4 rounded-lg">
+                                        <div className="flex justify-between items-center mb-3">
+                                            <h4 className="text-sm font-bold text-gray-700">Rôles / Postes nécessaires</h4>
+                                            <button onClick={addRole} type="button" className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 px-2 py-1 rounded font-bold">
+                                                <i className="fas fa-plus mr-1"></i> Ajouter un rôle
+                                            </button>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {editingEvent.roles?.map((role, idx) => (
+                                                <div key={idx} className="flex gap-2 items-center">
+                                                    <input
+                                                        className="flex-grow p-2 text-sm border border-gray-300 rounded focus:border-sbc outline-none"
+                                                        placeholder="Ex: Table de marque"
+                                                        value={role.name}
+                                                        onChange={(e) => updateRole(idx, 'name', e.target.value)}
+                                                    />
+                                                    <input
+                                                        type="number"
+                                                        className="w-16 p-2 text-sm border border-gray-300 rounded focus:border-sbc outline-none text-center"
+                                                        placeholder="Max"
+                                                        value={role.max}
+                                                        onChange={(e) => updateRole(idx, 'max', parseInt(e.target.value))}
+                                                    />
+                                                    <button onClick={() => removeRole(idx)} className="text-red-400 hover:text-red-600 px-2">
+                                                        <i className="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            {(editingEvent.roles?.length === 0 || !editingEvent.roles) && (
+                                                <p className="text-xs text-gray-400 italic text-center">Aucun rôle défini.</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                        </div>
+
+                        <div className="p-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50 sticky bottom-0 z-10">
+                            <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-gray-500 hover:text-gray-700 font-bold transition">Annuler</button>
+                            <button onClick={handleSave} className="px-6 py-2 bg-sbc text-white rounded-lg font-bold shadow hover:bg-sbc-dark transition transform hover:scale-105">
+                                {editingEvent.id ? 'Mettre à jour' : 'Créer'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}

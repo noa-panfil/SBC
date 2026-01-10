@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
@@ -13,9 +10,17 @@ export const metadata: Metadata = {
   title: "SBC - Accueil",
   description: "Le site officiel du Seclin Basket Club (SBC). Retrouvez les actus, les résultats, les équipes et la vie du club.",
   other: {
-    "google-site-verification": "verification_token", // Add if known from html head
+    "google-site-verification": "verification_token",
   }
 };
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+};
+
+import RootLayoutClient from "../components/RootLayoutClient";
 
 export default function RootLayout({
   children,
@@ -30,9 +35,9 @@ export default function RootLayout({
       <body
         className={`${inter.variable} antialiased bg-gray-50 text-gray-800 flex flex-col min-h-screen`}
       >
-        <Header />
-        {children}
-        <Footer />
+        <RootLayoutClient>
+          {children}
+        </RootLayoutClient>
       </body>
     </html>
   );

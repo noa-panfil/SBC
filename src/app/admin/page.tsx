@@ -134,79 +134,90 @@ export default async function AdminDashboard() {
     const teams = await getTeams();
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8">
-            <header className="mb-8 flex justify-between items-center bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                <div>
-                    <h1 className="text-3xl font-bold text-sbc-dark mb-1">Dashboard Admin</h1>
-                    <p className="text-gray-600">Bienvenue, <span className="font-semibold text-sbc">{session.user?.email}</span></p>
+        <div className="w-full max-w-7xl mx-auto p-4 md:p-8 space-y-6 md:space-y-10 pb-20 overflow-x-hidden">
+            {/* Header Section */}
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/90 backdrop-blur-md sticky top-0 md:top-4 z-40 p-6 md:rounded-2xl shadow-sm border-b md:border border-gray-100 md:border-white/20">
+                <div className="w-full md:w-auto">
+                    <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">Tableau de bord</h1>
+                    <p className="text-xs md:text-sm text-gray-500 font-medium truncate">Session : <span className="text-sbc font-bold">{session.user?.email}</span></p>
                 </div>
-                <div className="flex items-center gap-4">
-                    <Link href="/admin/images" className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition">
-                        <i className="fas fa-images"></i> Médiathèque
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                    <Link href="/" className="flex-1 md:flex-none justify-center px-4 py-2.5 text-xs font-black text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition flex items-center gap-2 uppercase tracking-wider">
+                        <i className="fas fa-external-link-alt text-[10px]"></i> Site public
                     </Link>
-                    <div className="text-sm text-gray-400">
-                        v1.1.0
+                    <div className="px-3 py-2 bg-sbc/10 text-sbc text-[10px] font-black rounded-xl uppercase tracking-widest border border-sbc/20">
+                        Status: Live
                     </div>
                 </div>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <Link href="/admin/players" className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 border-l-4 border-blue-500 hover:shadow-md transition cursor-pointer">
-                    <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-2xl">
-                        <i className="fas fa-users"></i>
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+                {[
+                    { label: "Joueurs", value: stats.players, icon: "fas fa-users", color: "from-blue-500 to-indigo-600", link: "/admin/players" },
+                    { label: "Coachs", value: stats.coaches, icon: "fas fa-user-tie", color: "from-emerald-500 to-teal-600", link: null },
+                    { label: "Équipes", value: teams.length, icon: "fas fa-shield-alt", color: "from-sbc to-sbc-dark", link: "#teams", fullMobile: true },
+                ].map((stat, i) => (
+                    <div key={i} className={`group relative ${stat.fullMobile ? 'col-span-2 lg:col-span-1' : 'col-span-1'}`}>
+                        {stat.link ? (
+                            <Link href={stat.link} className="absolute inset-0 z-10" />
+                        ) : null}
+                        <div className="bg-white p-5 md:p-6 rounded-2xl md:rounded-3xl shadow-sm border border-gray-100 transition-all duration-300 active:scale-95 md:hover:shadow-xl md:hover:-translate-y-1">
+                            <div className={`w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-gradient-to-br ${stat.color} text-white flex items-center justify-center text-xl md:text-2xl shadow-lg mb-3 md:mb-4 transition-transform`}>
+                                <i className={stat.icon}></i>
+                            </div>
+                            <div>
+                                <p className="text-gray-400 text-xs md:text-sm font-black uppercase tracking-widest">{stat.label}</p>
+                                <p className="text-2xl md:text-3xl font-black text-gray-900 mt-0.5 md:mt-1">{stat.value}</p>
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <p className="text-gray-500 text-sm font-medium">Joueurs</p>
-                        <p className="text-2xl font-bold text-gray-800">{stats.players}</p>
-                    </div>
-                </Link>
-
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 border-l-4 border-sbc hover:shadow-md transition">
-                    <div className="w-12 h-12 rounded-full bg-sbc-light text-sbc flex items-center justify-center text-2xl">
-                        <i className="fas fa-user-tie"></i>
-                    </div>
-                    <div>
-                        <p className="text-gray-500 text-sm font-medium">Coachs</p>
-                        <p className="text-2xl font-bold text-gray-800">{stats.coaches}</p>
-                    </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 border-l-4 border-purple-500 hover:shadow-md transition">
-                    <div className="w-12 h-12 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-2xl">
-                        <i className="fas fa-shield-alt"></i>
-                    </div>
-                    <div>
-                        <p className="text-gray-500 text-sm font-medium">Équipes</p>
-                        <p className="text-2xl font-bold text-gray-800">{teams.length}</p>
-                    </div>
-                </div>
+                ))}
             </div>
 
+            {/* Management Sections */}
+            <section id="teams" className="scroll-mt-24">
+                <div className="flex items-center gap-3 mb-6">
+                    <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Équipes</h2>
+                    <div className="h-px flex-grow bg-gray-200"></div>
+                </div>
+                <AdminTeamsClient teams={teams} />
+            </section>
 
-
-            <AdminTeamsClient teams={teams} />
-
-            <div className="my-8">
+            <section id="coaches" className="scroll-mt-24">
+                <div className="flex items-center gap-3 mb-6">
+                    <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Staff Technique</h2>
+                    <div className="h-px flex-grow bg-gray-200"></div>
+                </div>
                 <AdminCoachesManager teams={teams} />
-            </div>
+            </section>
 
-            <div className="my-8">
+            <section id="events" className="scroll-mt-24">
+                <div className="flex items-center gap-3 mb-6">
+                    <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Événements</h2>
+                    <div className="h-px flex-grow bg-gray-200"></div>
+                </div>
                 <AdminEventsManager teams={teams} />
-            </div>
+            </section>
 
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">Actions Rapides</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    <div className="p-4 border border-dashed border-gray-300 rounded-lg text-center text-gray-500 hover:border-sbc hover:text-sbc cursor-pointer transition">
-                        <i className="fas fa-plus mb-2 text-xl"></i>
-                        <p>Ajouter une équipe</p>
+            {/* Quick Actions Footer */}
+            <div className="bg-sbc-dark rounded-3xl md:rounded-[2.5rem] p-6 md:p-10 text-white overflow-hidden relative shadow-2xl">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-sbc-light opacity-10 rounded-full -mr-32 -mt-32"></div>
+                <div className="absolute bottom-0 left-0 w-32 h-32 bg-white opacity-5 rounded-full -ml-16 -mb-16"></div>
+
+                <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6 text-center md:text-left">
+                    <div>
+                        <h2 className="text-2xl md:text-3xl font-black mb-1">Actions rapides</h2>
+                        <p className="text-gray-400 text-xs md:text-base font-medium">Gérez votre contenu en toute simplicité.</p>
                     </div>
-                    <div className="p-4 border border-dashed border-gray-300 rounded-lg text-center text-gray-500 hover:border-sbc hover:text-sbc cursor-pointer transition">
-                        <i className="fas fa-plus mb-2 text-xl"></i>
-                        <p>Ajouter un événement</p>
+                    <div className="flex flex-wrap justify-center gap-3 w-full md:w-auto">
+                        <Link href="/admin/images" className="w-full md:w-auto bg-white/10 hover:bg-white/20 px-8 py-4 rounded-xl md:rounded-2xl font-black text-sm md:text-base uppercase tracking-widest flex items-center justify-center gap-3 transition-all backdrop-blur-sm border border-white/10">
+                            <i className="fas fa-images text-lg"></i> Médiathèque
+                        </Link>
                     </div>
                 </div>
             </div>
+
         </div>
     );
 }

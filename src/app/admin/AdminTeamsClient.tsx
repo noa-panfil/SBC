@@ -248,22 +248,22 @@ export default function AdminTeamsClient({ teams }: { teams: Team[] }) {
                 <i className="fas fa-basketball-ball text-sbc"></i> Gestion des Équipes
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {teams.map((team) => (
                     <div
                         key={team.id}
                         onClick={() => setSelectedTeam(team)}
-                        className="border border-gray-200 rounded-lg p-4 hover:shadow-md hover:border-sbc transition cursor-pointer flex items-center gap-4 group"
+                        className="bg-white border border-gray-100 rounded-2xl p-4 md:p-5 hover:shadow-lg hover:border-sbc transition-all cursor-pointer flex items-center gap-4 group"
                     >
-                        <div className="w-12 h-12 bg-gray-100 rounded-full flex-shrink-0 overflow-hidden">
-                            <img src={team.image || "/img/default-team.png"} alt={team.name} className="w-full h-full object-cover" />
+                        <div className="w-14 h-14 bg-gray-50 rounded-2xl flex-shrink-0 overflow-hidden border border-gray-100 shadow-inner">
+                            <img src={team.image || "/img/default-team.png"} alt={team.name} className="w-full h-full object-cover transition group-hover:scale-110" />
                         </div>
                         <div className="flex-grow min-w-0">
-                            <h3 className="font-bold text-gray-800 truncate group-hover:text-sbc transition">{team.name}</h3>
-                            <p className="text-sm text-gray-500 truncate">{team.category}</p>
+                            <h3 className="font-black text-gray-900 truncate group-hover:text-sbc transition uppercase tracking-tight text-sm md:text-base">{team.name}</h3>
+                            <p className="text-xs text-gray-400 font-bold truncate uppercase tracking-widest">{team.category}</p>
                         </div>
-                        <div className="text-gray-400 group-hover:text-sbc">
-                            <i className="fas fa-chevron-right"></i>
+                        <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-300 group-hover:bg-sbc/10 group-hover:text-sbc transition">
+                            <i className="fas fa-chevron-right text-xs"></i>
                         </div>
                     </div>
                 ))}
@@ -271,36 +271,39 @@ export default function AdminTeamsClient({ teams }: { teams: Team[] }) {
 
             {/* Modal Détails */}
             {selectedTeam && (
-                <div className="fixed inset-0 bg-white/30 backdrop-blur-md z-50 flex items-center justify-center p-4 content-start"
+                <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-md z-[100] flex items-end md:items-center justify-center p-0 md:p-4"
                     onMouseDown={() => { if (!isEditing) setSelectedTeam(null); }}>
-                    <div className="bg-white rounded-xl shadow-2xl w-[95%] max-w-[1600px] h-[90vh] overflow-hidden flex flex-col border border-gray-200 animate-fade-in-up"
+                    <div className="bg-white rounded-t-[2.5rem] md:rounded-[2rem] shadow-2xl w-full max-w-[1600px] h-[92vh] md:h-[85vh] overflow-hidden flex flex-col border border-white/20 animate-fade-in-up md:scale-[0.98] md:hover:scale-[1] transition-transform"
                         onMouseDown={(e) => e.stopPropagation()}>
 
                         {/* Header Modal */}
-                        <div className="bg-sbc p-4 flex items-center justify-between text-white shadow-md z-10">
-                            <h3 className="text-xl md:text-2xl font-bold flex items-center gap-3">
-                                {isEditing ? `Édition: ${editingTeam?.name}` : selectedTeam.name}
-                                {isEditing && <span className="text-xs bg-yellow-400 text-sbc-dark px-2 py-1 rounded font-bold uppercase">Mode Édition</span>}
-                            </h3>
-                            <div className="flex items-center gap-3">
+                        <div className="bg-white px-6 py-5 flex items-center justify-between border-b border-gray-100 sticky top-0 z-20">
+                            <div className="flex flex-col">
+                                <h3 className="text-xl md:text-2xl font-black text-gray-900 uppercase tracking-tighter">
+                                    {isEditing ? `Édition` : selectedTeam.name}
+                                </h3>
+                                {isEditing && <span className="text-[10px] bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full font-black uppercase tracking-widest w-fit mt-1">Mode Édition</span>}
+                                {!isEditing && <span className="text-xs text-gray-400 font-bold uppercase tracking-widest">{selectedTeam.category}</span>}
+                            </div>
+                            <div className="flex items-center gap-2">
                                 {isEditing ? (
                                     <>
                                         <button onClick={() => { setIsEditing(false); setEditingTeam(JSON.parse(JSON.stringify(selectedTeam))); }}
-                                            className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded text-sm font-bold transition">
+                                            className="px-4 py-2.5 rounded-xl text-xs font-black text-gray-500 hover:bg-gray-100 uppercase tracking-widest transition">
                                             Annuler
                                         </button>
                                         <button onClick={saveChanges}
-                                            className="bg-white text-sbc px-6 py-2 rounded shadow-lg hover:bg-gray-100 text-sm font-bold transition transform hover:scale-105">
-                                            <i className="fas fa-save mr-2"></i> Enregistrer
+                                            className="bg-sbc text-white px-6 py-2.5 rounded-xl shadow-lg shadow-sbc/20 hover:bg-sbc-dark text-xs font-black uppercase tracking-widest transition">
+                                            Enregistrer
                                         </button>
                                     </>
                                 ) : (
                                     <>
-                                        <button onClick={() => setIsEditing(true)} className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded text-sm font-bold transition">
-                                            <i className="fas fa-edit mr-2"></i> Éditer
+                                        <button onClick={() => setIsEditing(true)} className="bg-sbc/10 text-sbc px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition flex items-center gap-2">
+                                            <i className="fas fa-edit"></i> <span className="hidden sm:inline">Éditer</span>
                                         </button>
-                                        <button onClick={() => setSelectedTeam(null)} className="text-white hover:text-gray-200 text-2xl px-2">
-                                            &times;
+                                        <button onClick={() => setSelectedTeam(null)} className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition">
+                                            <i className="fas fa-times text-gray-400 text-xl"></i>
                                         </button>
                                     </>
                                 )}

@@ -1,19 +1,21 @@
-import Link from "next/link";
-import pool from "@/lib/db";
-import { RowDataPacket } from "mysql2";
+"use client";
 
-export default async function Footer() {
-    let logoUrl = "/img/logo.png";
-    try {
-        const [rows] = await pool.query<RowDataPacket[]>(
-            "SELECT value FROM settings WHERE key_name = 'site_logo_id'"
-        );
-        if (rows.length > 0) {
-            logoUrl = `/api/image/${rows[0].value}`;
-        }
-    } catch (e) {
-        console.error("Error fetching footer logo:", e);
-    }
+import Link from "next/link";
+import { useState, useEffect } from "react";
+
+export default function Footer() {
+    const [logoUrl, setLogoUrl] = useState("/img/logo.png");
+
+    useEffect(() => {
+        fetch('/api/settings')
+            .then(res => res.json())
+            .then(data => {
+                if (data.site_logo_id) {
+                    setLogoUrl(`/api/image/${data.site_logo_id}`);
+                }
+            })
+            .catch(console.error);
+    }, []);
 
     return (
         <footer className="bg-gray-900 text-white pt-12 pb-6 mt-auto">

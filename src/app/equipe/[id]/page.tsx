@@ -22,7 +22,7 @@ export default function EquipeDetail({ params }: { params: Promise<{ id: string 
 
     useEffect(() => {
         if (id) {
-            fetch('/json/teams.json')
+            fetch('/api/teams')
                 .then(res => res.json())
                 .then(data => {
                     const decodedId = decodeURIComponent(id);

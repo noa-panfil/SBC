@@ -28,7 +28,9 @@ export async function GET() {
             const coaches = members
                 .filter((m: any) => m.role.toLowerCase().includes('coach'))
                 .map((m: any) => ({
-                    name: m.firstname, // Keeping 'name' key for compatibility
+                    person_id: m.person_id, // Added ID for editing
+                    name: m.firstname,
+                    lastname: m.lastname,
                     role: m.role,
                     img: m.image_id ? `/api/image/${m.image_id}` : null,
                     birth: m.birthdate ? new Date(m.birthdate).toLocaleDateString('fr-FR') : null,
@@ -38,7 +40,9 @@ export async function GET() {
             const players = members
                 .filter((m: any) => !m.role.toLowerCase().includes('coach'))
                 .map((m: any) => ({
+                    person_id: m.person_id, // Added ID for editing
                     name: m.firstname,
+                    lastname: m.lastname,
                     num: m.number,
                     img: m.image_id ? `/api/image/${m.image_id}` : null,
                     birth: m.birthdate ? new Date(m.birthdate).toLocaleDateString('fr-FR') : null,

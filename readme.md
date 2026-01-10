@@ -1,95 +1,58 @@
-# Seclin Basket Club (SBC) - Site Officiel 🏀
+<div align="center">
+  <img src="https://seclinbasketclub.fr/api/image/2026" width="120" alt="SBC Logo" />
+  <h1>Seclin Basket Club (SBC)</h1>
+  <p><strong>Plateforme Officielle - Performance, Passion, Compétition</strong></p>
 
-![SBC Banner](https://seclinbasketclub.fr/api/image/2026)
-
-> **Bienvenue sur le dépôt officiel du Seclin Basket Club (SBC).**  
-> 🌐 **Site accessible sur : [seclinbasketclub.fr](https://seclinbasketclub.fr)**  
->
-> Ce site web est la vitrine numérique de notre club, offrant aux membres et aux fans un accès rapide aux actualités, résultats, équipes et événements du club.
-
----
-
-## 📌 À Propos
-
-Le **Seclin Basket Club** est une institution sportive historique située à Seclin (59113), dédiée à la formation, la passion et la compétition dans le basketball.
-
-Ce projet vise à fournir une interface moderne, responsive et dynamique pour :
-- Suivre les **derniers résultats** et classements.
-- Consulter le **calendrier des matchs**.
-- Découvrir nos **équipes** (de la jeunesse aux seniors).
-- S'informer sur les **événements** à venir (lotos, tournois, fêtes).
-- Mettre en avant nos précieux **partenaires**.
+  <p>
+    <a href="https://seclinbasketclub.fr"><img src="https://img.shields.io/badge/Site-Web-14532d?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Website" /></a>
+    <img src="https://img.shields.io/badge/Status-Production-success?style=for-the-badge" alt="Status" />
+    <img src="https://img.shields.io/badge/Stack-Next.js%2015-black?style=for-the-badge&logo=next.js" alt="Stack" />
+  </p>
+</div>
 
 ---
 
-## 🚀 Fonctionnalités Clés
-
-- **Accueil Dynamique** : Présentation visuelle impactante avec les dernières news.
-- **Gestion des Équipes** : Pages détaillées pour chaque catégorie (U7 à Seniors).
-- **Calendrier & Résultats** : Intégration des scores et des matchs à venir.
-- **Événements** : Section dédiée aux manifestations du club.
-- **Espace Partenaires** : Mise en valeur des sponsors qui nous soutiennent.
-- **Design Responsive** : Optimisé pour mobile, tablette et desktop grâce à **Tailwind CSS**.
+### 🌐 Présentation
+Le **Seclin Basket Club**, institution sportive de Seclin (59113), se dote d'une nouvelle infrastructure numérique.
+Ce projet, propulsé par **Next.js 15**, offre une expérience fluide aux licenciés tout en proposant une interface d'administration robuste pour la gestion du club au quotidien.
 
 ---
 
-## 🛠️ Stack Technique
+### 🚀 Fonctionnalités Clés
 
-Ce projet est construit avec des technologies web standards, privilégiant la performance et la simplicité de maintenance.
+#### 🛡️ Administration (Sécurisée)
+- **Tableau de Bord** : Statistiques en temps réel (nombre de joueurs, coachs).
+- **Médiathèque** : Gestion centralisée des images en base de données SQL.
+- **Gestion des Équipes** : Édition dynamique des effectifs, horaires et photos.
+- **Coachs Manager** : Organisation des entraîneurs par simple glisser-déposer.
 
-| Technologie | Usage |
-| :--- | :--- |
-| ![HTML5](https://skillicons.dev/icons?i=html&theme=dark) | Structure sémantique des pages. |
-| ![Tailwind CSS](https://skillicons.dev/icons?i=tailwind&theme=dark) | Framework CSS utilitaire pour le styling rapide et responsive. |
-| ![JavaScript](https://skillicons.dev/icons?i=js&theme=dark) | Logique dynamique (slider, interactions, chargement de données). |
-| ![JSON](https://img.shields.io/badge/JSON-000000?style=for-the-badge&logo=json&logoColor=white) | Stockage léger des données (équipes, matchs). |
+#### 📅 Événements & Inscriptions
+- **Système d'Inscription** : Formulaires dynamiques adaptés au type d'événement (Public, Joueurs, Bénévoles).
+- **Gestion des Inscrits** : Visualisation et export des listes d'inscriptions pour l'organisation.
 
 ---
 
-## 📂 Structure du Projet
-
+### 📂 Structure du projet
 ```bash
 SBC/
-├── img/                # Images et assets graphiques (logos, photos équipes, partenaires)
-├── js/                 # Scripts JavaScript
-│   ├── layout.js       # Gestion du Header/Footer commun
-│   ├── home.js         # Logique spécifique à la page d'accueil
-│   ├── equipes.js      # Gestion des données des équipes
-│   └── ...
-├── json/               # Données statiques (si applicable)
-├── index.html          # Page d'accueil
-├── equipes.html        # Liste des équipes
-├── detail-equipe.html  # Page de détail d'une équipe
-├── event.html          # Page des événements
-├── partenaires.html    # Page des partenaires
-├── style.css           # Styles CSS personnalisés (complémentaire à Tailwind)
-└── tailwind-config.js  # Configuration de Tailwind CSS
+├── src/
+│   ├── app/              # Routes Next.js (Admin, API, Pages publiques)
+│   ├── components/       # Composants UI (Header, Footer, Client components)
+│   └── lib/              # Connexion DB & Logique métier
+└── public/               # Favicon & Assets statiques
 ```
 
 ---
 
-## 💻 Installation & Utilisation
-
-Ce projet étant un site statique, aucune installation complexe côté serveur n'est requise.
-
-### Pré-requis
-- Un navigateur web moderne.
-- Une connexion internet (pour le chargement de Tailwind via CDN).
-
-### Lancer le projet localement
-
-1.  **Cloner le dépôt :**
-    ```bash
-    git clone https://github.com/noa-panfil/SBC.git
-    cd SBC
-    ```
-
-2.  **Ouvrir le site :**
-    - Ouvrez simplement le fichier `index.html` dans votre navigateur.
-    - OU utilisez une extension comme "Live Server" sur VS Code pour un rechargement automatique.
+### 💻 Installation Locale
+1. **Dépôt** : `git clone https://github.com/noa-panfil/SBC.git`
+2. **Dépendances** : `npm install`
+3. **Configuration** : Créer un `.env.local` avec vos identifiants SQL.
+4. **Lancement** : `npm run dev`
 
 ---
 
 <div align="center">
-  <sub>Fait avec ❤️ par le Web Master Noa Panfil </sub>
+  <p>Fait avec ❤️ pour le <strong>Seclin Basket Club</strong></p>
+  <p><sub>Propulsé par Antigravity AI & Noa Panfil </sub></p>
 </div>

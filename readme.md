@@ -91,5 +91,5 @@ Ce projet étant un site statique, aucune installation complexe côté serveur n
 ---
 
 <div align="center">
-  <sub>Fait avec ❤️ par le Web Master Noa Panfil</sub>
+  <sub>Fait avec ❤️ par le Web Master Noa Panfil </sub>
 </div>

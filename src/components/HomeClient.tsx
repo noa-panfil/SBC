@@ -44,11 +44,11 @@ function EventSection() {
     const itemsPerPage = 3;
 
     useEffect(() => {
-        fetch('/json/events.json')
+        fetch('/api/events')
             .then(res => res.json())
             .then(data => {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
+                const now = new Date();
+                now.setHours(0, 0, 0, 0);
 
                 const upcoming: Event[] = [];
                 const past: Event[] = [];
@@ -58,16 +58,21 @@ function EventSection() {
                     return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
                 }
 
-                for (const [key, event] of Object.entries(data)) {
-                    // @ts-ignore
-                    const e = { ...event, id: key } as Event;
-                    if (e["format-date"]) {
-                        const eventDate = parseDate(e["format-date"]);
-                        e.jsDate = eventDate;
-                        if (eventDate >= today) upcoming.push(e);
-                        else past.push(e);
+                Object.entries(data).forEach(([id, event]: [string, any]) => {
+                    if (!event["format-date"]) return;
+
+                    const eventDate = parseDate(event["format-date"]);
+                    if (!eventDate) return;
+
+                    const eventWithId: Event = { ...event, id, jsDate: eventDate };
+
+                    // Compare only dates (ignoring time)
+                    if (eventDate.getTime() >= now.getTime()) {
+                        upcoming.push(eventWithId);
+                    } else {
+                        past.push(eventWithId);
                     }
-                }
+                });
 
                 upcoming.sort((a, b) => (a.jsDate!.getTime() - b.jsDate!.getTime()));
                 past.sort((a, b) => (b.jsDate!.getTime() - a.jsDate!.getTime()));

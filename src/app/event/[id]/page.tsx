@@ -52,12 +52,13 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
     const [loadingCounts, setLoadingCounts] = useState(false);
 
     useEffect(() => {
-        Promise.all([
-            fetch('/json/events.json').then(res => res.json()),
-            fetch('/json/teams.json').then(res => res.json())
-        ])
-            .then(([events, teams]) => {
-                const ev = events[eventId];
+        const fetchEventAndTeams = async () => {
+            try {
+                // Fetch Event Data
+                const eventRes = await fetch('/api/events');
+                const eventsData = await eventRes.json();
+                const ev = eventsData[eventId];
+
                 if (ev) {
                     setEvent(ev);
                     if (ev.mode === "benevole") {
@@ -66,14 +67,21 @@ export default function EventDetail({ params }: { params: Promise<{ id: string }
                 } else {
                     setError("Événement introuvable");
                 }
+
+                // Fetch Teams Data
+                const teamsRes = await fetch('/api/teams');
+                const teams = await teamsRes.json();
                 setTeamsData(teams);
-                setLoading(false);
-            })
-            .catch(err => {
+
+            } catch (err) {
                 console.error(err);
                 setError("Impossible de charger les données");
+            } finally {
                 setLoading(false);
-            });
+            }
+        };
+
+        fetchEventAndTeams();
     }, [eventId]);
 
     const fetchBenevoleCounts = async (eventTitle: string) => {

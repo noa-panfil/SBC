@@ -1,5 +1,6 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import pool from "@/lib/db";
 import { RowDataPacket } from "mysql2";
 import AdminTeamsClient from "./AdminTeamsClient";
@@ -139,8 +140,13 @@ export default async function AdminDashboard() {
                     <h1 className="text-3xl font-bold text-sbc-dark mb-1">Dashboard Admin</h1>
                     <p className="text-gray-600">Bienvenue, <span className="font-semibold text-sbc">{session.user?.email}</span></p>
                 </div>
-                <div className="text-sm text-gray-400">
-                    v1.0.0
+                <div className="flex items-center gap-4">
+                    <Link href="/admin/images" className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition">
+                        <i className="fas fa-images"></i> Médiathèque
+                    </Link>
+                    <div className="text-sm text-gray-400">
+                        v1.1.0
+                    </div>
                 </div>
             </header>
 

@@ -27,32 +27,20 @@ jobs:
             # Naviguer vers le dossier
             cd /home/${{ secrets.USERNAME }}/htdocs/seclinbasketclub.fr
             
-            # Vérifier si c'est un dépôt git, sinon l'initialiser
-            if [ ! -d ".git" ]; then
-              echo "Initialisation du dépôt Git..."
-              git init
-              git remote add origin https://github.com/noa-panfil/SBC.git
-              git fetch
-              git reset --hard origin/main
-              echo "Mise à jour du dépôt..."
-              # Reset pour être sûr d'avoir la version propre
-              git fetch origin
-              git reset --hard origin/main
-              git clean -fd
-            fi
+            # Mise à jour du code
+            echo "Mise à jour du code depuis le dépôt main..."
+            git fetch origin
+            git reset --hard origin/main
+            git clean -fd
             
             # Installation et Build
             echo "Installation des dépendances..."
             npm install
             
-            echo "Construction du projet..."
+            echo "Construction du projet Next.js..."
             npm run build
             
-            # Redémarrage propre pour CloudPanel (qui relancera via 'npm start')
-            if command -v pm2 &> /dev/null; then
-                pm2 reload all || pm2 start npm --name "next-app" -- start
-            else
-                # Fallback: essaye de tuer les nœuds existants pour forcer le redémarrage propre
-                pkill -f node || true
-                echo "Redémarrage initié. CloudPanel devrait relancer le service automatiquement."
-            fi
+            # Redémarrage de l'application
+            echo "Redémarrage de l'application..."
+            pkill -f node || true
+            echo "Déploiement sur main terminé avec succès."

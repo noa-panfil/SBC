@@ -7,6 +7,8 @@ import AdminTeamsClient from "./AdminTeamsClient";
 import AdminCoachesManager from "./AdminCoachesManager";
 import AdminEventsManager from "./AdminEventsManager";
 
+import AdminCoachLoginsManager from "./AdminCoachLoginsManager";
+
 async function getStats() {
     try {
         const [playerRows] = await pool.query<RowDataPacket[]>(
@@ -23,6 +25,21 @@ async function getStats() {
     } catch (e) {
         console.error(e);
         return { players: 0, coaches: 0 };
+    }
+}
+
+async function getCoachLogins() {
+    try {
+        const [rows] = await pool.query<RowDataPacket[]>("SELECT id, firstname, lastname, email FROM login_coachs ORDER BY lastname ASC");
+        return rows.map((r: any) => ({
+            id: r.id,
+            firstname: r.firstname,
+            lastname: r.lastname,
+            email: r.email
+        }));
+    } catch (e) {
+        console.error("Error fetching coach logins", e);
+        return [];
     }
 }
 
@@ -132,6 +149,7 @@ export default async function AdminDashboard() {
 
     const stats = await getStats();
     const teams = await getTeams();
+    const coachLogins = await getCoachLogins();
 
     return (
         <div className="w-full max-w-7xl mx-auto p-4 md:p-8 space-y-6 md:space-y-10 pb-20 overflow-x-hidden">
@@ -190,6 +208,9 @@ export default async function AdminDashboard() {
                     <div className="h-px flex-grow bg-gray-200"></div>
                 </div>
                 <AdminCoachesManager teams={teams} />
+                <div className="mt-8">
+                    <AdminCoachLoginsManager initialLogins={coachLogins} />
+                </div>
             </section>
 
             <section id="events" className="scroll-mt-24">

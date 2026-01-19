@@ -8,6 +8,7 @@ import AdminCoachesManager from "./AdminCoachesManager";
 import AdminEventsManager from "./AdminEventsManager";
 
 import AdminCoachLoginsManager from "./AdminCoachLoginsManager";
+import { authOptions } from "@/lib/auth";
 
 async function getStats() {
     try {
@@ -141,10 +142,14 @@ async function getTeams() {
 }
 
 export default async function AdminDashboard() {
-    const session = await getServerSession();
+    const session: any = await getServerSession(authOptions);
 
     if (!session) {
-        redirect("/admin/login");
+        redirect("/login");
+    }
+
+    if (session.user.role !== 'admin') {
+        redirect("/coach");
     }
 
     const stats = await getStats();

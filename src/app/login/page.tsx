@@ -44,7 +44,7 @@ export default function LoginPage() {
                     <div className="w-20 h-20 bg-sbc rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-lg shadow-sbc/20 transform -rotate-6">
                         <i className="fas fa-shield-alt text-white text-3xl"></i>
                     </div>
-                    <h1 className="text-3xl font-black text-white tracking-tight uppercase">Dashboard Admin</h1>
+                    <h1 className="text-3xl font-black text-white tracking-tight uppercase">Connexion</h1>
                     <p className="text-gray-400 font-medium mt-2 italic">Seclin Basket Club</p>
                 </div>
 
@@ -94,7 +94,7 @@ export default function LoginPage() {
                         type="submit"
                         className="w-full bg-sbc text-white font-black py-4 rounded-2xl hover:bg-sbc-light transition shadow-lg shadow-sbc/30 active:scale-95 flex items-center justify-center gap-3 text-lg"
                     >
-                        Accéder au Panel <i className="fas fa-arrow-right text-sm"></i>
+                        Connexion <i className="fas fa-arrow-right text-sm"></i>
                     </button>
                 </form>
 

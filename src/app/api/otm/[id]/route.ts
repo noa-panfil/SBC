@@ -3,7 +3,7 @@ import pool from '@/lib/db';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const session: any = await getServerSession(authOptions);
     if (!session) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -47,7 +47,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const session: any = await getServerSession(authOptions);
     if (!session || session.user.role !== 'admin') {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

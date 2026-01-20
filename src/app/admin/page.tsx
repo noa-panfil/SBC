@@ -8,6 +8,7 @@ import AdminCoachesManager from "./AdminCoachesManager";
 import AdminEventsManager from "./AdminEventsManager";
 
 import AdminCoachLoginsManager from "./AdminCoachLoginsManager";
+import AdminOTMManager from "./AdminOTMManager";
 import { authOptions } from "@/lib/auth";
 
 async function getStats() {
@@ -141,6 +142,58 @@ async function getTeams() {
     }
 }
 
+async function getOtmMatches() {
+    try {
+        const [rows] = await pool.query<RowDataPacket[]>(`
+            SELECT * FROM otm_matches 
+            ORDER BY match_date ASC, match_time ASC
+        `);
+        return rows.map((row: any) => ({
+            ...row,
+            match_date: row.match_date.toISOString(),
+            created_at: row.created_at.toISOString(),
+        }));
+    } catch (e) {
+        console.error("Error fetching OTM matches", e);
+        return [];
+    }
+}
+
+async function getAllPersons() {
+    try {
+        const [rows] = await pool.query<RowDataPacket[]>(`
+            SELECT DISTINCT p.firstname, p.lastname, p.image_id, t.name as team_name, tm.role
+            FROM persons p
+            LEFT JOIN team_members tm ON p.id = tm.person_id
+            LEFT JOIN teams t ON tm.team_id = t.id
+            ORDER BY p.lastname, p.firstname
+        `);
+
+        const personMap = new Map<string, any>();
+        rows.forEach((r: any) => {
+            const fullname = `${r.lastname.toUpperCase()} ${r.firstname}`.trim();
+            if (!personMap.has(fullname)) {
+                personMap.set(fullname, {
+                    fullname,
+                    image_id: r.image_id,
+                    team: r.team_name,
+                    role: r.role
+                });
+            } else {
+                const existing = personMap.get(fullname);
+                if (existing.role && !existing.role.includes('Coach') && r.role && r.role.includes('Coach')) {
+                    personMap.set(fullname, { ...existing, team: r.team_name, role: r.role });
+                }
+            }
+        });
+        return Array.from(personMap.values());
+
+    } catch (e) {
+        console.error("Error fetching all persons", e);
+        return [];
+    }
+}
+
 export default async function AdminDashboard() {
     const session: any = await getServerSession(authOptions);
 
@@ -155,10 +208,11 @@ export default async function AdminDashboard() {
     const stats = await getStats();
     const teams = await getTeams();
     const coachLogins = await getCoachLogins();
+    const otmMatches = await getOtmMatches();
+    const officials = await getAllPersons();
 
     return (
         <div className="w-full max-w-7xl mx-auto p-4 md:p-8 space-y-6 md:space-y-10 pb-20 overflow-x-hidden">
-            {/* Header Section */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/90 backdrop-blur-md sticky top-0 md:top-4 z-40 p-6 md:rounded-2xl shadow-sm border-b md:border border-gray-100 md:border-white/20">
                 <div className="w-full md:w-auto">
                     <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">Tableau de bord</h1>
@@ -174,7 +228,6 @@ export default async function AdminDashboard() {
                 </div>
             </header>
 
-            {/* Stats Grid */}
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
                 {[
                     { label: "Joueurs", value: stats.players, icon: "fas fa-users", color: "from-blue-500 to-indigo-600", link: "/admin/players" },
@@ -198,7 +251,6 @@ export default async function AdminDashboard() {
                 ))}
             </div>
 
-            {/* Management Sections */}
             <section id="teams" className="scroll-mt-24">
                 <div className="flex items-center gap-3 mb-6">
                     <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Équipes</h2>
@@ -226,7 +278,14 @@ export default async function AdminDashboard() {
                 <AdminEventsManager teams={teams} />
             </section>
 
-            {/* Quick Actions Footer */}
+            <section id="otm" className="scroll-mt-24">
+                <div className="flex items-center gap-3 mb-6">
+                    <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Gestion OTM</h2>
+                    <div className="h-px flex-grow bg-gray-200"></div>
+                </div>
+                <AdminOTMManager initialMatches={otmMatches} teams={teams} officials={officials} />
+            </section>
+
             <div className="bg-sbc-dark rounded-3xl md:rounded-[2.5rem] p-6 md:p-10 text-white overflow-hidden relative shadow-2xl">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-sbc-light opacity-10 rounded-full -mr-32 -mt-32"></div>
                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-white opacity-5 rounded-full -ml-16 -mb-16"></div>

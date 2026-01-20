@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import pool from "@/lib/db";
 import { RowDataPacket } from "mysql2";
 import Link from "next/link";
+import CoachOTMManager from "./CoachOTMManager";
+import CoachSettings from "./CoachSettings";
 
 async function getCoachTeams(personId: number) {
     if (!personId) return [];
@@ -12,7 +14,7 @@ async function getCoachTeams(personId: number) {
             SELECT t.id, t.name, t.category, t.image_id, tm.role
             FROM teams t
             JOIN team_members tm ON t.id = tm.team_id
-            WHERE tm.person_id = ?
+            WHERE tm.person_id = ? AND tm.role LIKE '%Coach%'
             ORDER BY t.name
         `, [personId]);
         return rows;
@@ -37,20 +39,94 @@ async function getMyPlayersCount(teamIds: number[]) {
     }
 }
 
+async function getMyPlayers(teamIds: number[]) {
+    if (teamIds.length === 0) return [];
+    try {
+        const [rows] = await pool.query<RowDataPacket[]>(`
+            SELECT p.firstname, p.lastname, p.image_id, t.name as team_name
+            FROM persons p
+            JOIN team_members tm ON p.id = tm.person_id
+            JOIN teams t ON tm.team_id = t.id
+            WHERE tm.team_id IN (?) AND tm.role NOT LIKE '%Coach%'
+            ORDER BY p.lastname, p.firstname
+        `, [teamIds]);
+        return rows.map((r: any) => ({
+            fullname: `${r.lastname.toUpperCase()} ${r.firstname}`,
+            team: r.team_name,
+            image_id: r.image_id
+        }));
+    } catch (e) {
+        console.error("Error fetching players", e);
+        return [];
+    }
+}
+
+async function getOtmMatches(days?: number) {
+    try {
+        let query = `SELECT * FROM otm_matches`;
+        const params: any[] = [];
+
+        if (days) {
+            query += ` WHERE match_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL ? DAY)`;
+            params.push(days);
+        }
+
+        query += ` ORDER BY match_date ASC, match_time ASC`;
+
+        const [rows] = await pool.query<RowDataPacket[]>(query, params);
+        return rows.map((row: any) => ({
+            ...row,
+            match_date: row.match_date.toISOString(),
+            created_at: row.created_at.toISOString(),
+        }));
+    } catch (e) {
+        console.error("Error fetching OTM matches", e);
+        return [];
+    }
+}
+
 export default async function CoachDashboard() {
     const session: any = await getServerSession(authOptions);
 
     if (!session || session.user.role !== 'coach') {
-        redirect("/admin/login");
+        redirect("/login");
     }
 
     const personId = session.user.personId;
     const teams: any[] = await getCoachTeams(personId);
     const playersCount = await getMyPlayersCount(teams.map(t => t.id));
+    const players = await getMyPlayers(teams.map(t => t.id));
+    const otmMatches = await getOtmMatches(7);
+    const allOtmMatches = await getOtmMatches();
+
+
+    let coachImageId = null;
+    try {
+        const [coachRows] = await pool.query<RowDataPacket[]>("SELECT image_id FROM persons WHERE id = ?", [personId]);
+        if (coachRows.length > 0) {
+            coachImageId = coachRows[0].image_id;
+        }
+    } catch (e) {
+        console.error("Error fetching coach details", e);
+    }
+
+    const playerStatsMap = new Map<string, number>();
+    players.forEach((p: any) => playerStatsMap.set(p.fullname, 0));
+    allOtmMatches.forEach((m: any) => {
+        [m.scorer, m.timer, m.hall_manager, m.bar_manager, m.referee].forEach(name => {
+            if (name && playerStatsMap.has(name)) {
+                playerStatsMap.set(name, (playerStatsMap.get(name) || 0) + 1);
+            }
+        });
+    });
+    const playersWithStats = players.map((p: any) => ({
+        ...p,
+        otmCount: playerStatsMap.get(p.fullname) || 0
+    })).sort((a: any, b: any) => b.otmCount - a.otmCount);
 
     return (
         <div className="w-full max-w-7xl mx-auto p-4 md:p-8 space-y-6 md:space-y-10 pb-20 overflow-x-hidden">
-            {/* Header */}
+
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/90 backdrop-blur-md sticky top-0 md:top-4 z-40 p-6 md:rounded-2xl shadow-sm border-b md:border border-gray-100 md:border-white/20">
                 <div className="w-full md:w-auto">
                     <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">Espace Coach</h1>
@@ -58,32 +134,44 @@ export default async function CoachDashboard() {
                         Bonjour <span className="text-sbc font-bold">{session.user.name}</span>
                     </p>
                 </div>
+
+                <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+                    <CoachSettings />
+                    <Link href="#otm-planning" className="flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-50 text-orange-600 font-bold text-sm hover:bg-orange-100 transition shadow-sm border border-orange-100 whitespace-nowrap">
+                        <i className="fas fa-calendar-alt"></i>
+                        <span>Planning OTM</span>
+                    </Link>
+                    <Link href="#otm-leaderboard" className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-50 text-purple-600 font-bold text-sm hover:bg-purple-100 transition shadow-sm border border-purple-100 whitespace-nowrap">
+                        <i className="fas fa-trophy"></i>
+                        <span>Classement OTM</span>
+                    </Link>
+                </div>
             </header>
 
-            {/* Stats */}
             <div className="grid grid-cols-2 gap-3 md:gap-6">
-                <div className="bg-white p-5 md:p-6 rounded-2xl md:rounded-3xl shadow-sm border border-gray-100 mb-4">
-                    <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-gradient-to-br from-sbc to-sbc-dark text-white flex items-center justify-center text-xl md:text-2xl shadow-lg mb-3 md:mb-4">
-                        <i className="fas fa-shield-alt"></i>
-                    </div>
-                    <div>
-                        <p className="text-gray-400 text-xs md:text-sm font-black uppercase tracking-widest">Mes Équipes</p>
-                        <p className="text-2xl md:text-3xl font-black text-gray-900 mt-0.5 md:mt-1">{teams.length}</p>
+                <div className="bg-white p-5 md:p-6 rounded-2xl md:rounded-3xl shadow-sm border border-gray-100 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-sbc/10 to-transparent rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                    <div className="relative z-10">
+                        <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-sbc text-white flex items-center justify-center text-lg md:text-xl shadow-md mb-3">
+                            <i className="fas fa-shield-alt"></i>
+                        </div>
+                        <p className="text-gray-400 text-[10px] md:text-xs font-black uppercase tracking-widest">Mes Équipes</p>
+                        <p className="text-xl md:text-2xl font-black text-gray-900 mt-1">{teams.length}</p>
                     </div>
                 </div>
 
-                <div className="bg-white p-5 md:p-6 rounded-2xl md:rounded-3xl shadow-sm border border-gray-100 mb-4">
-                    <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-xl md:text-2xl shadow-lg mb-3 md:mb-4">
-                        <i className="fas fa-users"></i>
-                    </div>
-                    <div>
-                        <p className="text-gray-400 text-xs md:text-sm font-black uppercase tracking-widest">Mes Joueurs</p>
-                        <p className="text-2xl md:text-3xl font-black text-gray-900 mt-0.5 md:mt-1">{playersCount}</p>
+                <div className="bg-white p-5 md:p-6 rounded-2xl md:rounded-3xl shadow-sm border border-gray-100 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                    <div className="relative z-10">
+                        <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center text-lg md:text-xl shadow-md mb-3">
+                            <i className="fas fa-users"></i>
+                        </div>
+                        <p className="text-gray-400 text-[10px] md:text-xs font-black uppercase tracking-widest">Mes Joueurs</p>
+                        <p className="text-xl md:text-2xl font-black text-gray-900 mt-1">{playersCount}</p>
                     </div>
                 </div>
             </div>
 
-            {/* My Teams List */}
             <section>
                 <div className="flex items-center gap-3 mb-6">
                     <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Mes Équipes</h2>
@@ -109,10 +197,6 @@ export default async function CoachDashboard() {
                                 </div>
                                 <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-50">
                                     <span className="text-xs font-bold text-gray-500 uppercase">Role: {team.role}</span>
-                                    {/* Link to Team Details (future) */}
-                                    {/* <Link href={`/coach/teams/${team.id}`} className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-sbc hover:text-white transition">
-                                        <i className="fas fa-arrow-right text-xs"></i>
-                                    </Link> */}
                                 </div>
                             </div>
                         ))
@@ -121,6 +205,68 @@ export default async function CoachDashboard() {
                             Vous n'êtes assigné à aucune équipe pour le moment.
                         </div>
                     )}
+                </div>
+            </section>
+
+            <section id="otm-planning" className="mt-12 scroll-mt-24">
+                <div className="flex items-center gap-3 mb-6">
+                    <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Planning OTM</h2>
+                    <div className="h-px flex-grow bg-gray-200"></div>
+                </div>
+                <CoachOTMManager matches={otmMatches} myTeamNames={teams.map(t => t.name)} players={players} currentUser={session.user.name} coachImageId={coachImageId} />
+            </section>
+
+            <section id="otm-leaderboard" className="mt-12 scroll-mt-24">
+                <div className="flex items-center gap-3 mb-6">
+                    <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Classement OTM</h2>
+                    <div className="h-px flex-grow bg-gray-200"></div>
+                </div>
+
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-gray-50 border-b border-gray-100">
+                                    <th className="p-4 text-xs font-black text-gray-400 uppercase tracking-wider text-center w-16">#</th>
+                                    <th className="p-4 text-xs font-black text-gray-400 uppercase tracking-wider">Joueur</th>
+                                    <th className="p-4 text-xs font-black text-gray-400 uppercase tracking-wider">Équipe</th>
+                                    <th className="p-4 text-xs font-black text-gray-400 uppercase tracking-wider text-right">Tables</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {playersWithStats.map((player: any, index: number) => (
+                                    <tr key={index} className="hover:bg-gray-50/50 transition-colors group">
+                                        <td className="p-4 text-center font-black text-gray-300 group-hover:text-sbc">
+                                            {index + 1}
+                                        </td>
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-3">
+                                                {player.image_id ? (
+                                                    <img src={`/api/image/${player.image_id}`} className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm" />
+                                                ) : (
+                                                    <div className="w-10 h-10 rounded-full bg-sbc/10 text-sbc flex items-center justify-center font-black border-2 border-white shadow-sm">
+                                                        {player.fullname.charAt(0)}
+                                                    </div>
+                                                )}
+                                                <span className="font-bold text-gray-900">{player.fullname}</span>
+                                            </div>
+                                        </td>
+                                        <td className="p-4">
+                                            <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded uppercase">
+                                                {player.team}
+                                            </span>
+                                        </td>
+                                        <td className="p-4 text-right">
+                                            <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-black text-sm ${player.otmCount > 0 ? 'bg-sbc text-white shadow-md shadow-sbc/30' : 'bg-gray-100 text-gray-400'
+                                                }`}>
+                                                {player.otmCount}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
         </div>

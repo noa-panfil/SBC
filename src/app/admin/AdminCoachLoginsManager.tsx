@@ -49,15 +49,18 @@ export default function AdminCoachLoginsManager({ initialLogins }: { initialLogi
                 body: JSON.stringify(body)
             });
 
-            if (!res.ok) throw new Error("Failed to save");
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || "Failed to save");
+            }
 
             // Refresh data
             router.refresh();
             // Optimistic update or simple reload
             window.location.reload();
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            alert("Erreur lors de la sauvegarde");
+            alert(error.message || "Erreur lors de la sauvegarde");
         }
     };
 

@@ -149,7 +149,7 @@ export default async function AdminDashboard() {
     }
 
     if (session.user.role !== 'admin') {
-        redirect("/coach");
+        redirect("/login");
     }
 
     const stats = await getStats();

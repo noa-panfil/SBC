@@ -19,12 +19,8 @@ export default async function CoachLayout({ children }: { children: React.ReactN
         redirect("/login");
     }
 
-    // Optional: Restrict to coach role. 
-    // If Admin wants to access, they can, but the UI might assume they have a personId linked to a team.
-    // Ideally Admin should not access this directly unless we mock a logged in coach.
-    // For now, strict check:
     if (session.user.role !== 'coach') {
-        redirect("/admin");
+        redirect("/login");
     }
 
     return <CoachLayoutClient>{children}</CoachLayoutClient>;

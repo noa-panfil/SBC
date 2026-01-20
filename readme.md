@@ -54,5 +54,4 @@ SBC/
 
 <div align="center">
   <p>Fait avec ❤️ pour le <strong>Seclin Basket Club</strong></p>
-  <p><sub>Propulsé par Antigravity AI & Noa Panfil </sub></p>
 </div>

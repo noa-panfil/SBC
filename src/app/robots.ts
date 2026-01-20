@@ -5,7 +5,7 @@ export default function robots(): MetadataRoute.Robots {
         rules: {
             userAgent: '*',
             allow: '/',
-            disallow: ['/admin', '/api/admin'],
+            disallow: ['/admin', '/coach', '/login', '/api/admin', '/api/auth', '/merci'],
         },
         sitemap: 'https://seclinbasketclub.fr/sitemap.xml',
     }

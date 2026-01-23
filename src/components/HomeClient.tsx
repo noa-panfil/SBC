@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 // Types
 interface Event {
@@ -66,7 +67,6 @@ function EventSection() {
 
                     const eventWithId: Event = { ...event, id, jsDate: eventDate };
 
-                    // Compare only dates (ignoring time)
                     if (eventDate.getTime() >= now.getTime()) {
                         upcoming.push(eventWithId);
                     } else {
@@ -165,12 +165,18 @@ function EventCard({ event, isPast }: { event: Event, isPast: boolean }) {
     const CardContent = (
         <>
             <div className="relative w-full h-64 bg-gray-100">
-                <img src={event.image || "/img/event-placeholder.jpg"} alt={event.title} className="w-full h-full object-cover transition duration-500 hover:scale-105" />
-                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur text-sbc-dark font-bold px-3 py-1 rounded-lg shadow text-sm border border-gray-100">
+                <Image
+                    src={event.image || "/img/event-placeholder.jpg"}
+                    alt={event.title}
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    className="object-cover transition duration-500 hover:scale-105"
+                />
+                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur text-sbc-dark font-bold px-3 py-1 rounded-lg shadow text-sm border border-gray-100 z-10">
                     <i className="far fa-calendar mr-1"></i> {event.date}
                 </div>
                 {!isPast && (
-                    <div className="absolute inset-0 bg-transparent group-hover:bg-black/20 transition duration-300 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-transparent group-hover:bg-black/20 transition duration-300 flex items-center justify-center z-10">
                         <span className="bg-sbc text-white px-6 py-2 rounded-full font-bold shadow-lg opacity-0 transform translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition duration-300">
                             S'inscrire
                         </span>
@@ -292,7 +298,13 @@ function BirthdaySection() {
                         return (
                             <div key={i} className="bg-white rounded-xl shadow-md p-4 flex items-center gap-4 w-full md:w-[calc(50%-12px)] lg:w-[calc(33.33%-16px)] xl:w-[calc(25%-18px)] border-l-4 border-yellow-400 hover:shadow-lg transition transform hover:-translate-y-1">
                                 <div className="relative flex-shrink-0">
-                                    <img src={p.img} alt={p.name} className="w-16 h-16 rounded-full object-cover border-2 border-gray-100" />
+                                    <Image
+                                        src={p.img}
+                                        alt={p.name}
+                                        width={64}
+                                        height={64}
+                                        className="w-16 h-16 rounded-full object-cover border-2 border-gray-100"
+                                    />
                                     <div className="absolute -bottom-1 -right-1 bg-yellow-400 text-white text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full shadow">{p.day}</div>
                                 </div>
                                 <div className="flex-grow min-w-0">
@@ -354,10 +366,16 @@ function PartnerCarousel() {
                     <div className="carousel-track">
                         {allPartners.map((p, i) => (
                             <div key={i} className="carousel-item bg-white rounded-xl shadow-md border border-gray-100 p-4">
-                                <img src={p.img} alt={`Partenaire ${p.name}`}
-                                    className="h-32 w-full object-contain zoomable transition duration-300 hover:scale-105 cursor-zoom-in"
-                                    onClick={() => openModal(p.img, p.name)}
-                                />
+                                <div className="relative w-full h-32">
+                                    <Image
+                                        src={p.img}
+                                        alt={`Partenaire ${p.name}`}
+                                        fill
+                                        className="object-contain zoomable transition duration-300 hover:scale-105 cursor-zoom-in"
+                                        onClick={() => openModal(p.img, p.name)}
+                                        sizes="(max-width: 768px) 100vw, 300px"
+                                    />
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -375,7 +393,14 @@ function PartnerCarousel() {
                 <div className="fixed inset-0 bg-black bg-opacity-90 z-[100] flex items-center justify-center p-4 backdrop-blur-sm cursor-pointer" onClick={() => setModalOpen(false)}>
                     <div className="relative max-w-4xl w-full flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
                         <button onClick={() => setModalOpen(false)} className="absolute -top-12 right-0 text-white text-4xl hover:text-gray-300 transition focus:outline-none">&times;</button>
-                        <img src={modalImage} className="w-full max-h-[70vh] object-contain rounded-lg shadow-2xl bg-white p-4" />
+                        <div className="relative w-full max-h-[70vh] h-[70vh]">
+                            <Image
+                                src={modalImage}
+                                alt={modalTitle}
+                                fill
+                                className="object-contain rounded-lg shadow-2xl bg-white p-4"
+                            />
+                        </div>
                         <div className="text-center mt-6">
                             <h3 className="text-3xl font-bold text-white mb-2 tracking-wide">{modalTitle}</h3>
                             <p className="text-sbc-light text-lg font-medium uppercase">Partenaire du Seclin Basket Club</p>

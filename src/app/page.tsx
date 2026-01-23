@@ -22,10 +22,11 @@ export default async function Home() {
       <header className="relative h-screen flex items-center justify-center bg-gray-900 text-white">
         <div className="absolute inset-0 overflow-hidden">
           <Image
-            src="https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1080"
+            src="https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=1920&auto=format&fit=crop"
             alt="Terrain de basket - Seclin Basket Club"
             fill
             priority
+            sizes="100vw"
             className="w-full h-full object-cover opacity-50"
           />
         </div>

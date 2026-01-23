@@ -14,7 +14,6 @@ interface Team {
 }
 
 export default function EquipeDetail({ params }: { params: Promise<{ id: string }> }) {
-    // Unwrap params using React.use()
     const { id } = use(params);
 
     const [team, setTeam] = useState<Team | null>(null);
@@ -49,46 +48,61 @@ export default function EquipeDetail({ params }: { params: Promise<{ id: string 
 
     useEffect(() => {
         if (team?.widgetId) {
-            const desktopTarget = document.getElementById('scorenco-widget-desktop');
-            const mobileTarget = document.getElementById('scorenco-widget-mobile');
+            let scriptElement: HTMLScriptElement | null = null;
 
-            if (desktopTarget || mobileTarget) {
-                // Clear previous widgets
+            const loadWidget = () => {
+                const desktopTarget = document.getElementById('scorenco-widget-desktop');
+                const mobileTarget = document.getElementById('scorenco-widget-mobile');
+                const isDesktop = window.matchMedia('(min-width:1024px)').matches;
+                const target = isDesktop ? desktopTarget : mobileTarget;
+                const other = isDesktop ? mobileTarget : desktopTarget;
+
                 if (desktopTarget) desktopTarget.innerHTML = '';
                 if (mobileTarget) mobileTarget.innerHTML = '';
 
-                const w = document.createElement('div');
-                w.className = 'scorenco-widget';
-                w.setAttribute('data-widget-type', 'team');
-                w.setAttribute('data-widget-id', team.widgetId);
-                // Using the inline style from original code
-                w.style.cssText = 'background: #14532d; height: 500px; display: flex; align-items: center; justify-content: center; flex-direction: column; text-transform: uppercase; font-family: sans-serif; font-weight: bolder; gap: 9px; color:#1E457B;';
+                const oldScript = document.getElementById('scorenco-loader');
+                if (oldScript) oldScript.remove();
 
-                const styleTag = document.createElement('style');
-                styleTag.textContent = ".ldsdr{display:inline-block;width:80px;height:80px}.ldsdr:after{content:\" \";display:block;width:64px;height:64px;margin:8px;border-radius:50%;border:6px solid #1E457B;border-color:#1E457B transparent;animation:ldsdr 1.2s linear infinite}@keyframes ldsdr{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}";
-                w.appendChild(styleTag);
+                if (target) {
+                    const w = document.createElement('div');
+                    w.className = 'scorenco-widget';
+                    w.setAttribute('data-widget-type', 'team');
+                    w.setAttribute('data-widget-id', team.widgetId);
+                    w.style.cssText = 'background: #14532d; min-height: 500px; height: auto; width: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column; text-transform: uppercase; font-family: sans-serif; font-weight: bolder; gap: 9px; color:#1E457B;';
 
-                const s = document.createElement('script');
-                s.async = true;
-                s.defer = true;
-                s.src = 'https://widgets.scorenco.com/host/widgets.js';
-                w.appendChild(s);
+                    const styleTag = document.createElement('style');
+                    styleTag.textContent = ".ldsdr{display:inline-block;width:80px;height:80px}.ldsdr:after{content:\" \";display:block;width:64px;height:64px;margin:8px;border-radius:50%;border:6px solid #1E457B;border-color:#1E457B transparent;animation:ldsdr 1.2s linear infinite}@keyframes ldsdr{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}";
+                    w.appendChild(styleTag);
 
-                const placeWidget = () => {
-                    const isDesktop = window.matchMedia('(min-width:1024px)').matches;
-                    // Logic from original js
-                    if (isDesktop && desktopTarget) {
-                        if (!desktopTarget.hasChildNodes()) desktopTarget.appendChild(w);
-                    } else if (!isDesktop && mobileTarget) {
-                        if (!mobileTarget.hasChildNodes()) mobileTarget.appendChild(w);
-                    }
-                };
+                    target.appendChild(w);
 
-                placeWidget();
+                    setTimeout(() => {
+                        scriptElement = document.createElement('script');
+                        scriptElement.id = 'scorenco-loader';
+                        scriptElement.async = true;
+                        scriptElement.src = `https://widgets.scorenco.com/host/widgets.js?t=${Date.now()}`;
+                        document.body.appendChild(scriptElement);
+                    }, 50);
+                }
+            };
 
-                window.addEventListener('resize', placeWidget);
-                return () => window.removeEventListener('resize', placeWidget);
-            }
+            loadWidget();
+
+            let resizeTimer: NodeJS.Timeout;
+            const handleResize = () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(loadWidget, 250);
+            };
+
+            window.addEventListener('resize', handleResize);
+            return () => {
+                window.removeEventListener('resize', handleResize);
+                clearTimeout(resizeTimer);
+                if (scriptElement) scriptElement.remove();
+
+                const existingScript = document.getElementById('scorenco-loader');
+                if (existingScript) existingScript.remove();
+            };
         }
     }, [team]);
 
@@ -150,7 +164,14 @@ export default function EquipeDetail({ params }: { params: Promise<{ id: string 
                             ))}
                         </div>
                     </div>
-                    <div id="scorenco-widget-desktop" className="hidden lg:block lg:col-span-1 lg:col-start-1 lg:row-start-2 mt-6 h-[500px]"></div>
+                    {team.widgetId && (
+                        <iframe
+                            src={`/widget/${team.widgetId}`}
+                            className="hidden lg:block lg:col-span-1 lg:col-start-1 lg:row-start-2 mt-6 w-full border-0"
+                            style={{ minHeight: '500px', height: '800px' }}
+                            title="Résultats et Classement"
+                        ></iframe>
+                    )}
                 </div>
 
                 <div className="lg:col-span-2">
@@ -176,7 +197,14 @@ export default function EquipeDetail({ params }: { params: Promise<{ id: string 
                             <p className="text-gray-500 col-span-full">Effectif non communiqué.</p>
                         )}
                     </div>
-                    <div id="scorenco-widget-mobile" className="block lg:hidden mt-6 min-h-[500px]"></div>
+                    {team.widgetId && (
+                        <iframe
+                            src={`/widget/${team.widgetId}`}
+                            className="block lg:hidden mt-6 w-full border-0"
+                            style={{ minHeight: '500px', height: '800px' }}
+                            title="Résultats et Classement Mobile"
+                        ></iframe>
+                    )}
                 </div>
             </main>
         </>

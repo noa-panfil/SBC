@@ -1,44 +1,46 @@
-# name: Deploy to Production
+name: Deploy to Production
 
-# on:
-#   push:
-#     branches:
-#       - main
+on:
+  push:
+    branches:
+      - main
 
-# jobs:
-#   deploy:
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v4
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-#       - name: Deploy via SSH
-#         uses: appleboy/ssh-action@master
-#         with:
-#           host: ${{ secrets.HOST }}
-#           username: ${{ secrets.USERNAME }}
-#           key: ${{ secrets.SSH_PRIVATE_KEY }}
-#           port: 22
-#           script: |
-#             export NVM_DIR="$HOME/.nvm"
-#             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             
-#             cd /home/${{ secrets.USERNAME }}/htdocs/seclinbasketclub.fr
+            cd /home/${{ secrets.USERNAME }}/htdocs/seclinbasketclub.fr
             
-#             echo "Mise à jour du code..."
-#             git fetch origin
-#             git reset --hard origin/main
-#             git clean -fd
+            echo "Mise à jour du code..."
+            git fetch origin
+            git reset --hard origin/main
+            git clean -fd
             
-#             echo "Installation des dépendances..."
-#             npm install
+            echo "Installation des dépendances..."
+            npm install
             
-#             echo "Construction du projet Next.js..."
-#             # On ignore les erreurs de BDD au build pour éviter de bloquer si le .env est partiel
-#             npm run build || echo "Build terminé avec warnings"
+            echo "Construction du projet Next.js..."
+            # On ignore les erreurs de BDD au build pour éviter de bloquer si le .env est partiel
+            npm run build || echo "Build terminé avec warnings"
             
-#             echo "Redémarrage de l'application..."
-#             # On tue uniquement les serveurs Next et non le processus SSH courant
-#             pkill -f "next-server" || pkill -f "node server.js" || true
+            echo "Redémarrage de l'application via PM2..."
+            # On recharge le processus PM2 nommé "sbc"
+            # Si le processus n'existe pas, on tente de le démarrer
+            pm2 reload sbc || pm2 start npm --name "sbc" -- start
+            pm2 save
             
-#             echo "Déploiement terminé avec succès sur main !"
+            echo "Déploiement terminé avec succès sur main !"

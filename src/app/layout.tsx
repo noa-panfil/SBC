@@ -4,6 +4,7 @@ import "./globals.css";
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -30,7 +31,19 @@ export default function RootLayout({
   return (
     <html lang="fr" className="scroll-smooth">
       <head>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              const link = document.createElement('link');
+              link.rel = 'stylesheet';
+              link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css';
+              document.head.appendChild(link);
+            `
+          }}
+        />
+        <noscript>
+          <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+        </noscript>
       </head>
       <body
         className={`${inter.variable} antialiased bg-gray-50 text-gray-800 flex flex-col min-h-screen`}

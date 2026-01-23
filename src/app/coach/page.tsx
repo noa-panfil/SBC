@@ -208,6 +208,37 @@ export default async function CoachDashboard() {
                 </div>
             </section>
 
+            <section className="mt-12">
+                <div className="flex items-center gap-3 mb-6">
+                    <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Mes Joueurs</h2>
+                    <div className="h-px flex-grow bg-gray-200"></div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {players.length > 0 ? (
+                        players.map((player: any, index: number) => (
+                            <div key={index} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition group">
+                                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-200 shrink-0">
+                                    {player.image_id ? (
+                                        <img src={`/api/image/${player.image_id}`} alt={player.fullname} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <span className="font-black text-gray-400 text-sm">{player.fullname.charAt(0)}</span>
+                                    )}
+                                </div>
+                                <div className="min-w-0">
+                                    <h3 className="font-bold text-gray-900 truncate group-hover:text-sbc transition">{player.fullname}</h3>
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider truncate">{player.team}</p>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="col-span-full p-8 text-center text-gray-400 italic bg-white rounded-2xl border border-gray-100 border-dashed">
+                            Aucun joueur trouvé dans vos équipes.
+                        </div>
+                    )}
+                </div>
+            </section>
+
             <section id="otm-planning" className="mt-12 scroll-mt-24">
                 <div className="flex items-center gap-3 mb-6">
                     <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Planning OTM</h2>

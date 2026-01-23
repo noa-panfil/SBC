@@ -63,26 +63,48 @@ export default function Palmares() {
                         </h2>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-                            {highlights.map((item) => (
-                                <div key={item.id} className="bg-gradient-to-b from-yellow-50 to-white p-6 rounded-2xl shadow-lg border border-yellow-200 transform hover:-translate-y-2 transition duration-300 flex flex-col h-full">
-                                    <div className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 shadow-md ${item.year === 2024 ? 'bg-yellow-400 text-white' : 'bg-sbc text-white'}`}>
-                                        <i className="fas fa-trophy"></i>
-                                    </div>
-                                    <div className="text-2xl font-bold text-gray-800 mb-1">{item.year}</div>
-                                    <h3 className="text-lg font-bold text-yellow-600 uppercase mb-2">{item.title}</h3>
-                                    <p className="text-gray-600 font-bold text-sm">{item.description}</p>
-                                    <p className="text-gray-400 text-xs mb-4">{item.category}</p>
-                                    <div className="mt-auto pt-4">
-                                        <div className="bg-white p-2 shadow-md rounded-lg rotate-2 transform transition hover:rotate-0">
-                                            <img src={item.image}
-                                                alt={item.title}
-                                                onClick={() => openModal(item.image, item.title, item.description)}
-                                                className="rounded object-cover h-48 w-full zoomable cursor-zoom-in"
-                                                onError={(e) => (e.currentTarget.src = 'https://placehold.co/600x400?text=Photo')} />
+                            {highlights.map((item, index) => {
+                                const styles = [
+                                    {
+                                        card: "bg-gradient-to-b from-yellow-50 to-white border-yellow-200",
+                                        icon: "bg-yellow-400",
+                                        title: "text-yellow-600"
+                                    },
+                                    {
+                                        card: "bg-gradient-to-b from-slate-100 to-white border-slate-300",
+                                        icon: "bg-slate-400",
+                                        title: "text-slate-600"
+                                    },
+                                    {
+                                        card: "bg-gradient-to-b from-orange-50 to-white border-orange-200",
+                                        icon: "bg-orange-400",
+                                        title: "text-orange-600"
+                                    }
+                                ];
+
+                                const style = styles[index] || styles[0];
+
+                                return (
+                                    <div key={item.id} className={`p-6 rounded-2xl shadow-lg border transform hover:-translate-y-2 transition duration-300 flex flex-col h-full ${style.card}`}>
+                                        <div className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 shadow-md text-white ${style.icon}`}>
+                                            <i className="fas fa-trophy"></i>
+                                        </div>
+                                        <div className="text-2xl font-bold text-gray-800 mb-1">{item.year}</div>
+                                        <h3 className={`text-lg font-bold uppercase mb-2 ${style.title}`}>{item.title}</h3>
+                                        <p className="text-gray-600 font-bold text-sm">{item.description}</p>
+                                        <p className="text-gray-400 text-xs mb-4">{item.category}</p>
+                                        <div className="mt-auto pt-4">
+                                            <div className="bg-white p-2 shadow-md rounded-lg rotate-2 transform transition hover:rotate-0">
+                                                <img src={item.image}
+                                                    alt={item.title}
+                                                    onClick={() => openModal(item.image, item.title, item.description)}
+                                                    className="rounded object-cover h-48 w-full zoomable cursor-zoom-in"
+                                                    onError={(e) => (e.currentTarget.src = 'https://placehold.co/600x400?text=Photo')} />
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </section>
                 )}

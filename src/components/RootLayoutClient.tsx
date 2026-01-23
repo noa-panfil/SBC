@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 
 export default function RootLayoutClient({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
-    const isDashboard = pathname?.startsWith("/admin") || pathname?.startsWith("/coach") || pathname === "/login";
+    const isDashboard = pathname?.startsWith("/admin") || pathname?.startsWith("/coach") || pathname === "/login" || pathname?.startsWith("/widget");
 
     return (
         <>

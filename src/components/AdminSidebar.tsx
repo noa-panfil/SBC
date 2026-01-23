@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { signOut } from "next-auth/react";
 
 const menuItems = [
     { name: "Vue d'ensemble", icon: "fas fa-chart-line", href: "/admin" },
@@ -49,7 +50,15 @@ export default function AdminSidebar() {
                     })}
                 </nav>
 
-                <div className="p-4 mt-auto border-t border-white/5">
+                <div className="p-4 mt-auto border-t border-white/5 space-y-2">
+                    <button
+                        onClick={() => signOut({ callbackUrl: '/login' })}
+                        className="w-full flex items-center gap-4 p-4 rounded-xl text-gray-400 hover:text-red-400 hover:bg-white/5 transition-all text-left"
+                    >
+                        <i className="fas fa-sign-out-alt w-6 text-center"></i>
+                        <span className={`whitespace-nowrap ${isHovered ? 'opacity-100' : 'opacity-0'}`}>Déconnexion</span>
+                    </button>
+
                     <Link
                         href="/"
                         className="flex items-center gap-4 p-4 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition-all"
@@ -62,7 +71,7 @@ export default function AdminSidebar() {
 
             {/* Mobile Bottom Navigation - Visible only on mobile */}
             <div className="md:hidden fixed bottom-4 left-4 right-4 bg-white/90 backdrop-blur-xl border border-white/20 px-6 py-4 z-[100] flex justify-between items-center shadow-2xl rounded-[2rem]">
-                {menuItems.slice(0, 5).map((item) => {
+                {menuItems.slice(0, 4).map((item) => {
                     const isActive = pathname === item.href;
                     return (
                         <Link
@@ -74,6 +83,12 @@ export default function AdminSidebar() {
                         </Link>
                     );
                 })}
+                <button
+                    onClick={() => signOut({ callbackUrl: '/login' })}
+                    className="flex flex-col items-center justify-center w-12 h-12 rounded-2xl text-red-400 hover:text-red-600"
+                >
+                    <i className="fas fa-sign-out-alt text-xl"></i>
+                </button>
             </div>
         </>
     );

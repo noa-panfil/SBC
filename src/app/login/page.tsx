@@ -103,6 +103,18 @@ export default function LoginPage() {
                         </div>
                     </div>
 
+                    <div className="flex items-center ml-1">
+                        <label className="flex items-center gap-3 cursor-pointer group">
+                            <input
+                                type="checkbox"
+                                className="w-5 h-5 rounded border-2 border-white/20 bg-white/5 checked:bg-sbc checked:border-sbc transition focus:ring-2 focus:ring-sbc/50 outline-none appearance-none cursor-pointer"
+                                defaultChecked
+                            />
+                            <i className="fas fa-check text-white absolute ml-1 text-xs pointer-events-none opacity-0 peer-checked:opacity-100"></i>
+                            <span className="text-sm font-bold text-gray-400 group-hover:text-white transition select-none">Rester connecté</span>
+                        </label>
+                    </div>
+
                     <button
                         type="submit"
                         className="w-full bg-sbc text-white font-black py-4 rounded-2xl hover:bg-sbc-light transition shadow-lg shadow-sbc/30 active:scale-95 flex items-center justify-center gap-3 text-lg"

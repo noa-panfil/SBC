@@ -309,7 +309,21 @@ export default function CoachOTMManager({ matches, myTeamNames, players, current
                                                                 <i className={`fas ${item.icon} text-xs ${item.val ? 'text-sbc' : 'text-gray-200'}`}></i>
                                                             </div>
                                                             {item.val ? (
-                                                                <p className="text-sm font-bold text-gray-900 capitalize">{item.val}</p>
+                                                                (() => {
+                                                                    const foundPlayer = selectablePlayers.find(p => p.fullname === item.val);
+                                                                    return (
+                                                                        <div className="flex items-center gap-2 mt-1">
+                                                                            {foundPlayer?.image_id ? (
+                                                                                <img src={`/api/image/${foundPlayer.image_id}`} className="w-6 h-6 rounded-full object-cover border border-gray-200 shadow-sm shrink-0" alt={item.val} />
+                                                                            ) : (
+                                                                                <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500 border border-gray-200 shrink-0 uppercase">
+                                                                                    {item.val.substring(0, 2)}
+                                                                                </div>
+                                                                            )}
+                                                                            <p className="text-sm font-bold text-gray-900 capitalize truncate" title={item.val}>{item.val}</p>
+                                                                        </div>
+                                                                    );
+                                                                })()
                                                             ) : (
                                                                 <p className="text-xs italic text-gray-400 flex items-center gap-1">
                                                                     <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span> À définir

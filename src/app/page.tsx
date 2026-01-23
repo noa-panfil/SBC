@@ -1,3 +1,4 @@
+import Image from "next/image";
 import HomeClient from "@/components/HomeClient";
 import Link from "next/link";
 import pool from "@/lib/db";
@@ -20,11 +21,22 @@ export default async function Home() {
     <>
       <header className="relative h-screen flex items-center justify-center bg-gray-900 text-white">
         <div className="absolute inset-0 overflow-hidden">
-          <img src="https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1950"
-            alt="Terrain de basket - Seclin Basket Club" className="w-full h-full object-cover opacity-50" />
+          <Image
+            src="https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1080"
+            alt="Terrain de basket - Seclin Basket Club"
+            fill
+            priority
+            className="w-full h-full object-cover opacity-50"
+          />
         </div>
         <div className="relative z-10 text-center px-4 max-w-4xl fade-in">
-          <img src={logoUrl} alt="Logo Seclin Basket Club - SBC" className="h-32 w-auto mx-auto mb-6 drop-shadow-lg" />
+          <Image
+            src={logoUrl}
+            alt="Logo Seclin Basket Club - SBC"
+            width={128}
+            height={128}
+            className="h-32 w-auto mx-auto mb-6 drop-shadow-lg"
+          />
           <h1 className="text-5xl md:text-7xl font-extrabold mb-6">SECLIN <span className="text-sbc-light">BASKET</span> CLUB</h1>
           <p className="text-xl md:text-2xl mb-8 text-gray-200">Rejoignez la passion verte et blanche.</p>
           <Link href="/equipes"

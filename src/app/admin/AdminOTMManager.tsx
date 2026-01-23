@@ -95,6 +95,10 @@ function getStartOfWeek(date: Date) {
 export default function AdminOTMManager({ initialMatches, teams, officials = [] }: { initialMatches: any[], teams: any[], officials?: any[] }) {
     const router = useRouter();
     const [rawMatches, setRawMatches] = useState(initialMatches);
+
+    useEffect(() => {
+        setRawMatches(initialMatches);
+    }, [initialMatches]);
     const [isEditing, setIsEditing] = useState(false);
     const [currentMatch, setCurrentMatch] = useState<any>({});
 
@@ -234,8 +238,10 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
 
             setRawMatches(prev => {
                 if (currentMatch.id) {
-                    return prev.map(m => m.id === currentMatch.id ? { ...savedMatch, match_date: savedMatch.match_date || currentMatch.match_date } : m);
+                    // For edits, merge existing match with current form data
+                    return prev.map(m => m.id === currentMatch.id ? { ...m, ...currentMatch } : m);
                 } else {
+                    // For creation, savedMatch contains the new resource with ID (returned by API)
                     return [...prev, savedMatch];
                 }
             });

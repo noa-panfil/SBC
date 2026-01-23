@@ -147,18 +147,32 @@ export default function CoachOTMManager({ matches, myTeamNames, players, current
     const handleSave = async () => {
         setLoading(true);
         try {
+            // Only send fields that coaches are allowed to edit
+            const payload = {
+                id: editForm.id,
+                scorer: editForm.scorer,
+                timer: editForm.timer,
+                hall_manager: editForm.hall_manager,
+                bar_manager: editForm.bar_manager,
+                referee: editForm.referee
+            };
+
             const res = await fetch(`/api/otm/${editForm.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(editForm)
+                body: JSON.stringify(payload)
             });
 
-            if (!res.ok) throw new Error("Failed");
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || "Une erreur est survenue");
+            }
 
             setEditingId(null);
             router.refresh();
-        } catch (e) {
-            alert("Erreur lors de la sauvegarde");
+        } catch (e: any) {
+            console.error(e);
+            alert("Erreur: " + e.message);
         } finally {
             setLoading(false);
         }

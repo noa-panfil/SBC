@@ -67,7 +67,7 @@ async function getOtmMatches(days?: number) {
         const params: any[] = [];
 
         if (days) {
-            query += ` WHERE match_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL ? DAY)`;
+            query += ` WHERE match_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 2 DAY) AND DATE_ADD(CURDATE(), INTERVAL ? DAY)`;
             params.push(days);
         }
 

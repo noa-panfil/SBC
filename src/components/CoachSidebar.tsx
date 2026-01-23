@@ -49,7 +49,7 @@ export default function CoachSidebar() {
 
                 <div className="p-4 mt-auto border-t border-white/5 space-y-2">
                     <button
-                        onClick={() => signOut({ callbackUrl: '/' })}
+                        onClick={() => signOut({ callbackUrl: '/login' })}
                         className="w-full flex items-center gap-4 p-4 rounded-xl text-gray-400 hover:text-red-400 hover:bg-white/5 transition-all text-left"
                     >
                         <i className="fas fa-sign-out-alt w-6 text-center"></i>
@@ -81,7 +81,7 @@ export default function CoachSidebar() {
                     );
                 })}
                 <button
-                    onClick={() => signOut({ callbackUrl: '/' })}
+                    onClick={() => signOut({ callbackUrl: '/login' })}
                     className="flex flex-col items-center justify-center w-12 h-12 rounded-2xl text-red-400 hover:text-red-600"
                 >
                     <i className="fas fa-sign-out-alt text-xl"></i>

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function LoginPage() {
+    const [logoUrl, setLogoUrl] = useState("/img/logo.png");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -13,6 +14,14 @@ export default function LoginPage() {
 
     useEffect(() => {
         signOut({ redirect: false });
+        fetch('/api/settings')
+            .then(res => res.json())
+            .then(data => {
+                if (data.site_logo_id) {
+                    setLogoUrl(`/api/image/${data.site_logo_id}`);
+                }
+            })
+            .catch(console.error);
     }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -45,8 +54,8 @@ export default function LoginPage() {
 
             <div className="bg-white/10 backdrop-blur-xl p-10 rounded-[2.5rem] shadow-2xl w-full max-w-md border border-white/20 relative z-10 transition-all hover:shadow-sbc/10">
                 <div className="text-center mb-10">
-                    <div className="w-20 h-20 bg-sbc rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-lg shadow-sbc/20 transform -rotate-6">
-                        <i className="fas fa-shield-alt text-white text-3xl"></i>
+                    <div className="w-24 h-24 mx-auto mb-6 flex items-center justify-center transform hover:scale-105 transition duration-500">
+                        <img src={logoUrl} alt="Logo SBC" className="w-full h-full object-contain drop-shadow-2xl" />
                     </div>
                     <h1 className="text-3xl font-black text-white tracking-tight uppercase">Connexion</h1>
                     <p className="text-gray-400 font-medium mt-2 italic">Seclin Basket Club</p>

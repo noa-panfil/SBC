@@ -106,43 +106,76 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
     const LEADERBOARD_ITEMS_PER_PAGE = 10;
 
     const officialStats = useMemo(() => {
-        const stats = new Map<string, { scorer: number, timer: number, referee: number, total: number, teams: Record<string, number>, image_id?: number | null, knownTeam?: string }>();
+        // Key is string: either ID (as string) or Name (if no ID found)
+        const stats = new Map<string, {
+            name: string,
+            scorer: number,
+            timer: number,
+            referee: number,
+            total: number,
+            teams: Record<string, number>,
+            image_id?: number | null,
+            knownTeam?: string,
+            is_coach?: boolean
+        }>();
 
-        const addStat = (name: string, role: 'scorer' | 'timer' | 'referee', designation: string) => {
+        const addStat = (name: string, role: 'scorer' | 'timer' | 'referee', match: any) => {
             if (!name || name.trim() === "") return;
             const cleanName = name.trim();
-            if (!stats.has(cleanName)) {
-                const official = officials.find(o => o.fullname === cleanName);
-                const isCoach = official?.role?.toLowerCase().includes('coach');
 
-                stats.set(cleanName, {
+            // Resolve Player
+            let candidates = officials.filter(o => o.fullname === cleanName);
+            if (candidates.length === 0) {
+                candidates = officials.filter(o => o.originalName === cleanName);
+            }
+            let selectedOfficial = candidates[0];
+
+            if (candidates.length > 1) {
+                // Try to find the one matching the team
+                const perfectMatch = candidates.find(candidate => {
+                    const candidateTeams = candidate.teams || (candidate.team ? [candidate.team] : []);
+                    return candidateTeams.some((t: string) => t === match.category || (match.designation && match.designation.includes(t)));
+                });
+                if (perfectMatch) selectedOfficial = perfectMatch;
+            }
+
+            // Use ID if available, otherwise fallback to name
+            const key = selectedOfficial ? `ID_${selectedOfficial.id}` : `NAME_${cleanName}`;
+
+            if (!stats.has(key)) {
+                const isCoach = selectedOfficial?.role?.toLowerCase().includes('coach');
+
+                stats.set(key, {
+                    name: selectedOfficial ? selectedOfficial.fullname : cleanName,
                     scorer: 0,
                     timer: 0,
                     referee: 0,
                     total: 0,
                     teams: {},
-                    image_id: official?.image_id,
-                    knownTeam: isCoach ? "Coach / Staff" : official?.team
+                    image_id: selectedOfficial?.image_id,
+                    knownTeam: isCoach ? "Coach / Staff" : selectedOfficial?.team,
+                    is_coach: isCoach
                 });
             }
-            const s = stats.get(cleanName)!;
+
+            const s = stats.get(key)!;
             s[role]++;
             s.total++;
 
-            if (designation && designation.includes("Table = 2 Joueurs/Parents ")) {
-                const teamName = designation.replace("Table = 2 Joueurs/Parents ", "").trim();
+            if (match.designation && match.designation.includes("Table = 2 Joueurs/Parents ")) {
+                const teamName = match.designation.replace("Table = 2 Joueurs/Parents ", "").trim();
                 s.teams[teamName] = (s.teams[teamName] || 0) + 1;
             }
         };
 
         rawMatches.forEach(m => {
-            addStat(m.scorer, 'scorer', m.designation);
-            addStat(m.timer, 'timer', m.designation);
-            addStat(m.referee, 'referee', m.designation);
+            addStat(m.scorer, 'scorer', m);
+            addStat(m.timer, 'timer', m);
+            addStat(m.referee, 'referee', m);
         });
 
-        return Array.from(stats.entries())
-            .sort((a, b) => b[1].total - a[1].total);
+        return Array.from(stats.values())
+            .sort((a, b) => b.total - a.total);
     }, [rawMatches, officials]);
 
     const totalLeaderboardPages = Math.ceil(officialStats.length / LEADERBOARD_ITEMS_PER_PAGE);
@@ -365,9 +398,10 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                            {paginatedStats.map(([name, data], index) => {
+                            {paginatedStats.map((data, index) => {
                                 let displayTeam = null;
-                                let isCoach = false;
+                                let isCoach = data.is_coach || false;
+                                const name = data.name;
 
                                 if (data.knownTeam) {
                                     if (data.knownTeam === "Coach / Staff") {

@@ -7,6 +7,7 @@ import { signOut } from "next-auth/react";
 
 const menuItems = [
     { name: "Vue d'ensemble", icon: "fas fa-chart-line", href: "/coach" },
+    { name: "OTM", icon: "fas fa-table", href: "/coach#otm" },
     // Later we can add "My Team", "Events", etc.
 ];
 

@@ -122,7 +122,7 @@ function PlayerSelector({ players, value, onChange, label }: { players: any[], v
     );
 }
 
-export default function CoachOTMManager({ matches, myTeamNames, players, currentUser, coachImageId }: { matches: any[], myTeamNames: string[], players?: any[], currentUser?: string, coachImageId?: number | null }) {
+export default function CoachOTMManager({ matches, myTeamNames, players, allPlayers, currentUser, coachImageId }: { matches: any[], myTeamNames: string[], players?: any[], allPlayers?: any[], currentUser?: string, coachImageId?: number | null }) {
     const router = useRouter();
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editForm, setEditForm] = useState<any>({});
@@ -324,7 +324,13 @@ export default function CoachOTMManager({ matches, myTeamNames, players, current
                                                             </div>
                                                             {item.val ? (
                                                                 (() => {
-                                                                    const foundPlayer = selectablePlayers.find(p => p.fullname === item.val);
+                                                                    const candidates = (allPlayers || []).filter(p => p.fullname === item.val);
+                                                                    let foundPlayer = candidates[0];
+                                                                    if (candidates.length > 1) {
+                                                                        const perfectMatch = candidates.find(p => p.team === match.category || (match.designation && match.designation.includes(p.team)));
+                                                                        if (perfectMatch) foundPlayer = perfectMatch;
+                                                                    }
+                                                                    if (!foundPlayer) foundPlayer = selectablePlayers.find(p => p.fullname === item.val);
                                                                     return (
                                                                         <div className="flex items-center gap-2 mt-1">
                                                                             {foundPlayer?.image_id ? (

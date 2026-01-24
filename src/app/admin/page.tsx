@@ -10,6 +10,7 @@ import AdminEventsManager from "./AdminEventsManager";
 import AdminCoachLoginsManager from "./AdminCoachLoginsManager";
 import AdminOTMManager from "./AdminOTMManager";
 import { authOptions } from "@/lib/auth";
+import InstallPWA from "@/components/InstallPWA";
 
 async function getStats() {
     try {
@@ -241,6 +242,7 @@ export default async function AdminDashboard() {
                     <p className="text-xs md:text-sm text-gray-500 font-medium truncate">Session : <span className="text-sbc font-bold">{session.user?.email}</span></p>
                 </div>
                 <div className="flex items-center gap-3 w-full md:w-auto">
+                    <InstallPWA />
                     <Link href="/" className="flex-1 md:flex-none justify-center px-4 py-2.5 text-xs font-black text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition flex items-center gap-2 uppercase tracking-wider">
                         <i className="fas fa-external-link-alt text-[10px]"></i> Site public
                     </Link>

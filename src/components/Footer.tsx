@@ -51,7 +51,7 @@ export default function Footer() {
                 </div>
             </div>
             <div className="text-center border-t border-gray-800 pt-6 text-gray-500 text-sm">
-                &copy; 2025 Seclin Basket Club. Tous droits réservés. - <Link href="/mentions-legales" className="hover:text-gray-300">Mentions Légales</Link>
+                &copy; 2025 Seclin Basket Club. Tous droits réservés. - <Link href="/mentions-legales" className="hover:text-gray-300">Mentions Légales</Link> - <Link href="/login" className="hover:text-gray-300">Connexion</Link>
             </div>
         </footer>
     );

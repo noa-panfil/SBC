@@ -118,11 +118,28 @@ export default async function CoachDashboard() {
     const personId = session.user.personId;
     const teams: any[] = await getCoachTeams(personId);
     const playersCount = await getMyPlayersCount(teams.map(t => t.id));
-    const players = await getMyPlayers(teams.map(t => t.id));
     const otmMatches = await getOtmMatches(7);
 
     const allOtmMatches = await getOtmMatches();
-    const allPlayers = await getAllPlayers();
+    const rawAllPlayers = await getAllPlayers();
+
+    // Disambiguate players with same name
+    const nameCounts: Record<string, number> = {};
+    rawAllPlayers.forEach((p: any) => {
+        nameCounts[p.fullname] = (nameCounts[p.fullname] || 0) + 1;
+    });
+
+    const allPlayers = rawAllPlayers.map((p: any) => ({
+        ...p,
+        originalName: p.fullname,
+        fullname: nameCounts[p.fullname] > 1 ? `${p.fullname} (${p.team})` : p.fullname
+    }));
+
+    // Update 'players' (my players) with the disambiguated names
+    const players = (await getMyPlayers(teams.map(t => t.id))).map((p: any) => {
+        const found = allPlayers.find((ap: any) => ap.id === p.id);
+        return found ? found : p;
+    });
 
 
     let coachImageId = null;
@@ -141,8 +158,13 @@ export default async function CoachDashboard() {
     allOtmMatches.forEach((m: any) => {
         [m.scorer, m.timer, m.hall_manager, m.bar_manager, m.referee].forEach(name => {
             if (name) {
-                // Find all candidates with this name
-                const candidates = allPlayers.filter((ap: any) => ap.fullname === name);
+                // 1. Try exact match (handles "Axel (U11)" vs "Axel (U13)")
+                let candidates = allPlayers.filter((ap: any) => ap.fullname === name);
+
+                // 2. Fallback: Try matching original name (handles legacy "Axel")
+                if (candidates.length === 0) {
+                    candidates = allPlayers.filter((ap: any) => ap.originalName === name);
+                }
 
                 if (candidates.length > 0) {
                     let selectedPlayer = candidates[0];

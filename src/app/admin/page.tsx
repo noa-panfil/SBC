@@ -219,7 +219,19 @@ export default async function AdminDashboard() {
     const teams = await getTeams();
     const coachLogins = await getCoachLogins();
     const otmMatches = await getOtmMatches();
-    const officials = await getAllPersons();
+    const rawOfficials = await getAllPersons();
+
+    // Disambiguate
+    const nameCounts: Record<string, number> = {};
+    rawOfficials.forEach((p: any) => {
+        nameCounts[p.fullname] = (nameCounts[p.fullname] || 0) + 1;
+    });
+
+    const officials = rawOfficials.map((p: any) => ({
+        ...p,
+        originalName: p.fullname,
+        fullname: nameCounts[p.fullname] > 1 ? `${p.fullname} (${p.team})` : p.fullname
+    }));
 
     return (
         <div className="w-full max-w-7xl mx-auto p-4 md:p-8 space-y-6 md:space-y-10 pb-20 overflow-x-hidden">

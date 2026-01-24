@@ -124,7 +124,10 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
             const cleanName = name.trim();
 
             // Resolve Player
-            const candidates = officials.filter(o => o.fullname === cleanName);
+            let candidates = officials.filter(o => o.fullname === cleanName);
+            if (candidates.length === 0) {
+                candidates = officials.filter(o => o.originalName === cleanName);
+            }
             let selectedOfficial = candidates[0];
 
             if (candidates.length > 1) {

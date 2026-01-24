@@ -9,6 +9,7 @@ const menuItems = [
     { name: "Vue d'ensemble", icon: "fas fa-chart-line", href: "/admin" },
     { name: "Équipes", icon: "fas fa-users", href: "/admin#teams" },
     { name: "Joueurs", icon: "fas fa-user-friends", href: "/admin/players" },
+    { name: "OTM", icon: "fas fa-table", href: "/admin#otm" },
     { name: "Événements", icon: "fas fa-calendar-alt", href: "/admin#events" },
     { name: "Médiathèque", icon: "fas fa-images", href: "/admin/images" },
 ];
@@ -71,7 +72,7 @@ export default function AdminSidebar() {
 
             {/* Mobile Bottom Navigation - Visible only on mobile */}
             <div className="md:hidden fixed bottom-4 left-4 right-4 bg-white/90 backdrop-blur-xl border border-white/20 px-6 py-4 z-[100] flex justify-between items-center shadow-2xl rounded-[2rem]">
-                {menuItems.slice(0, 4).map((item) => {
+                {menuItems.slice(0, 5).map((item) => {
                     const isActive = pathname === item.href;
                     return (
                         <Link

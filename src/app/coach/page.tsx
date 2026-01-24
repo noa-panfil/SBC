@@ -43,7 +43,7 @@ async function getMyPlayers(teamIds: number[]) {
     if (teamIds.length === 0) return [];
     try {
         const [rows] = await pool.query<RowDataPacket[]>(`
-            SELECT p.firstname, p.lastname, p.image_id, t.name as team_name
+            SELECT p.id, p.firstname, p.lastname, p.image_id, t.name as team_name
             FROM persons p
             JOIN team_members tm ON p.id = tm.person_id
             JOIN teams t ON tm.team_id = t.id
@@ -51,6 +51,7 @@ async function getMyPlayers(teamIds: number[]) {
             ORDER BY p.lastname, p.firstname
         `, [teamIds]);
         return rows.map((r: any) => ({
+            id: r.id,
             fullname: `${r.lastname.toUpperCase()} ${r.firstname}`,
             team: r.team_name,
             image_id: r.image_id
@@ -85,6 +86,28 @@ async function getOtmMatches(days?: number) {
     }
 }
 
+async function getAllPlayers() {
+    try {
+        const [rows] = await pool.query<RowDataPacket[]>(`
+            SELECT p.id, p.firstname, p.lastname, p.image_id, t.name as team_name
+            FROM persons p
+            JOIN team_members tm ON p.id = tm.person_id
+            JOIN teams t ON tm.team_id = t.id
+            WHERE tm.role NOT LIKE '%Coach%'
+            ORDER BY p.lastname, p.firstname
+        `);
+        return rows.map((r: any) => ({
+            id: r.id,
+            fullname: `${r.lastname.toUpperCase()} ${r.firstname}`,
+            team: r.team_name,
+            image_id: r.image_id
+        }));
+    } catch (e) {
+        console.error("Error fetching all players", e);
+        return [];
+    }
+}
+
 export default async function CoachDashboard() {
     const session: any = await getServerSession(authOptions);
 
@@ -97,7 +120,9 @@ export default async function CoachDashboard() {
     const playersCount = await getMyPlayersCount(teams.map(t => t.id));
     const players = await getMyPlayers(teams.map(t => t.id));
     const otmMatches = await getOtmMatches(7);
+
     const allOtmMatches = await getOtmMatches();
+    const allPlayers = await getAllPlayers();
 
 
     let coachImageId = null;
@@ -110,18 +135,36 @@ export default async function CoachDashboard() {
         console.error("Error fetching coach details", e);
     }
 
-    const playerStatsMap = new Map<string, number>();
-    players.forEach((p: any) => playerStatsMap.set(p.fullname, 0));
+    const playerStatsMap = new Map<number, number>();
+    players.forEach((p: any) => playerStatsMap.set(p.id, 0));
+
     allOtmMatches.forEach((m: any) => {
         [m.scorer, m.timer, m.hall_manager, m.bar_manager, m.referee].forEach(name => {
-            if (name && playerStatsMap.has(name)) {
-                playerStatsMap.set(name, (playerStatsMap.get(name) || 0) + 1);
+            if (name) {
+                // Find all candidates with this name
+                const candidates = allPlayers.filter((ap: any) => ap.fullname === name);
+
+                if (candidates.length > 0) {
+                    let selectedPlayer = candidates[0];
+
+                    // If multiple candidates, try to resolve by team
+                    if (candidates.length > 1) {
+                        const perfectMatch = candidates.find((p: any) => p.team === m.category || (m.designation && m.designation.includes(p.team)));
+                        if (perfectMatch) selectedPlayer = perfectMatch;
+                    }
+
+                    // Only credit if the RESOLVED player is one of the logged-in coach's players
+                    if (playerStatsMap.has(selectedPlayer.id)) {
+                        playerStatsMap.set(selectedPlayer.id, (playerStatsMap.get(selectedPlayer.id) || 0) + 1);
+                    }
+                }
             }
         });
     });
+
     const playersWithStats = players.map((p: any) => ({
         ...p,
-        otmCount: playerStatsMap.get(p.fullname) || 0
+        otmCount: playerStatsMap.get(p.id) || 0
     })).sort((a: any, b: any) => b.otmCount - a.otmCount);
 
     return (
@@ -244,7 +287,7 @@ export default async function CoachDashboard() {
                     <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Planning OTM</h2>
                     <div className="h-px flex-grow bg-gray-200"></div>
                 </div>
-                <CoachOTMManager matches={otmMatches} myTeamNames={teams.map(t => t.name)} players={players} currentUser={session.user.name} coachImageId={coachImageId} />
+                <CoachOTMManager matches={otmMatches} myTeamNames={teams.map(t => t.name)} players={players} allPlayers={allPlayers} currentUser={session.user.name} coachImageId={coachImageId} />
             </section>
 
             <section id="otm-leaderboard" className="mt-12 scroll-mt-24">

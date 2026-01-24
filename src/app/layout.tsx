@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
+import CookieBanner from "@/components/CookieBanner";
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
@@ -77,6 +79,10 @@ export default function RootLayout({
             })
           }}
         />
+        {process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID && (
+          <GoogleAnalytics GA_MEASUREMENT_ID={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID} />
+        )}
+        <CookieBanner />
       </body>
     </html>
   );

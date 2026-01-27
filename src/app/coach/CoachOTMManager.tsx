@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-function PlayerSelector({ players, value, onChange, label }: { players: any[], value: string, onChange: (val: string) => void, label: any }) {
+function PlayerSelector({ players, value, onChange, label, disabled = false, highlight = false }: { players: any[], value: string, onChange: (val: string) => void, label: any, disabled?: boolean, highlight?: boolean }) {
     const [isOpen, setIsOpen] = useState(false);
     const [isTyping, setIsTyping] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -33,8 +33,19 @@ function PlayerSelector({ players, value, onChange, label }: { players: any[], v
         }
     };
 
+    if (disabled) {
+        return (
+            <div className="relative opacity-60">
+                {label}
+                <div className="py-1 border-b border-gray-100 flex items-center gap-2">
+                    <span className="text-sm font-bold text-gray-400 italic">Non assigné à votre équipe</span>
+                </div>
+            </div>
+        )
+    }
+
     return (
-        <div className="relative" ref={containerRef}>
+        <div className={`relative rounded-lg transition-all ${highlight ? 'ring-2 ring-green-500 bg-green-50/30 p-1 -m-1' : ''}`} ref={containerRef}>
             {label}
             {showInput ? (
                 <div className="flex items-center gap-2 animate-fade-in mt-1">
@@ -133,6 +144,44 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
         ...(players || [])
     ];
 
+    const getAllowedRoles = (match: any) => {
+        const allowed = new Set<string>();
+
+        if (myTeamNames.includes(match.category)) {
+            allowed.add('scorer');
+            allowed.add('timer');
+            allowed.add('hall_manager');
+            allowed.add('bar_manager');
+        }
+
+        if (!match.designation) return allowed;
+
+        if (match.designation.startsWith("Table = 2 Joueurs/Parents ")) {
+            const team = match.designation.replace("Table = 2 Joueurs/Parents ", "").trim();
+            if (myTeamNames.includes(team)) {
+                allowed.add('scorer');
+                allowed.add('timer');
+            }
+        } else {
+            const parts = match.designation.split("+");
+            parts.forEach((part: string) => {
+                const m = part.trim().match(/^(.*) \{(.*)\}$/);
+                if (m) {
+                    const teamName = m[1].trim();
+                    if (myTeamNames.includes(teamName)) {
+                        const rolesStr = m[2];
+                        if (rolesStr.includes("Marqueur")) allowed.add('scorer');
+                        if (rolesStr.includes("Chronométreur")) allowed.add('timer');
+                        if (rolesStr.includes("Respo Salle")) allowed.add('hall_manager');
+                        if (rolesStr.includes("Buvette")) allowed.add('bar_manager');
+                        // Referees are explicitly excluded even if present in legacy string
+                    }
+                }
+            });
+        }
+        return allowed;
+    };
+
     const handleEdit = (match: any) => {
         console.log("Editing match ID:", match.id);
         setEditingId(match.id);
@@ -147,14 +196,14 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
     const handleSave = async () => {
         setLoading(true);
         try {
-            // Only send fields that coaches are allowed to edit
             const payload = {
                 id: editForm.id,
                 scorer: editForm.scorer,
                 timer: editForm.timer,
                 hall_manager: editForm.hall_manager,
                 bar_manager: editForm.bar_manager,
-                referee: editForm.referee
+                referee: editForm.referee,
+                referee_2: editForm.referee_2
             };
 
             const res = await fetch(`/api/otm/${editForm.id}`, {
@@ -198,6 +247,8 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
                     <div className="grid gap-6">
                         {dateMatches.map((match: any) => {
                             const isTargeted = myTeamNames.some(name => match.category === name || (match.designation && match.designation.includes(name)));
+                            const allowedRoles = getAllowedRoles(match);
+
                             return (
                                 <div key={match.id} className={`rounded-2xl shadow-sm border overflow-hidden hover:shadow-md transition-shadow group ${isTargeted ? 'bg-green-50/60 border-sbc ring-1 ring-sbc' : 'bg-white border-gray-100'}`}>
                                     <div className="grid grid-cols-1 lg:grid-cols-12">
@@ -284,21 +335,29 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
                                                             { label: "Chronométreur", key: "timer", icon: "fa-stopwatch" },
                                                             { label: "Resp. Salle", key: "hall_manager", icon: "fa-building" },
                                                             { label: "Buvette", key: "bar_manager", icon: "fa-coffee" },
-                                                            { label: "Arbitre", key: "referee", icon: "fa-whistle" },
-                                                        ].map(field => (
-                                                            <div key={field.key} className="bg-white p-2 rounded-xl border border-gray-100 shadow-sm">
-                                                                <PlayerSelector
-                                                                    players={selectablePlayers}
-                                                                    value={editForm[field.key] || ''}
-                                                                    onChange={(val) => setEditForm({ ...editForm, [field.key]: val })}
-                                                                    label={
-                                                                        <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 flex items-center gap-2">
-                                                                            <i className={`fas ${field.icon} opacity-50`}></i> {field.label}
-                                                                        </label>
-                                                                    }
-                                                                />
-                                                            </div>
-                                                        ))}
+                                                            ...(match.is_club_referee ? [
+                                                                { label: "Arbitre Club 1", key: "referee", icon: "fa-whistle" },
+                                                                { label: "Arbitre Club 2", key: "referee_2", icon: "fa-whistle" },
+                                                            ] : [])
+                                                        ].map(field => {
+                                                            const isAllowed = allowedRoles.has(field.key);
+                                                            return (
+                                                                <div key={field.key} className={`bg-white p-2 rounded-xl border shadow-sm ${isAllowed ? 'border-gray-100' : 'border-gray-50 bg-gray-50'}`}>
+                                                                    <PlayerSelector
+                                                                        players={selectablePlayers}
+                                                                        value={editForm[field.key] || ''}
+                                                                        onChange={(val) => setEditForm({ ...editForm, [field.key]: val })}
+                                                                        disabled={!isAllowed}
+                                                                        highlight={isAllowed}
+                                                                        label={
+                                                                            <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 flex items-center gap-2">
+                                                                                <i className={`fas ${field.icon} opacity-50`}></i> {field.label}
+                                                                            </label>
+                                                                        }
+                                                                    />
+                                                                </div>
+                                                            );
+                                                        })}
                                                     </div>
                                                     <div className="flex justify-end gap-3 mt-6">
                                                         <button onClick={handleCancel} className="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-700 uppercase transition-colors">Annuler</button>
@@ -311,46 +370,63 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
                                             ) : (
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                                                     {[
-                                                        { label: "Marqueur", val: match.scorer, icon: "fa-pen" },
-                                                        { label: "Chronométreur", val: match.timer, icon: "fa-stopwatch" },
-                                                        { label: "Resp. Salle", val: match.hall_manager, icon: "fa-building" },
-                                                        { label: "Bar / Buvette", val: match.bar_manager, icon: "fa-coffee" },
-                                                        { label: "Arbitre Club", val: match.referee, icon: "fa-gavel" },
-                                                    ].map((item, i) => (
-                                                        <div key={i} className={`p-4 rounded-xl border transition-all duration-200 ${item.val ? 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-sm' : 'bg-gray-50/50 border-transparent border-dashed'}`}>
-                                                            <div className="flex items-start justify-between mb-2">
-                                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">{item.label}</span>
-                                                                <i className={`fas ${item.icon} text-xs ${item.val ? 'text-sbc' : 'text-gray-200'}`}></i>
+                                                        { label: "Marqueur", val: match.scorer, icon: "fa-pen", key: "scorer" },
+                                                        { label: "Chronométreur", val: match.timer, icon: "fa-stopwatch", key: "timer" },
+                                                        { label: "Resp. Salle", val: match.hall_manager, icon: "fa-building", key: "hall_manager" },
+                                                        { label: "Bar / Buvette", val: match.bar_manager, icon: "fa-coffee", key: "bar_manager" },
+                                                        ...(match.is_club_referee ? [
+                                                            { label: "Arbitre Club 1", val: match.referee, icon: "fa-gavel", key: "referee" },
+                                                            { label: "Arbitre Club 2", val: match.referee_2, icon: "fa-gavel", key: "referee_2" },
+                                                        ] : [])
+                                                    ].map((item, i) => {
+                                                        const isAllowed = allowedRoles.has(item.key);
+                                                        const isMissing = isAllowed && !item.val;
+
+                                                        return (
+                                                            <div key={i} className={`p-4 rounded-xl border transition-all duration-200 
+                                                                ${isMissing
+                                                                    ? 'bg-green-50 border-green-300 ring-2 ring-green-500 shadow-md transform scale-[1.02]'
+                                                                    : item.val
+                                                                        ? 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-sm'
+                                                                        : 'bg-gray-50/50 border-transparent border-dashed'
+                                                                }
+                                                                ${isAllowed && item.val ? 'border-green-200 bg-green-50/20' : ''}
+                                                            `}>
+                                                                <div className="flex items-start justify-between mb-2">
+                                                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">{item.label}</span>
+                                                                    <i className={`fas ${item.icon} text-xs ${item.val ? 'text-sbc' : 'text-gray-200'}`}></i>
+                                                                </div>
+                                                                {item.val ? (
+                                                                    (() => {
+                                                                        const candidates = (allPlayers || []).filter(p => p.fullname === item.val);
+                                                                        let foundPlayer = candidates[0];
+                                                                        if (candidates.length > 1) {
+                                                                            const perfectMatch = candidates.find(p => p.team === match.category || (match.designation && match.designation.includes(p.team)));
+                                                                            if (perfectMatch) foundPlayer = perfectMatch;
+                                                                        }
+                                                                        if (!foundPlayer) foundPlayer = selectablePlayers.find(p => p.fullname === item.val);
+                                                                        return (
+                                                                            <div className="flex items-center gap-2 mt-1">
+                                                                                {foundPlayer?.image_id ? (
+                                                                                    <img src={`/api/image/${foundPlayer.image_id}`} className="w-6 h-6 rounded-full object-cover border border-gray-200 shadow-sm shrink-0" alt={item.val} />
+                                                                                ) : (
+                                                                                    <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500 border border-gray-200 shrink-0 uppercase">
+                                                                                        {item.val.substring(0, 2)}
+                                                                                    </div>
+                                                                                )}
+                                                                                <p className="text-sm font-bold text-gray-900 capitalize truncate" title={item.val}>{item.val}</p>
+                                                                            </div>
+                                                                        );
+                                                                    })()
+                                                                ) : (
+                                                                    <p className={`text-xs italic flex items-center gap-1 ${isMissing ? 'text-green-700 font-bold animate-pulse' : 'text-gray-400'}`}>
+                                                                        <span className={`w-1.5 h-1.5 rounded-full ${isMissing ? 'bg-green-600' : 'bg-red-400'}`}></span>
+                                                                        {isMissing ? 'À définir (Vous)' : 'À définir'}
+                                                                    </p>
+                                                                )}
                                                             </div>
-                                                            {item.val ? (
-                                                                (() => {
-                                                                    const candidates = (allPlayers || []).filter(p => p.fullname === item.val);
-                                                                    let foundPlayer = candidates[0];
-                                                                    if (candidates.length > 1) {
-                                                                        const perfectMatch = candidates.find(p => p.team === match.category || (match.designation && match.designation.includes(p.team)));
-                                                                        if (perfectMatch) foundPlayer = perfectMatch;
-                                                                    }
-                                                                    if (!foundPlayer) foundPlayer = selectablePlayers.find(p => p.fullname === item.val);
-                                                                    return (
-                                                                        <div className="flex items-center gap-2 mt-1">
-                                                                            {foundPlayer?.image_id ? (
-                                                                                <img src={`/api/image/${foundPlayer.image_id}`} className="w-6 h-6 rounded-full object-cover border border-gray-200 shadow-sm shrink-0" alt={item.val} />
-                                                                            ) : (
-                                                                                <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500 border border-gray-200 shrink-0 uppercase">
-                                                                                    {item.val.substring(0, 2)}
-                                                                                </div>
-                                                                            )}
-                                                                            <p className="text-sm font-bold text-gray-900 capitalize truncate" title={item.val}>{item.val}</p>
-                                                                        </div>
-                                                                    );
-                                                                })()
-                                                            ) : (
-                                                                <p className="text-xs italic text-gray-400 flex items-center gap-1">
-                                                                    <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span> À définir
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    ))}
+                                                        );
+                                                    })}
                                                 </div>
                                             )}
                                         </div>

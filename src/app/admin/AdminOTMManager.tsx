@@ -92,6 +92,179 @@ function getStartOfWeek(date: Date) {
     return d;
 }
 
+type Assignment = {
+    id: string;
+    team: string;
+    roles: {
+        marqueur: boolean;
+        chronometreur: boolean;
+        resp_salle: boolean;
+        buvette: boolean;
+    }
+};
+
+function DesignationEditor({ teams, value, onChange }: { teams: any[], value: string, onChange: (val: string) => void }) {
+    const [assignments, setAssignments] = useState<Assignment[]>([]);
+
+    useEffect(() => {
+        if (!value) {
+            setAssignments([]);
+            return;
+        }
+
+        const currentSerialized = serialize(assignments);
+        if (currentSerialized === value) return;
+
+        if (value.startsWith("Table = 2 Joueurs/Parents ")) {
+            setAssignments([{
+                id: "init_legacy",
+                team: value.replace("Table = 2 Joueurs/Parents ", "").trim(),
+                roles: { marqueur: true, chronometreur: true, resp_salle: false, buvette: false }
+            }]);
+        } else if (value.includes("{")) {
+            const parts = value.split(" + ");
+            const newAssignments: Assignment[] = [];
+            parts.forEach((part, idx) => {
+                const m = part.match(/^(.*) \{(.*)\}$/);
+                if (m) {
+                    const team = m[1].trim();
+                    const rolesStr = m[2];
+                    newAssignments.push({
+                        id: `parsed_${idx}`,
+                        team,
+                        roles: {
+                            marqueur: rolesStr.includes("Marqueur"),
+                            chronometreur: rolesStr.includes("Chronométreur"),
+                            resp_salle: rolesStr.includes("Respo Salle"),
+                            buvette: rolesStr.includes("Buvette")
+                        }
+                    });
+                }
+            });
+            setAssignments(newAssignments);
+        } else {
+            if (teams.some(t => t.name === value)) {
+                setAssignments([{
+                    id: "init_simple",
+                    team: value,
+                    roles: { marqueur: true, chronometreur: true, resp_salle: false, buvette: false }
+                }]);
+            }
+        }
+    }, [value]);
+
+    const serialize = (currentAssignments: Assignment[]) => {
+        if (currentAssignments.length === 0) return "";
+        return currentAssignments.map(a => {
+            const activeRoles = [];
+            if (a.roles.marqueur) activeRoles.push("Marqueur");
+            if (a.roles.chronometreur) activeRoles.push("Chronométreur");
+            if (a.roles.resp_salle) activeRoles.push("Respo Salle");
+            if (a.roles.buvette) activeRoles.push("Buvette");
+            return `${a.team} {${activeRoles.join(', ')}}`;
+        }).join(" + ");
+    };
+
+    const updateAssignments = (newAssignments: Assignment[]) => {
+        setAssignments(newAssignments);
+        onChange(serialize(newAssignments));
+    };
+
+    const addAssignment = () => {
+        updateAssignments([...assignments, {
+            id: Date.now().toString(),
+            team: "",
+            roles: { marqueur: false, chronometreur: false, resp_salle: false, buvette: false }
+        }]);
+    };
+
+    const removeAssignment = (id: string) => {
+        updateAssignments(assignments.filter(a => a.id !== id));
+    };
+
+    const updateAssignmentTeam = (id: string, team: string) => {
+        updateAssignments(assignments.map(a => a.id === id ? { ...a, team } : a));
+    };
+
+    const toggleRole = (id: string, role: keyof Assignment['roles']) => {
+        updateAssignments(assignments.map(a => a.id === id ? {
+            ...a,
+            roles: { ...a.roles, [role]: !a.roles[role] }
+        } : a));
+    };
+
+    return (
+        <div className="space-y-3">
+            <label className="block text-xs font-bold text-gray-500 uppercase">Désignation (Équipes OTM)</label>
+
+            {assignments.map((assignment, index) => (
+                <div key={assignment.id} className="p-3 bg-gray-50 rounded-xl border border-gray-200 relative">
+                    <div className="flex justify-between items-start gap-4 mb-3">
+                        <div className="flex-1">
+                            <TeamSelector
+                                teams={teams}
+                                value={assignment.team}
+                                onChange={(val) => updateAssignmentTeam(assignment.id, val)}
+                                label={`Équipe ${index + 1}`}
+                                position={index > 1 ? "top" : "bottom"}
+                            />
+                        </div>
+                        <button onClick={() => removeAssignment(assignment.id)} className="text-red-400 hover:text-red-600 p-1">
+                            <i className="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 md:gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer bg-white px-2 py-1 rounded border border-gray-200 hover:border-sbc transition">
+                            <input
+                                type="checkbox"
+                                checked={assignment.roles.marqueur}
+                                onChange={() => toggleRole(assignment.id, 'marqueur')}
+                                className="w-4 h-4 text-sbc rounded focus:ring-sbc"
+                            />
+                            <span className="text-xs font-bold text-gray-700">Marqueur</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer bg-white px-2 py-1 rounded border border-gray-200 hover:border-sbc transition">
+                            <input
+                                type="checkbox"
+                                checked={assignment.roles.chronometreur}
+                                onChange={() => toggleRole(assignment.id, 'chronometreur')}
+                                className="w-4 h-4 text-sbc rounded focus:ring-sbc"
+                            />
+                            <span className="text-xs font-bold text-gray-700">Chronométreur</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer bg-white px-2 py-1 rounded border border-gray-200 hover:border-sbc transition">
+                            <input
+                                type="checkbox"
+                                checked={assignment.roles.resp_salle}
+                                onChange={() => toggleRole(assignment.id, 'resp_salle')}
+                                className="w-4 h-4 text-sbc rounded focus:ring-sbc"
+                            />
+                            <span className="text-xs font-bold text-gray-700">Respo Salle</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer bg-white px-2 py-1 rounded border border-gray-200 hover:border-sbc transition">
+                            <input
+                                type="checkbox"
+                                checked={assignment.roles.buvette}
+                                onChange={() => toggleRole(assignment.id, 'buvette')}
+                                className="w-4 h-4 text-sbc rounded focus:ring-sbc"
+                            />
+                            <span className="text-xs font-bold text-gray-700">Buvette</span>
+                        </label>
+                    </div>
+                </div>
+            ))}
+
+            <button
+                onClick={addAssignment}
+                className="w-full py-2 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 font-bold text-xs uppercase hover:border-sbc hover:text-sbc transition flex items-center justify-center gap-2"
+            >
+                <i className="fas fa-plus"></i> Ajouter une équipe
+            </button>
+        </div>
+    );
+}
+
 export default function AdminOTMManager({ initialMatches, teams, officials = [] }: { initialMatches: any[], teams: any[], officials?: any[] }) {
     const router = useRouter();
     const [rawMatches, setRawMatches] = useState(initialMatches);
@@ -106,7 +279,6 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
     const LEADERBOARD_ITEMS_PER_PAGE = 10;
 
     const officialStats = useMemo(() => {
-        // Key is string: either ID (as string) or Name (if no ID found)
         const stats = new Map<string, {
             name: string,
             scorer: number,
@@ -162,9 +334,21 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
             s[role]++;
             s.total++;
 
+            // Legacy Parsing
             if (match.designation && match.designation.includes("Table = 2 Joueurs/Parents ")) {
                 const teamName = match.designation.replace("Table = 2 Joueurs/Parents ", "").trim();
                 s.teams[teamName] = (s.teams[teamName] || 0) + 1;
+            }
+            // New Parsing: "TeamName {Roles} + TeamName2 {Roles}"
+            else if (match.designation && match.designation.includes("{")) {
+                const parts = match.designation.split(" + ");
+                parts.forEach((p: string) => {
+                    const m = p.match(/^(.*) \{(.*)\}$/);
+                    if (m) {
+                        const teamName = m[1].trim();
+                        s.teams[teamName] = (s.teams[teamName] || 0) + 1;
+                    }
+                });
             }
         };
 
@@ -172,6 +356,7 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
             addStat(m.scorer, 'scorer', m);
             addStat(m.timer, 'timer', m);
             addStat(m.referee, 'referee', m);
+            addStat(m.referee_2, 'referee', m);
         });
 
         return Array.from(stats.values())
@@ -335,20 +520,28 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                         {filteredMatches.map(match => (
                             <tr key={match.id} className="hover:bg-gray-50">
                                 <td className="p-4 font-bold">{match.category}</td>
-                                <td className="p-4 text-center">
-                                    {match.is_white_jersey ? (
-                                        <div className="tooltip" data-tip="Maillots Blancs">
-                                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 border-2 border-gray-200 shadow-sm">
-                                                <i className="fas fa-tshirt text-white text-sm drop-shadow-[0_1px_1px_rgba(0,0,0,0.25)]"></i>
+                                <td className="p-4 text-center pb-2">
+                                    <div className="flex flex-col items-center gap-1">
+                                        {match.is_white_jersey ? (
+                                            <div className="tooltip" data-tip="Maillots Blancs">
+                                                <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 border-2 border-gray-200 shadow-sm">
+                                                    <i className="fas fa-tshirt text-white text-sm drop-shadow-[0_1px_1px_rgba(0,0,0,0.25)]"></i>
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <div className="tooltip" data-tip="Maillots Verts">
+                                                <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-50 border border-green-100 shadow-sm">
+                                                    <i className="fas fa-tshirt text-green-600 text-sm"></i>
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {match.is_club_referee && (
+                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border bg-purple-50 text-purple-700 border-purple-200 whitespace-nowrap" title="Arbitres Club">
+                                                <i className="fas fa-whistle"></i> Club
                                             </span>
-                                        </div>
-                                    ) : (
-                                        <div className="tooltip" data-tip="Maillots Verts">
-                                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-50 border border-green-100 shadow-sm">
-                                                <i className="fas fa-tshirt text-green-600 text-sm"></i>
-                                            </span>
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
                                 </td>
                                 <td className="p-4">
                                     <div className="font-bold">{new Date(match.match_date).toLocaleDateString('fr-FR')}</div>
@@ -363,7 +556,9 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                                         {match.timer && <><span className="font-bold text-gray-400 uppercase text-[10px]">Chrono:</span> <span className="text-gray-900 font-semibold truncate">{match.timer}</span></>}
                                         {match.hall_manager && <><span className="font-bold text-gray-400 uppercase text-[10px]">Resp.:</span> <span className="text-gray-900 font-semibold truncate">{match.hall_manager}</span></>}
                                         {match.bar_manager && <><span className="font-bold text-gray-400 uppercase text-[10px]">Buvette:</span> <span className="text-gray-900 font-semibold truncate">{match.bar_manager}</span></>}
-                                        {match.referee && <><span className="font-bold text-gray-400 uppercase text-[10px]">Arbitre:</span> <span className="text-gray-900 font-semibold truncate">{match.referee}</span></>}
+                                        {match.bar_manager && <><span className="font-bold text-gray-400 uppercase text-[10px]">Buvette:</span> <span className="text-gray-900 font-semibold truncate">{match.bar_manager}</span></>}
+                                        {match.referee && <><span className="font-bold text-gray-400 uppercase text-[10px]">Arb 1:</span> <span className="text-gray-900 font-semibold truncate">{match.referee}</span></>}
+                                        {match.referee_2 && <><span className="font-bold text-gray-400 uppercase text-[10px]">Arb 2:</span> <span className="text-gray-900 font-semibold truncate">{match.referee_2}</span></>}
                                     </div>
                                 </td>
                                 <td className="p-4 text-right flex gap-2 justify-end">
@@ -516,10 +711,14 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                                     label="Catégorie (Équipe à domicile)"
                                 />
                             </div>
-                            <div className="flex items-end pb-3">
+                            <div className="flex flex-col gap-2 pb-3">
                                 <label className="flex items-center gap-2 cursor-pointer">
                                     <input type="checkbox" checked={currentMatch.is_white_jersey || false} onChange={e => setCurrentMatch({ ...currentMatch, is_white_jersey: e.target.checked })} className="w-5 h-5 text-sbc rounded" />
                                     <span className="text-sm font-bold text-gray-700 uppercase">Maillots Blancs ?</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" checked={currentMatch.is_club_referee || false} onChange={e => setCurrentMatch({ ...currentMatch, is_club_referee: e.target.checked })} className="w-5 h-5 text-sbc rounded" />
+                                    <span className="text-sm font-bold text-gray-700 uppercase">Arbitres Club ?</span>
                                 </label>
                             </div>
                             <div>
@@ -545,12 +744,10 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                                 <input className="w-full p-2 border rounded-lg font-mono" value={currentMatch.match_code || ''} onChange={e => setCurrentMatch({ ...currentMatch, match_code: e.target.value })} />
                             </div>
                             <div className="col-span-2">
-                                <TeamSelector
+                                <DesignationEditor
                                     teams={teams}
-                                    value={currentMatch.designation ? currentMatch.designation.replace("Table = 2 Joueurs/Parents ", "") : ""}
-                                    onChange={(name) => setCurrentMatch({ ...currentMatch, designation: `Table = 2 Joueurs/Parents ${name}` })}
-                                    label="Désignation (Équipe OTM)"
-                                    position="top"
+                                    value={currentMatch.designation}
+                                    onChange={(val) => setCurrentMatch({ ...currentMatch, designation: val })}
                                 />
                             </div>
                         </div>
@@ -563,7 +760,8 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                                     <input className="p-2 border rounded text-sm" placeholder="Chronométreur" value={currentMatch.timer || ''} onChange={e => setCurrentMatch({ ...currentMatch, timer: e.target.value })} />
                                     <input className="p-2 border rounded text-sm" placeholder="Resp. Salle" value={currentMatch.hall_manager || ''} onChange={e => setCurrentMatch({ ...currentMatch, hall_manager: e.target.value })} />
                                     <input className="p-2 border rounded text-sm" placeholder="Buvette" value={currentMatch.bar_manager || ''} onChange={e => setCurrentMatch({ ...currentMatch, bar_manager: e.target.value })} />
-                                    <input className="p-2 border rounded text-sm" placeholder="Arbitre" value={currentMatch.referee || ''} onChange={e => setCurrentMatch({ ...currentMatch, referee: e.target.value })} />
+                                    <input className="p-2 border rounded text-sm" placeholder="Arbitre Club 1" value={currentMatch.referee || ''} onChange={e => setCurrentMatch({ ...currentMatch, referee: e.target.value })} />
+                                    <input className="p-2 border rounded text-sm" placeholder="Arbitre Club 2" value={currentMatch.referee_2 || ''} onChange={e => setCurrentMatch({ ...currentMatch, referee_2: e.target.value })} />
                                 </div>
                             </div>
                         )}

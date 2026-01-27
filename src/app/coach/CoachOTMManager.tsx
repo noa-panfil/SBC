@@ -306,30 +306,32 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
         <div className="space-y-8">
             {/* Week Navigation */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => changeWeek(-1)}
-                        className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-sbc hover:text-white transition-colors"
-                    >
-                        <i className="fas fa-chevron-left"></i>
-                    </button>
-                    <button
-                        onClick={() => setCurrentDate(new Date())}
-                        className="px-4 py-2 rounded-lg bg-gray-50 text-xs font-bold uppercase tracking-wider text-gray-600 hover:bg-gray-100 transition-colors"
-                    >
-                        Aujourd'hui
-                    </button>
-                    <button
-                        onClick={() => changeWeek(1)}
-                        className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-sbc hover:text-white transition-colors"
-                    >
-                        <i className="fas fa-chevron-right"></i>
-                    </button>
-                    <div className="h-8 w-px bg-gray-200 mx-2 hidden sm:block"></div>
+                <div className="flex flex-wrap items-center justify-center gap-3 w-full sm:w-auto">
+                    <div className="flex items-center gap-2 bg-gray-50 rounded-full p-1 border border-gray-100">
+                        <button
+                            onClick={() => changeWeek(-1)}
+                            className="w-8 h-8 rounded-full bg-white text-gray-400 hover:text-sbc hover:scale-110 transition-all shadow-sm flex items-center justify-center"
+                        >
+                            <i className="fas fa-chevron-left text-xs"></i>
+                        </button>
+                        <button
+                            onClick={() => setCurrentDate(new Date())}
+                            className="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider text-gray-500 hover:text-sbc transition-colors"
+                        >
+                            Aujourd'hui
+                        </button>
+                        <button
+                            onClick={() => changeWeek(1)}
+                            className="w-8 h-8 rounded-full bg-white text-gray-400 hover:text-sbc hover:scale-110 transition-all shadow-sm flex items-center justify-center"
+                        >
+                            <i className="fas fa-chevron-right text-xs"></i>
+                        </button>
+                    </div>
+
                     <select
                         value={viewFilter}
                         onChange={(e) => setViewFilter(e.target.value as any)}
-                        className="bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold uppercase rounded-lg px-3 py-2 outline-none focus:border-sbc focus:ring-1 focus:ring-sbc transition-all cursor-pointer"
+                        className="bg-white border border-gray-200 text-gray-700 text-xs font-bold uppercase rounded-lg px-3 py-2 outline-none focus:border-sbc focus:ring-1 focus:ring-sbc transition-all cursor-pointer shadow-sm hover:border-gray-300 w-full sm:w-auto"
                     >
                         <option value="all">Tous les matchs</option>
                         <option value="my_matches">Mes Matchs</option>

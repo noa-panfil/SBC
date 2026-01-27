@@ -63,6 +63,10 @@ export default function Header() {
                             <i className="fab fa-instagram text-xl"></i>
                         </a>
                     </div>
+
+                    <Link href="/login" className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-full transition shadow-md flex items-center gap-2">
+                        <i className="fas fa-user text-xs"></i> Connexion
+                    </Link>
                 </div>
 
                 {/* Burger Button */}
@@ -87,6 +91,9 @@ export default function Header() {
                     <Link href="/informations" className={linkClass("/informations", true)} onClick={() => setIsMobileMenuOpen(false)}>Infos Pratiques</Link>
                     <Link href="/partenaires" className={linkClass("/partenaires", true)} onClick={() => setIsMobileMenuOpen(false)}>Partenaires</Link>
                     <Link href="/contact" className="text-sbc-light font-bold py-2 bg-green-900/30 rounded-lg mt-2" onClick={() => setIsMobileMenuOpen(false)}>Nous Contacter</Link>
+                    <Link href="/login" className="text-white font-bold py-2 bg-white/10 rounded-lg flex items-center justify-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
+                        <i className="fas fa-lock text-sm"></i> Connexion
+                    </Link>
 
                     <div className="flex justify-center gap-6 pt-4 border-t border-green-800/30">
                         <a href="https://www.facebook.com/share/1BfEPGLcYV/" target="_blank" className="text-white hover:text-[#1877F2] transition">

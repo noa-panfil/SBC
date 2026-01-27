@@ -49,6 +49,23 @@ export default function CoachSettings() {
                 throw new Error(data.error || 'Une erreur est survenue');
             }
 
+            // Update local storage if saved account exists
+            const savedAccountStr = localStorage.getItem('sbc_saved_account');
+            if (savedAccountStr) {
+                try {
+                    const savedAccount = JSON.parse(savedAccountStr);
+                    // Only update if we can verify it might be the same user ideally, 
+                    // but here we assume the currently logged in user IS the saved user 
+                    // or at least we update the stored credential.
+                    // For better security/correctness we could check email match if we had it in context, 
+                    // but for this specific request:
+                    savedAccount.password = newPassword;
+                    localStorage.setItem('sbc_saved_account', JSON.stringify(savedAccount));
+                } catch (e) {
+                    console.error("Failed to update saved account password", e);
+                }
+            }
+
             setMessage({ type: 'success', text: 'Mot de passe mis à jour !' });
             setCurrentPassword('');
             setNewPassword('');

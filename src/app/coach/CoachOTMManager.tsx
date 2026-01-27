@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-function PlayerSelector({ players, value, onChange, label, disabled = false, highlight = false }: { players: any[], value: string, onChange: (val: string) => void, label: any, disabled?: boolean, highlight?: boolean }) {
+function PlayerSelector({ players, value, onChange, label, disabled = false, highlight = false, theme = 'green' }: { players: any[], value: string, onChange: (val: string) => void, label: any, disabled?: boolean, highlight?: boolean, theme?: 'green' | 'blue' }) {
     const [isOpen, setIsOpen] = useState(false);
     const [isTyping, setIsTyping] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -11,6 +11,26 @@ function PlayerSelector({ players, value, onChange, label, disabled = false, hig
     const isKnown = players.some(p => p.fullname === value);
     const selectedPlayer = players.find(p => p.fullname === value);
     const showInput = isTyping || (value && !isKnown);
+
+    const themeColors = {
+        green: {
+            ring: 'ring-green-500',
+            bgHighlight: 'bg-green-50/30',
+            border: 'border-sbc',
+            text: 'text-sbc',
+            bgIcon: 'bg-sbc/10',
+            borderIcon: 'border-sbc/20'
+        },
+        blue: {
+            ring: 'ring-blue-500',
+            bgHighlight: 'bg-blue-50/30',
+            border: 'border-blue-500',
+            text: 'text-blue-600',
+            bgIcon: 'bg-blue-100',
+            borderIcon: 'border-blue-200'
+        }
+    };
+    const t = themeColors[theme];
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -45,7 +65,7 @@ function PlayerSelector({ players, value, onChange, label, disabled = false, hig
     }
 
     return (
-        <div className={`relative rounded-lg transition-all ${highlight ? 'ring-2 ring-green-500 bg-green-50/30 p-1 -m-1' : ''}`} ref={containerRef}>
+        <div className={`relative rounded-lg transition-all ${highlight ? `ring-2 ${t.ring} ${t.bgHighlight} p-1 -m-1` : ''}`} ref={containerRef}>
             {label}
             {showInput ? (
                 <div className="flex items-center gap-2 animate-fade-in mt-1">
@@ -53,7 +73,7 @@ function PlayerSelector({ players, value, onChange, label, disabled = false, hig
                         <i className="fas fa-user-edit text-xs"></i>
                     </div>
                     <input
-                        className="w-full text-sm font-bold text-gray-900 border-b-2 border-sbc outline-none py-1 bg-transparent placeholder-gray-300"
+                        className={`w-full text-sm font-bold text-gray-900 border-b-2 ${t.border} outline-none py-1 bg-transparent placeholder-gray-300`}
                         value={value}
                         onChange={e => onChange(e.target.value)}
                         placeholder="Saisir Prénom Nom..."
@@ -79,11 +99,11 @@ function PlayerSelector({ players, value, onChange, label, disabled = false, hig
                                     {selectedPlayer?.image_id ? (
                                         <img src={`/api/image/${selectedPlayer.image_id}`} className="w-6 h-6 rounded-full object-cover border border-gray-200 shadow-sm" />
                                     ) : (
-                                        <div className="w-6 h-6 rounded-full bg-sbc/10 text-sbc flex items-center justify-center text-xs font-bold border border-sbc/20">
+                                        <div className={`w-6 h-6 rounded-full ${t.bgIcon} ${t.text} flex items-center justify-center text-xs font-bold border ${t.borderIcon}`}>
                                             {selectedPlayer ? selectedPlayer.fullname.charAt(0) : value.charAt(0)}
                                         </div>
                                     )}
-                                    <span className="text-sm font-bold text-gray-900 truncate group-hover:text-sbc transition-colors">{value}</span>
+                                    <span className={`text-sm font-bold text-gray-900 truncate group-hover:${t.text} transition-colors`}>{value}</span>
                                 </>
                             ) : (
                                 <>
@@ -117,11 +137,11 @@ function PlayerSelector({ players, value, onChange, label, disabled = false, hig
                                 </div>
                             ))}
                             <div
-                                className="flex items-center gap-3 px-3 py-3 hover:bg-gray-50 cursor-pointer text-sbc font-bold bg-gray-50/50 sticky bottom-0 backdrop-blur-sm"
+                                className={`flex items-center gap-3 px-3 py-3 hover:bg-gray-50 cursor-pointer ${t.text} font-bold bg-gray-50/50 sticky bottom-0 backdrop-blur-sm`}
                                 onClick={() => handleSelect('___CUSTOM___')}
                             >
-                                <div className="w-8 h-8 rounded-full bg-sbc/10 flex items-center justify-center border border-sbc/20">
-                                    <i className="fas fa-pen text-sbc text-xs"></i>
+                                <div className={`w-8 h-8 rounded-full ${t.bgIcon} flex items-center justify-center border ${t.borderIcon}`}>
+                                    <i className={`fas fa-pen ${t.text} text-xs`}></i>
                                 </div>
                                 <span className="text-sm">Autre (Saisir un nom)</span>
                             </div>
@@ -132,6 +152,7 @@ function PlayerSelector({ players, value, onChange, label, disabled = false, hig
         </div>
     );
 }
+
 
 export default function CoachOTMManager({ matches, myTeamNames, players, allPlayers, currentUser, coachImageId }: { matches: any[], myTeamNames: string[], players?: any[], allPlayers?: any[], currentUser?: string, coachImageId?: number | null }) {
     const router = useRouter();
@@ -227,225 +248,375 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
         }
     };
 
-    const groupedMatches = matches.reduce((acc: any, match) => {
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [viewFilter, setViewFilter] = useState<'all' | 'my_matches' | 'my_designations'>('all');
+
+    // Helper to get Monday of the week
+    const getStartOfWeek = (d: Date) => {
+        const date = new Date(d);
+        const day = date.getDay();
+        const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(date.setDate(diff));
+        monday.setHours(0, 0, 0, 0);
+        return monday;
+    };
+
+    const getEndOfWeek = (d: Date) => {
+        const start = getStartOfWeek(d);
+        const end = new Date(start);
+        end.setDate(start.getDate() + 6);
+        end.setHours(23, 59, 59, 999);
+        return end;
+    };
+
+    const startOfWeek = getStartOfWeek(currentDate);
+    const endOfWeek = getEndOfWeek(currentDate);
+
+    const filteredMatches = matches.filter(match => {
+        const matchDate = new Date(match.match_date);
+        const inWeek = matchDate >= startOfWeek && matchDate <= endOfWeek;
+        if (!inWeek) return false;
+
+        if (viewFilter === 'all') return true;
+
+        const isPlaying = myTeamNames.includes(match.category);
+        if (viewFilter === 'my_matches') return isPlaying;
+
+        if (viewFilter === 'my_designations') {
+            const isAssignedOTM = !isPlaying && match.designation && myTeamNames.some(name => match.designation.includes(name));
+            return isAssignedOTM;
+        }
+        return true;
+    });
+
+    const groupedMatches = filteredMatches.reduce((acc: any, match) => {
         const date = new Date(match.match_date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
         if (!acc[date]) acc[date] = [];
         acc[date].push(match);
         return acc;
     }, {});
 
+    const changeWeek = (offset: number) => {
+        const newDate = new Date(currentDate);
+        newDate.setDate(newDate.getDate() + (offset * 7));
+        setCurrentDate(newDate);
+    };
+
     return (
-        <div className="space-y-12">
-            {Object.entries(groupedMatches).map(([date, dateMatches]: [string, any]) => (
-                <div key={date} className="relative">
-                    <div className="sticky top-0 bg-gray-50/95 backdrop-blur-sm z-30 py-3 mb-6 border-b border-gray-200">
-                        <h3 className="text-xl font-black text-gray-800 capitalize flex items-center gap-3">
-                            <span className="w-2 h-8 bg-sbc rounded-r-md"></span>
-                            {date}
-                        </h3>
-                    </div>
-                    <div className="grid gap-6">
-                        {dateMatches.map((match: any) => {
-                            const isTargeted = myTeamNames.some(name => match.category === name || (match.designation && match.designation.includes(name)));
-                            const allowedRoles = getAllowedRoles(match);
+        <div className="space-y-8">
+            {/* Week Navigation */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => changeWeek(-1)}
+                        className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-sbc hover:text-white transition-colors"
+                    >
+                        <i className="fas fa-chevron-left"></i>
+                    </button>
+                    <button
+                        onClick={() => setCurrentDate(new Date())}
+                        className="px-4 py-2 rounded-lg bg-gray-50 text-xs font-bold uppercase tracking-wider text-gray-600 hover:bg-gray-100 transition-colors"
+                    >
+                        Aujourd'hui
+                    </button>
+                    <button
+                        onClick={() => changeWeek(1)}
+                        className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-sbc hover:text-white transition-colors"
+                    >
+                        <i className="fas fa-chevron-right"></i>
+                    </button>
+                    <div className="h-8 w-px bg-gray-200 mx-2 hidden sm:block"></div>
+                    <select
+                        value={viewFilter}
+                        onChange={(e) => setViewFilter(e.target.value as any)}
+                        className="bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold uppercase rounded-lg px-3 py-2 outline-none focus:border-sbc focus:ring-1 focus:ring-sbc transition-all cursor-pointer"
+                    >
+                        <option value="all">Tous les matchs</option>
+                        <option value="my_matches">Mes Matchs</option>
+                        <option value="my_designations">Mes Désignations</option>
+                    </select>
+                </div>
 
-                            return (
-                                <div key={match.id} className={`rounded-2xl shadow-sm border overflow-hidden hover:shadow-md transition-shadow group ${isTargeted ? 'bg-green-50/60 border-sbc ring-1 ring-sbc' : 'bg-white border-gray-100'}`}>
-                                    <div className="grid grid-cols-1 lg:grid-cols-12">
-                                        <div className={`lg:col-span-4 p-6 flex flex-col justify-between border-b lg:border-b-0 lg:border-r relative overflow-hidden ${isTargeted ? 'bg-green-100/30 border-green-200' : 'bg-gray-50 border-gray-100'}`}>
-                                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sbc to-blue-400 opacity-20"></div>
+                <div className="text-center sm:text-right">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Semaine du</p>
+                    <h3 className="text-lg font-black text-gray-900 capitalize flex items-center gap-2 justify-center sm:justify-end">
+                        <i className="fas fa-calendar-alt text-sbc"></i>
+                        {startOfWeek.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} au {endOfWeek.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </h3>
+                </div>
+            </div>
 
-                                            <div className="space-y-4">
-                                                <div className="flex justify-between items-start">
-                                                    <span className="bg-green-600 text-white text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider">{match.category}</span>
-                                                    <span className="font-mono text-[10px] text-gray-500 bg-white px-2 py-1 rounded border border-gray-200" title="Code Rencontre">
-                                                        <span className="font-bold text-gray-300 mr-1">CODE MATCH:</span>
-                                                        {match.match_code}
-                                                    </span>
-                                                </div>
+            <div className="space-y-12">
+                {Object.entries(groupedMatches).map(([date, dateMatches]: [string, any]) => (
+                    <div key={date} className="relative">
+                        <div className="sticky top-0 bg-gray-50/95 backdrop-blur-sm z-30 py-3 mb-6 border-b border-gray-200">
+                            <h3 className="text-xl font-black text-gray-800 capitalize flex items-center gap-3">
+                                <span className="w-2 h-8 bg-sbc rounded-r-md"></span>
+                                {date}
+                            </h3>
+                        </div>
+                        <div className="grid gap-6">
+                            {dateMatches.map((match: any) => {
+                                const isPlaying = myTeamNames.includes(match.category);
+                                const isAssignedOTM = !isPlaying && match.designation && myTeamNames.some(name => match.designation.includes(name));
+                                const allowedRoles = getAllowedRoles(match);
 
-                                                <div>
-                                                    <p className="text-xs font-bold text-gray-400 uppercase mb-1">Adversaire</p>
-                                                    <h4 className="text-xl font-black text-gray-900 leading-tight uppercase">{match.opponent}</h4>
-                                                </div>
+                                return (
+                                    <div key={match.id} className={`rounded-2xl shadow-sm border overflow-hidden hover:shadow-md transition-shadow group
+                                        ${isPlaying
+                                            ? 'bg-green-50/60 border-sbc ring-1 ring-sbc'
+                                            : isAssignedOTM
+                                                ? 'bg-blue-50/60 border-blue-400 ring-1 ring-blue-400'
+                                                : 'bg-white border-gray-100'
+                                        }`}>
+                                        <div className="grid grid-cols-1 lg:grid-cols-12">
+                                            <div className={`lg:col-span-4 p-6 flex flex-col justify-between border-b lg:border-b-0 lg:border-r relative overflow-hidden
+                                                ${isPlaying
+                                                    ? 'bg-green-100/30 border-green-200'
+                                                    : isAssignedOTM
+                                                        ? 'bg-blue-100/30 border-blue-200'
+                                                        : 'bg-gray-50 border-gray-100'
+                                                }`}>
 
-                                                <div className="flex flex-col gap-2 pt-2">
-                                                    <div className="flex items-center gap-3 text-gray-700 bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
-                                                        <div className="w-8 h-8 rounded-full bg-sbc/10 flex items-center justify-center text-sbc shrink-0">
-                                                            <i className="fas fa-clock"></i>
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-[10px] uppercase font-bold text-gray-400">Heure du Match</p>
-                                                            <p className="font-black text-lg">{match.match_time}</p>
-                                                        </div>
+                                                {/* Background Gradient */}
+                                                <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r opacity-30
+                                                    ${isPlaying ? 'from-sbc to-green-300' : isAssignedOTM ? 'from-blue-500 to-indigo-400' : 'from-gray-300 to-gray-200'}
+                                                `}></div>
+
+                                                <div className="space-y-4">
+                                                    <div className="flex justify-between items-start">
+                                                        <span className="bg-green-600 text-white text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider">{match.category}</span>
+                                                        <span className="font-mono text-[10px] text-gray-500 bg-white px-2 py-1 rounded border border-gray-200" title="Code Rencontre">
+                                                            <span className="font-bold text-gray-300 mr-1">CODE:</span>
+                                                            {match.match_code}
+                                                        </span>
                                                     </div>
 
-                                                    <div className="flex items-center gap-3 text-sbc bg-sbc/5 p-3 rounded-xl border border-sbc/10 shadow-sm">
-                                                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-sbc shrink-0 shadow-sm">
-                                                            <i className="fas fa-map-marker-alt"></i>
+                                                    {/* Context Badge */}
+                                                    {(isPlaying || isAssignedOTM) && (
+                                                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-widest mb-1
+                                                            ${isPlaying
+                                                                ? 'bg-sbc/10 border-sbc/20 text-sbc'
+                                                                : 'bg-blue-50 border-blue-200 text-blue-600'
+                                                            }`}>
+                                                            {isPlaying ? (
+                                                                <>
+                                                                    <i className="fas fa-basketball-ball"></i>
+                                                                    Votre Match
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <i className="fas fa-clipboard-list"></i>
+                                                                    Désignation OTM
+                                                                </>
+                                                            )}
                                                         </div>
-                                                        <div>
-                                                            <p className="text-[10px] uppercase font-bold text-sbc/60">Rendez-vous (OTM)</p>
-                                                            <p className="font-black text-lg">{match.meeting_time}</p>
+                                                    )}
+
+                                                    <div>
+                                                        <p className="text-xs font-bold text-gray-400 uppercase mb-1">Adversaire</p>
+                                                        <h4 className="text-xl font-black text-gray-900 leading-tight uppercase">{match.opponent}</h4>
+                                                    </div>
+
+                                                    <div className="flex flex-col gap-2 pt-2">
+                                                        <div className="flex items-center gap-3 text-gray-700 bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
+                                                            <div className="w-8 h-8 rounded-full bg-sbc/10 flex items-center justify-center text-sbc shrink-0">
+                                                                <i className="fas fa-clock"></i>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-[10px] uppercase font-bold text-gray-400">Heure du Match</p>
+                                                                <p className="font-black text-lg">{match.match_time}</p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className={`flex items-center gap-3 p-3 rounded-xl border shadow-sm
+                                                            ${isPlaying ? 'text-sbc bg-sbc/5 border-sbc/10' : 'text-blue-600 bg-blue-50/50 border-blue-100'}
+                                                        `}>
+                                                            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm">
+                                                                <i className={`fas fa-map-marker-alt ${isPlaying ? 'text-sbc' : 'text-blue-500'}`}></i>
+                                                            </div>
+                                                            <div>
+                                                                <p className={`text-[10px] uppercase font-bold ${isPlaying ? 'text-sbc/60' : 'text-blue-400'}`}>Rendez-vous (OTM)</p>
+                                                                <p className="font-black text-lg">{match.meeting_time}</p>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
 
-                                            <div className="mt-6 flex flex-wrap gap-2 text-xs">
-                                                <span className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg font-bold shadow-sm ${match.is_white_jersey
-                                                    ? 'bg-white border border-gray-200 text-gray-500'
-                                                    : 'bg-green-50 border border-green-200 text-green-700'
-                                                    }`}>
-                                                    <i className="fas fa-tshirt"></i>
-                                                    {match.is_white_jersey ? 'Maillots Blancs' : 'Maillots Verts'}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <div className="lg:col-span-8 p-6 relative">
-                                            <div className="flex justify-between items-center mb-6">
-                                                <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
-                                                    <i className="fas fa-users text-gray-400"></i>
-                                                    Officiels de Table
-                                                </h4>
-                                                {!editingId && myTeamNames.some(name => match.category === name || (match.designation && match.designation.includes(name))) && (
-                                                    <button
-                                                        onClick={() => handleEdit(match)}
-                                                        className="group-hover:bg-sbc group-hover:text-white bg-gray-100 text-gray-500 rounded-lg px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2"
-                                                    >
-                                                        <i className="fas fa-edit"></i> Modifier
-                                                    </button>
-                                                )}
-                                                {match.designation && (
-                                                    <span className="text-[10px] font-bold text-sbc bg-sbc/10 px-3 py-1.5 rounded-lg border border-sbc/20 max-w-[250px] truncate flex items-center gap-1.5" title={match.designation}>
-                                                        <i className="fas fa-users-cog"></i>
-                                                        <span className="opacity-70 font-medium">Équipe OTM:</span>
-                                                        <span className="uppercase">{match.designation.replace("Table = 2 Joueurs/Parents ", "")}</span>
+                                                <div className="mt-6 flex flex-wrap gap-2 text-xs">
+                                                    <span className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg font-bold shadow-sm ${match.is_white_jersey
+                                                        ? 'bg-white border border-gray-200 text-gray-500'
+                                                        : 'bg-green-50 border border-green-200 text-green-700'
+                                                        }`}>
+                                                        <i className="fas fa-tshirt"></i>
+                                                        {match.is_white_jersey ? 'Maillots Blancs' : 'Maillots Verts'}
                                                     </span>
-                                                )}
+                                                    {match.is_club_referee ? (
+                                                        <span className="inline-flex items-center gap-2 px-3 py-2 rounded-lg font-bold shadow-sm bg-purple-50 border border-purple-200 text-purple-700">
+                                                            <i className="fas fa-whistle"></i>
+                                                            Arb. Club
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-2 px-3 py-2 rounded-lg font-bold shadow-sm bg-gray-100 border border-gray-200 text-gray-500">
+                                                            <i className="fas fa-user-tie"></i>
+                                                            Arb. Fédération
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
 
-                                            {editingId === match.id ? (
-                                                <div className="bg-gray-50 rounded-2xl p-6 border border-sbc/20 animate-fade-in relative overflow-hidden">
-                                                    <div className="absolute top-0 right-0 w-16 h-16 bg-sbc opacity-5 rounded-bl-full pointer-events-none"></div>
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="lg:col-span-8 p-6 relative">
+                                                <div className="flex justify-between items-center mb-6">
+                                                    <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
+                                                        <i className="fas fa-users text-gray-400"></i>
+                                                        Officiels de Table
+                                                    </h4>
+                                                    {!editingId && (isPlaying || isAssignedOTM) && (
+                                                        <button
+                                                            onClick={() => handleEdit(match)}
+                                                            className={`rounded-lg px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2
+                                                                ${isPlaying
+                                                                    ? 'bg-sbc/10 text-sbc hover:bg-sbc hover:text-white'
+                                                                    : 'bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white'
+                                                                }`}
+                                                        >
+                                                            <i className="fas fa-edit"></i> Modifier
+                                                        </button>
+                                                    )}
+                                                    {match.designation && (
+                                                        <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200 max-w-[200px] truncate flex items-center gap-1.5" title={match.designation}>
+                                                            <i className="fas fa-clipboard-check"></i>
+                                                            <span className="uppercase">{match.designation.replace("Table = 2 Joueurs/Parents ", "")}</span>
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                {editingId === match.id ? (
+                                                    <div className={`bg-gray-50 rounded-2xl p-6 border animate-fade-in relative overflow-hidden ${isPlaying ? 'border-sbc/20' : 'border-blue-200'}`}>
+                                                        <div className={`absolute top-0 right-0 w-16 h-16 opacity-5 rounded-bl-full pointer-events-none ${isPlaying ? 'bg-sbc' : 'bg-blue-600'}`}></div>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            {[
+                                                                { label: "Marqueur", key: "scorer", icon: "fa-pen" },
+                                                                { label: "Chronométreur", key: "timer", icon: "fa-stopwatch" },
+                                                                { label: "Resp. Salle", key: "hall_manager", icon: "fa-building" },
+                                                                { label: "Buvette", key: "bar_manager", icon: "fa-coffee" },
+                                                                ...(match.is_club_referee ? [
+                                                                    { label: "Arbitre Club 1", key: "referee", icon: "fa-whistle" },
+                                                                    { label: "Arbitre Club 2", key: "referee_2", icon: "fa-whistle" },
+                                                                ] : [])
+                                                            ].map(field => {
+                                                                const isAllowed = allowedRoles.has(field.key);
+                                                                return (
+                                                                    <div key={field.key} className={`bg-white p-2 rounded-xl border shadow-sm ${isAllowed ? 'border-gray-100' : 'border-gray-50 bg-gray-50'}`}>
+                                                                        <PlayerSelector
+                                                                            players={selectablePlayers}
+                                                                            value={editForm[field.key] || ''}
+                                                                            onChange={(val) => setEditForm({ ...editForm, [field.key]: val })}
+                                                                            disabled={!isAllowed}
+                                                                            highlight={isAllowed}
+                                                                            theme={isPlaying ? 'green' : 'blue'}
+                                                                            label={
+                                                                                <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 flex items-center gap-2">
+                                                                                    <i className={`fas ${field.icon} opacity-50`}></i> {field.label}
+                                                                                </label>
+                                                                            }
+                                                                        />
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                        <div className="flex justify-end gap-3 mt-6">
+                                                            <button onClick={handleCancel} className="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-700 uppercase transition-colors">Annuler</button>
+                                                            <button onClick={handleSave} disabled={loading} className={`${isPlaying ? 'bg-sbc hover:bg-sbc-dark shadow-sbc/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'} text-white px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest shadow-lg transition-all transform active:scale-95 disabled:opacity-70 flex items-center gap-2`}>
+                                                                {loading ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-check"></i>}
+                                                                Enregistrer
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                                                         {[
-                                                            { label: "Marqueur", key: "scorer", icon: "fa-pen" },
-                                                            { label: "Chronométreur", key: "timer", icon: "fa-stopwatch" },
-                                                            { label: "Resp. Salle", key: "hall_manager", icon: "fa-building" },
-                                                            { label: "Buvette", key: "bar_manager", icon: "fa-coffee" },
+                                                            { label: "Marqueur", val: match.scorer, icon: "fa-pen", key: "scorer" },
+                                                            { label: "Chronométreur", val: match.timer, icon: "fa-stopwatch", key: "timer" },
+                                                            { label: "Resp. Salle", val: match.hall_manager, icon: "fa-building", key: "hall_manager" },
+                                                            { label: "Bar / Buvette", val: match.bar_manager, icon: "fa-coffee", key: "bar_manager" },
                                                             ...(match.is_club_referee ? [
-                                                                { label: "Arbitre Club 1", key: "referee", icon: "fa-whistle" },
-                                                                { label: "Arbitre Club 2", key: "referee_2", icon: "fa-whistle" },
+                                                                { label: "Arbitre Club 1", val: match.referee, icon: "fa-gavel", key: "referee" },
+                                                                { label: "Arbitre Club 2", val: match.referee_2, icon: "fa-gavel", key: "referee_2" },
                                                             ] : [])
-                                                        ].map(field => {
-                                                            const isAllowed = allowedRoles.has(field.key);
+                                                        ].map((item, i) => {
+                                                            const isAllowed = allowedRoles.has(item.key);
+                                                            const isMissing = isAllowed && !item.val;
+
                                                             return (
-                                                                <div key={field.key} className={`bg-white p-2 rounded-xl border shadow-sm ${isAllowed ? 'border-gray-100' : 'border-gray-50 bg-gray-50'}`}>
-                                                                    <PlayerSelector
-                                                                        players={selectablePlayers}
-                                                                        value={editForm[field.key] || ''}
-                                                                        onChange={(val) => setEditForm({ ...editForm, [field.key]: val })}
-                                                                        disabled={!isAllowed}
-                                                                        highlight={isAllowed}
-                                                                        label={
-                                                                            <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 flex items-center gap-2">
-                                                                                <i className={`fas ${field.icon} opacity-50`}></i> {field.label}
-                                                                            </label>
-                                                                        }
-                                                                    />
+                                                                <div key={i} className={`p-4 rounded-xl border transition-all duration-200 
+                                                                ${isMissing
+                                                                        ? isPlaying
+                                                                            ? 'bg-green-50 border-green-300 ring-2 ring-green-500 shadow-md transform scale-[1.02]'
+                                                                            : 'bg-blue-50 border-blue-300 ring-2 ring-blue-500 shadow-md transform scale-[1.02]'
+                                                                        : item.val
+                                                                            ? 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-sm'
+                                                                            : 'bg-gray-50/50 border-transparent border-dashed'
+                                                                    }
+                                                                ${isAllowed && item.val
+                                                                        ? isPlaying ? 'border-green-200 bg-green-50/20' : 'border-blue-200 bg-blue-50/20'
+                                                                        : ''}
+                                                            `}>
+                                                                    <div className="flex items-start justify-between mb-2">
+                                                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">{item.label}</span>
+                                                                        <i className={`fas ${item.icon} text-xs ${item.val ? (isPlaying ? 'text-sbc' : 'text-blue-600') : 'text-gray-200'}`}></i>
+                                                                    </div>
+                                                                    {item.val ? (
+                                                                        (() => {
+                                                                            const candidates = (allPlayers || []).filter(p => p.fullname === item.val);
+                                                                            let foundPlayer = candidates[0];
+                                                                            if (candidates.length > 1) {
+                                                                                const perfectMatch = candidates.find(p => p.team === match.category || (match.designation && match.designation.includes(p.team)));
+                                                                                if (perfectMatch) foundPlayer = perfectMatch;
+                                                                            }
+                                                                            if (!foundPlayer) foundPlayer = selectablePlayers.find(p => p.fullname === item.val);
+                                                                            return (
+                                                                                <div className="flex items-center gap-2 mt-1">
+                                                                                    {foundPlayer?.image_id ? (
+                                                                                        <img src={`/api/image/${foundPlayer.image_id}`} className="w-6 h-6 rounded-full object-cover border border-gray-200 shadow-sm shrink-0" alt={item.val} />
+                                                                                    ) : (
+                                                                                        <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500 border border-gray-200 shrink-0 uppercase">
+                                                                                            {item.val.substring(0, 2)}
+                                                                                        </div>
+                                                                                    )}
+                                                                                    <p className="text-sm font-bold text-gray-900 capitalize truncate" title={item.val}>{item.val}</p>
+                                                                                </div>
+                                                                            );
+                                                                        })()
+                                                                    ) : (
+                                                                        <p className={`text-xs italic flex items-center gap-1 ${isMissing ? (isPlaying ? 'text-green-700 font-bold animate-pulse' : 'text-blue-700 font-bold animate-pulse') : 'text-gray-400'}`}>
+                                                                            <span className={`w-1.5 h-1.5 rounded-full ${isMissing ? (isPlaying ? 'bg-green-600' : 'bg-blue-600') : 'bg-red-400'}`}></span>
+                                                                            {isMissing ? 'À définir (Vous)' : 'À définir'}
+                                                                        </p>
+                                                                    )}
                                                                 </div>
                                                             );
                                                         })}
                                                     </div>
-                                                    <div className="flex justify-end gap-3 mt-6">
-                                                        <button onClick={handleCancel} className="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-700 uppercase transition-colors">Annuler</button>
-                                                        <button onClick={handleSave} disabled={loading} className="bg-sbc text-white px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-sbc-dark shadow-lg shadow-sbc/20 transition-all transform active:scale-95 disabled:opacity-70 flex items-center gap-2">
-                                                            {loading ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-check"></i>}
-                                                            Enregistrer
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                                    {[
-                                                        { label: "Marqueur", val: match.scorer, icon: "fa-pen", key: "scorer" },
-                                                        { label: "Chronométreur", val: match.timer, icon: "fa-stopwatch", key: "timer" },
-                                                        { label: "Resp. Salle", val: match.hall_manager, icon: "fa-building", key: "hall_manager" },
-                                                        { label: "Bar / Buvette", val: match.bar_manager, icon: "fa-coffee", key: "bar_manager" },
-                                                        ...(match.is_club_referee ? [
-                                                            { label: "Arbitre Club 1", val: match.referee, icon: "fa-gavel", key: "referee" },
-                                                            { label: "Arbitre Club 2", val: match.referee_2, icon: "fa-gavel", key: "referee_2" },
-                                                        ] : [])
-                                                    ].map((item, i) => {
-                                                        const isAllowed = allowedRoles.has(item.key);
-                                                        const isMissing = isAllowed && !item.val;
-
-                                                        return (
-                                                            <div key={i} className={`p-4 rounded-xl border transition-all duration-200 
-                                                                ${isMissing
-                                                                    ? 'bg-green-50 border-green-300 ring-2 ring-green-500 shadow-md transform scale-[1.02]'
-                                                                    : item.val
-                                                                        ? 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-sm'
-                                                                        : 'bg-gray-50/50 border-transparent border-dashed'
-                                                                }
-                                                                ${isAllowed && item.val ? 'border-green-200 bg-green-50/20' : ''}
-                                                            `}>
-                                                                <div className="flex items-start justify-between mb-2">
-                                                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">{item.label}</span>
-                                                                    <i className={`fas ${item.icon} text-xs ${item.val ? 'text-sbc' : 'text-gray-200'}`}></i>
-                                                                </div>
-                                                                {item.val ? (
-                                                                    (() => {
-                                                                        const candidates = (allPlayers || []).filter(p => p.fullname === item.val);
-                                                                        let foundPlayer = candidates[0];
-                                                                        if (candidates.length > 1) {
-                                                                            const perfectMatch = candidates.find(p => p.team === match.category || (match.designation && match.designation.includes(p.team)));
-                                                                            if (perfectMatch) foundPlayer = perfectMatch;
-                                                                        }
-                                                                        if (!foundPlayer) foundPlayer = selectablePlayers.find(p => p.fullname === item.val);
-                                                                        return (
-                                                                            <div className="flex items-center gap-2 mt-1">
-                                                                                {foundPlayer?.image_id ? (
-                                                                                    <img src={`/api/image/${foundPlayer.image_id}`} className="w-6 h-6 rounded-full object-cover border border-gray-200 shadow-sm shrink-0" alt={item.val} />
-                                                                                ) : (
-                                                                                    <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500 border border-gray-200 shrink-0 uppercase">
-                                                                                        {item.val.substring(0, 2)}
-                                                                                    </div>
-                                                                                )}
-                                                                                <p className="text-sm font-bold text-gray-900 capitalize truncate" title={item.val}>{item.val}</p>
-                                                                            </div>
-                                                                        );
-                                                                    })()
-                                                                ) : (
-                                                                    <p className={`text-xs italic flex items-center gap-1 ${isMissing ? 'text-green-700 font-bold animate-pulse' : 'text-gray-400'}`}>
-                                                                        <span className={`w-1.5 h-1.5 rounded-full ${isMissing ? 'bg-green-600' : 'bg-red-400'}`}></span>
-                                                                        {isMissing ? 'À définir (Vous)' : 'À définir'}
-                                                                    </p>
-                                                                )}
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            )}
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            );
-                        })}
+                                );
+                            })}
+                        </div>
                     </div>
-                </div>
-            ))}
-            {matches.length === 0 && (
-                <div className="text-center py-20 px-4">
-                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i className="fas fa-calendar-times text-gray-300 text-2xl"></i>
+                ))}
+                {filteredMatches.length === 0 && (
+                    <div className="text-center py-20 px-4">
+                        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i className="fas fa-calendar-times text-gray-300 text-2xl"></i>
+                        </div>
+                        <h3 className="text-gray-900 font-bold mb-1">Aucun match OTM cette semaine</h3>
+                        <p className="text-gray-400 text-sm">Le calendrier est vide pour la période du {startOfWeek.toLocaleDateString('fr-FR')} au {endOfWeek.toLocaleDateString('fr-FR')}.</p>
                     </div>
-                    <h3 className="text-gray-900 font-bold mb-1">Aucun match OTM</h3>
-                    <p className="text-gray-400 text-sm">Le calendrier est vide pour le moment.</p>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 }

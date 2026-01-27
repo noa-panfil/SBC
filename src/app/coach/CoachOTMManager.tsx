@@ -152,7 +152,6 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
             allowed.add('timer');
             allowed.add('hall_manager');
             allowed.add('bar_manager');
-            allowed.add('referee');
         }
 
         if (!match.designation) return allowed;
@@ -175,7 +174,7 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
                         if (rolesStr.includes("Chronométreur")) allowed.add('timer');
                         if (rolesStr.includes("Respo Salle")) allowed.add('hall_manager');
                         if (rolesStr.includes("Buvette")) allowed.add('bar_manager');
-                        if (rolesStr.includes("Arbitre")) allowed.add('referee');
+                        // Referees are explicitly excluded even if present in legacy string
                     }
                 }
             });
@@ -203,7 +202,8 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
                 timer: editForm.timer,
                 hall_manager: editForm.hall_manager,
                 bar_manager: editForm.bar_manager,
-                referee: editForm.referee
+                referee: editForm.referee,
+                referee_2: editForm.referee_2
             };
 
             const res = await fetch(`/api/otm/${editForm.id}`, {
@@ -335,7 +335,10 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
                                                             { label: "Chronométreur", key: "timer", icon: "fa-stopwatch" },
                                                             { label: "Resp. Salle", key: "hall_manager", icon: "fa-building" },
                                                             { label: "Buvette", key: "bar_manager", icon: "fa-coffee" },
-                                                            { label: "Arbitre", key: "referee", icon: "fa-whistle" },
+                                                            ...(match.is_club_referee ? [
+                                                                { label: "Arbitre Club 1", key: "referee", icon: "fa-whistle" },
+                                                                { label: "Arbitre Club 2", key: "referee_2", icon: "fa-whistle" },
+                                                            ] : [])
                                                         ].map(field => {
                                                             const isAllowed = allowedRoles.has(field.key);
                                                             return (
@@ -371,7 +374,10 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
                                                         { label: "Chronométreur", val: match.timer, icon: "fa-stopwatch", key: "timer" },
                                                         { label: "Resp. Salle", val: match.hall_manager, icon: "fa-building", key: "hall_manager" },
                                                         { label: "Bar / Buvette", val: match.bar_manager, icon: "fa-coffee", key: "bar_manager" },
-                                                        { label: "Arbitre Club", val: match.referee, icon: "fa-gavel", key: "referee" },
+                                                        ...(match.is_club_referee ? [
+                                                            { label: "Arbitre Club 1", val: match.referee, icon: "fa-gavel", key: "referee" },
+                                                            { label: "Arbitre Club 2", val: match.referee_2, icon: "fa-gavel", key: "referee_2" },
+                                                        ] : [])
                                                     ].map((item, i) => {
                                                         const isAllowed = allowedRoles.has(item.key);
                                                         const isMissing = isAllowed && !item.val;

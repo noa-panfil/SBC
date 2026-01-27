@@ -53,14 +53,16 @@ export async function POST(request: NextRequest) {
             meeting_time = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
         }
 
+        const is_club_referee = body.is_club_referee || false;
+
         const [result]: any = await pool.query(`
             INSERT INTO otm_matches (
                 category, is_white_jersey, match_date, match_time, meeting_time, 
-                opponent, match_code, designation
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                opponent, match_code, designation, referee_2, is_club_referee
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
             category, is_white_jersey || false, match_date, match_time, meeting_time,
-            opponent, match_code, designation
+            opponent, match_code, designation, null, is_club_referee
         ]);
 
         return NextResponse.json({
@@ -73,11 +75,13 @@ export async function POST(request: NextRequest) {
             opponent,
             match_code,
             designation,
+            is_club_referee,
             scorer: null,
             timer: null,
             hall_manager: null,
             bar_manager: null,
-            referee: null
+            referee: null,
+            referee_2: null
         });
     } catch (error: any) {
         console.error("Error creating OTM match:", error);

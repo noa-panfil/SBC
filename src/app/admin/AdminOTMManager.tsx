@@ -100,7 +100,6 @@ type Assignment = {
         chronometreur: boolean;
         resp_salle: boolean;
         buvette: boolean;
-        arbitre: boolean;
     }
 };
 
@@ -120,7 +119,7 @@ function DesignationEditor({ teams, value, onChange }: { teams: any[], value: st
             setAssignments([{
                 id: "init_legacy",
                 team: value.replace("Table = 2 Joueurs/Parents ", "").trim(),
-                roles: { marqueur: true, chronometreur: true, resp_salle: false, buvette: false, arbitre: false }
+                roles: { marqueur: true, chronometreur: true, resp_salle: false, buvette: false }
             }]);
         } else if (value.includes("{")) {
             const parts = value.split(" + ");
@@ -137,8 +136,7 @@ function DesignationEditor({ teams, value, onChange }: { teams: any[], value: st
                             marqueur: rolesStr.includes("Marqueur"),
                             chronometreur: rolesStr.includes("Chronométreur"),
                             resp_salle: rolesStr.includes("Respo Salle"),
-                            buvette: rolesStr.includes("Buvette"),
-                            arbitre: rolesStr.includes("Arbitre")
+                            buvette: rolesStr.includes("Buvette")
                         }
                     });
                 }
@@ -149,7 +147,7 @@ function DesignationEditor({ teams, value, onChange }: { teams: any[], value: st
                 setAssignments([{
                     id: "init_simple",
                     team: value,
-                    roles: { marqueur: true, chronometreur: true, resp_salle: false, buvette: false, arbitre: false }
+                    roles: { marqueur: true, chronometreur: true, resp_salle: false, buvette: false }
                 }]);
             }
         }
@@ -163,7 +161,6 @@ function DesignationEditor({ teams, value, onChange }: { teams: any[], value: st
             if (a.roles.chronometreur) activeRoles.push("Chronométreur");
             if (a.roles.resp_salle) activeRoles.push("Respo Salle");
             if (a.roles.buvette) activeRoles.push("Buvette");
-            if (a.roles.arbitre) activeRoles.push("Arbitre");
             return `${a.team} {${activeRoles.join(', ')}}`;
         }).join(" + ");
     };
@@ -177,7 +174,7 @@ function DesignationEditor({ teams, value, onChange }: { teams: any[], value: st
         updateAssignments([...assignments, {
             id: Date.now().toString(),
             team: "",
-            roles: { marqueur: false, chronometreur: false, resp_salle: false, buvette: false, arbitre: false }
+            roles: { marqueur: false, chronometreur: false, resp_salle: false, buvette: false }
         }]);
     };
 
@@ -253,15 +250,6 @@ function DesignationEditor({ teams, value, onChange }: { teams: any[], value: st
                                 className="w-4 h-4 text-sbc rounded focus:ring-sbc"
                             />
                             <span className="text-xs font-bold text-gray-700">Buvette</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer bg-white px-2 py-1 rounded border border-gray-200 hover:border-sbc transition">
-                            <input
-                                type="checkbox"
-                                checked={assignment.roles.arbitre}
-                                onChange={() => toggleRole(assignment.id, 'arbitre')}
-                                className="w-4 h-4 text-sbc rounded focus:ring-sbc"
-                            />
-                            <span className="text-xs font-bold text-gray-700">Arbitre</span>
                         </label>
                     </div>
                 </div>
@@ -368,6 +356,7 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
             addStat(m.scorer, 'scorer', m);
             addStat(m.timer, 'timer', m);
             addStat(m.referee, 'referee', m);
+            addStat(m.referee_2, 'referee', m);
         });
 
         return Array.from(stats.values())
@@ -531,20 +520,28 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                         {filteredMatches.map(match => (
                             <tr key={match.id} className="hover:bg-gray-50">
                                 <td className="p-4 font-bold">{match.category}</td>
-                                <td className="p-4 text-center">
-                                    {match.is_white_jersey ? (
-                                        <div className="tooltip" data-tip="Maillots Blancs">
-                                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 border-2 border-gray-200 shadow-sm">
-                                                <i className="fas fa-tshirt text-white text-sm drop-shadow-[0_1px_1px_rgba(0,0,0,0.25)]"></i>
+                                <td className="p-4 text-center pb-2">
+                                    <div className="flex flex-col items-center gap-1">
+                                        {match.is_white_jersey ? (
+                                            <div className="tooltip" data-tip="Maillots Blancs">
+                                                <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 border-2 border-gray-200 shadow-sm">
+                                                    <i className="fas fa-tshirt text-white text-sm drop-shadow-[0_1px_1px_rgba(0,0,0,0.25)]"></i>
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <div className="tooltip" data-tip="Maillots Verts">
+                                                <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-50 border border-green-100 shadow-sm">
+                                                    <i className="fas fa-tshirt text-green-600 text-sm"></i>
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {match.is_club_referee && (
+                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border bg-purple-50 text-purple-700 border-purple-200 whitespace-nowrap" title="Arbitres Club">
+                                                <i className="fas fa-whistle"></i> Club
                                             </span>
-                                        </div>
-                                    ) : (
-                                        <div className="tooltip" data-tip="Maillots Verts">
-                                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-50 border border-green-100 shadow-sm">
-                                                <i className="fas fa-tshirt text-green-600 text-sm"></i>
-                                            </span>
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
                                 </td>
                                 <td className="p-4">
                                     <div className="font-bold">{new Date(match.match_date).toLocaleDateString('fr-FR')}</div>
@@ -559,7 +556,9 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                                         {match.timer && <><span className="font-bold text-gray-400 uppercase text-[10px]">Chrono:</span> <span className="text-gray-900 font-semibold truncate">{match.timer}</span></>}
                                         {match.hall_manager && <><span className="font-bold text-gray-400 uppercase text-[10px]">Resp.:</span> <span className="text-gray-900 font-semibold truncate">{match.hall_manager}</span></>}
                                         {match.bar_manager && <><span className="font-bold text-gray-400 uppercase text-[10px]">Buvette:</span> <span className="text-gray-900 font-semibold truncate">{match.bar_manager}</span></>}
-                                        {match.referee && <><span className="font-bold text-gray-400 uppercase text-[10px]">Arbitre:</span> <span className="text-gray-900 font-semibold truncate">{match.referee}</span></>}
+                                        {match.bar_manager && <><span className="font-bold text-gray-400 uppercase text-[10px]">Buvette:</span> <span className="text-gray-900 font-semibold truncate">{match.bar_manager}</span></>}
+                                        {match.referee && <><span className="font-bold text-gray-400 uppercase text-[10px]">Arb 1:</span> <span className="text-gray-900 font-semibold truncate">{match.referee}</span></>}
+                                        {match.referee_2 && <><span className="font-bold text-gray-400 uppercase text-[10px]">Arb 2:</span> <span className="text-gray-900 font-semibold truncate">{match.referee_2}</span></>}
                                     </div>
                                 </td>
                                 <td className="p-4 text-right flex gap-2 justify-end">
@@ -712,10 +711,14 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                                     label="Catégorie (Équipe à domicile)"
                                 />
                             </div>
-                            <div className="flex items-end pb-3">
+                            <div className="flex flex-col gap-2 pb-3">
                                 <label className="flex items-center gap-2 cursor-pointer">
                                     <input type="checkbox" checked={currentMatch.is_white_jersey || false} onChange={e => setCurrentMatch({ ...currentMatch, is_white_jersey: e.target.checked })} className="w-5 h-5 text-sbc rounded" />
                                     <span className="text-sm font-bold text-gray-700 uppercase">Maillots Blancs ?</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" checked={currentMatch.is_club_referee || false} onChange={e => setCurrentMatch({ ...currentMatch, is_club_referee: e.target.checked })} className="w-5 h-5 text-sbc rounded" />
+                                    <span className="text-sm font-bold text-gray-700 uppercase">Arbitres Club ?</span>
                                 </label>
                             </div>
                             <div>
@@ -757,7 +760,8 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                                     <input className="p-2 border rounded text-sm" placeholder="Chronométreur" value={currentMatch.timer || ''} onChange={e => setCurrentMatch({ ...currentMatch, timer: e.target.value })} />
                                     <input className="p-2 border rounded text-sm" placeholder="Resp. Salle" value={currentMatch.hall_manager || ''} onChange={e => setCurrentMatch({ ...currentMatch, hall_manager: e.target.value })} />
                                     <input className="p-2 border rounded text-sm" placeholder="Buvette" value={currentMatch.bar_manager || ''} onChange={e => setCurrentMatch({ ...currentMatch, bar_manager: e.target.value })} />
-                                    <input className="p-2 border rounded text-sm" placeholder="Arbitre" value={currentMatch.referee || ''} onChange={e => setCurrentMatch({ ...currentMatch, referee: e.target.value })} />
+                                    <input className="p-2 border rounded text-sm" placeholder="Arbitre Club 1" value={currentMatch.referee || ''} onChange={e => setCurrentMatch({ ...currentMatch, referee: e.target.value })} />
+                                    <input className="p-2 border rounded text-sm" placeholder="Arbitre Club 2" value={currentMatch.referee_2 || ''} onChange={e => setCurrentMatch({ ...currentMatch, referee_2: e.target.value })} />
                                 </div>
                             </div>
                         )}

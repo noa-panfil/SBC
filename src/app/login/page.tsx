@@ -9,11 +9,34 @@ export default function LoginPage() {
     const [logoUrl, setLogoUrl] = useState("/img/logo.png");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [rememberMe, setRememberMe] = useState(false);
+    const [savedAccount, setSavedAccount] = useState<any>(null);
     const [error, setError] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
-        signOut({ redirect: false });
+        // Check for existing session
+        getSession().then((session: any) => {
+            if (session?.user) {
+                if (session.user.role === 'coach') {
+                    router.push("/coach");
+                } else {
+                    router.push("/admin");
+                }
+            }
+        });
+
+        // Load saved account
+        const saved = localStorage.getItem('sbc_saved_account');
+        if (saved) {
+            try {
+                setSavedAccount(JSON.parse(saved));
+            } catch (e) {
+                console.error("Error parsing saved account", e);
+            }
+        }
+
         fetch('/api/settings')
             .then(res => res.json())
             .then(data => {
@@ -22,26 +45,63 @@ export default function LoginPage() {
                 }
             })
             .catch(console.error);
-    }, []);
+    }, [router]);
+
+    const handleLogin = async (loginEmail: string, loginPass: string) => {
+        setIsLoading(true);
+        setError("");
+
+        try {
+            const res = await signIn("credentials", {
+                email: loginEmail,
+                password: loginPass,
+                redirect: false,
+            });
+
+            if (res?.error) {
+                setError("Email ou mot de passe incorrect");
+                setIsLoading(false);
+            } else {
+                const session: any = await getSession();
+
+                // Save account if requested
+                if (rememberMe || (savedAccount && savedAccount.email === loginEmail)) {
+                    localStorage.setItem('sbc_saved_account', JSON.stringify({
+                        email: loginEmail,
+                        password: loginPass, // Note: Storing password locally is not secure standard practice but requested for auto-login
+                        name: session?.user?.name || "Utilisateur",
+                        role: session?.user?.role || "user",
+                        picture: null // We don't have avatar URL easily here unless we fetch it, skipping for now
+                    }));
+                }
+
+                if (session?.user?.role === 'coach') {
+                    router.push("/coach");
+                } else {
+                    router.push("/admin");
+                }
+            }
+        } catch (err) {
+            setError("Une erreur est survenue");
+            setIsLoading(false);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const res = await signIn("credentials", {
-            email,
-            password,
-            redirect: false,
-        });
+        handleLogin(email, password);
+    };
 
-        if (res?.error) {
-            setError("Email ou mot de passe incorrect");
-        } else {
-            const session: any = await getSession();
-            if (session?.user?.role === 'coach') {
-                router.push("/coach");
-            } else {
-                router.push("/admin");
-            }
+    const loginWithSavedAccount = () => {
+        if (savedAccount) {
+            handleLogin(savedAccount.email, savedAccount.password);
         }
+    };
+
+    const removeSavedAccount = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        localStorage.removeItem('sbc_saved_account');
+        setSavedAccount(null);
     };
 
     return (
@@ -108,20 +168,53 @@ export default function LoginPage() {
                             <input
                                 type="checkbox"
                                 className="w-5 h-5 rounded border-2 border-white/20 bg-white/5 checked:bg-sbc checked:border-sbc transition focus:ring-2 focus:ring-sbc/50 outline-none appearance-none cursor-pointer"
-                                defaultChecked
+                                checked={rememberMe}
+                                onChange={(e) => setRememberMe(e.target.checked)}
                             />
-                            <i className="fas fa-check text-white absolute ml-1 text-xs pointer-events-none opacity-0 peer-checked:opacity-100"></i>
+                            <div className={`absolute pointer-events-none transition-opacity ${rememberMe ? 'opacity-100' : 'opacity-0'}`}>
+                                <i className="fas fa-check text-white text-xs ml-0.5"></i>
+                            </div>
                             <span className="text-sm font-bold text-gray-400 group-hover:text-white transition select-none">Rester connecté</span>
                         </label>
                     </div>
 
                     <button
                         type="submit"
-                        className="w-full bg-sbc text-white font-black py-4 rounded-2xl hover:bg-sbc-light transition shadow-lg shadow-sbc/30 active:scale-95 flex items-center justify-center gap-3 text-lg"
+                        disabled={isLoading}
+                        className="w-full bg-sbc text-white font-black py-4 rounded-2xl hover:bg-sbc-light transition shadow-lg shadow-sbc/30 active:scale-95 flex items-center justify-center gap-3 text-lg disabled:opacity-70 disabled:cursor-wait"
                     >
-                        Connexion <i className="fas fa-arrow-right text-sm"></i>
+                        {isLoading ? <i className="fas fa-spinner fa-spin"></i> : <>Connexion <i className="fas fa-arrow-right text-sm"></i></>}
                     </button>
                 </form>
+
+                {savedAccount && !email && (
+                    <div className="mt-8 pt-8 border-t border-white/10 animate-fade-in-up">
+                        <p className="text-gray-400 text-xs font-black uppercase tracking-widest mb-4 ml-2">Compte enregistré</p>
+                        <div
+                            onClick={loginWithSavedAccount}
+                            className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl p-4 flex items-center gap-4 cursor-pointer transition group relative"
+                        >
+                            <div className="w-12 h-12 rounded-full bg-sbc flex items-center justify-center text-white text-xl font-bold border-2 border-white/10">
+                                {savedAccount.name.charAt(0)}
+                            </div>
+                            <div className="flex-1">
+                                <h4 className="text-white font-bold group-hover:text-sbc transition">{savedAccount.name}</h4>
+                                <p className="text-gray-400 text-xs">{savedAccount.role === 'coach' ? 'Coach' : 'Admin'}</p>
+                            </div>
+                            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 group-hover:bg-sbc group-hover:text-white transition">
+                                <i className="fas fa-sign-in-alt"></i>
+                            </div>
+
+                            <button
+                                onClick={removeSavedAccount}
+                                className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition hover:bg-red-600 shadow-lg"
+                                title="Oublier ce compte"
+                            >
+                                <i className="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 <div className="mt-8 text-center">
                     <Link href="/" className="text-gray-500 hover:text-white text-sm font-bold transition">

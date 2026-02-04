@@ -228,11 +228,31 @@ export default async function AdminDashboard() {
         nameCounts[p.fullname] = (nameCounts[p.fullname] || 0) + 1;
     });
 
-    const officials = rawOfficials.map((p: any) => ({
+    const processedOfficials = rawOfficials.map((p: any) => ({
         ...p,
         originalName: p.fullname,
-        fullname: nameCounts[p.fullname] > 1 ? `${p.fullname} (${p.team})` : p.fullname
+        displayName: nameCounts[p.fullname] > 1 ? `${p.fullname} (${p.team || '?'})` : p.fullname
     }));
+
+    const displayCounts: Record<string, number> = {};
+    processedOfficials.forEach((p: any) => {
+        displayCounts[p.displayName] = (displayCounts[p.displayName] || 0) + 1;
+    });
+
+    const seenCounts: Record<string, number> = {};
+    const officials = processedOfficials.map((p: any) => {
+        if (displayCounts[p.displayName] > 1) {
+            seenCounts[p.displayName] = (seenCounts[p.displayName] || 0) + 1;
+            return {
+                ...p,
+                fullname: `${p.displayName} ${seenCounts[p.displayName]}`
+            };
+        }
+        return {
+            ...p,
+            fullname: p.displayName
+        };
+    });
 
     return (
         <div className="w-full max-w-7xl mx-auto p-4 md:p-8 space-y-6 md:space-y-10 pb-20 overflow-x-hidden">

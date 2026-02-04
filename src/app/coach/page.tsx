@@ -130,11 +130,32 @@ export default async function CoachDashboard() {
         nameCounts[p.fullname] = (nameCounts[p.fullname] || 0) + 1;
     });
 
-    const allPlayers = rawAllPlayers.map((p: any) => ({
+    // First pass: Append Team if needed
+    const processedPlayers = rawAllPlayers.map((p: any) => ({
         ...p,
         originalName: p.fullname,
-        fullname: nameCounts[p.fullname] > 1 ? `${p.fullname} (${p.team})` : p.fullname
+        displayName: nameCounts[p.fullname] > 1 ? `${p.fullname} (${p.team || '?'})` : p.fullname
     }));
+
+    const displayCounts: Record<string, number> = {};
+    processedPlayers.forEach((p: any) => {
+        displayCounts[p.displayName] = (displayCounts[p.displayName] || 0) + 1;
+    });
+
+    const seenCounts: Record<string, number> = {};
+    const allPlayers = processedPlayers.map((p: any) => {
+        if (displayCounts[p.displayName] > 1) {
+            seenCounts[p.displayName] = (seenCounts[p.displayName] || 0) + 1;
+            return {
+                ...p,
+                fullname: `${p.displayName} ${seenCounts[p.displayName]}`
+            };
+        }
+        return {
+            ...p,
+            fullname: p.displayName
+        };
+    });
 
     // Update 'players' (my players) with the disambiguated names
     const players = (await getMyPlayers(teams.map(t => t.id))).map((p: any) => {

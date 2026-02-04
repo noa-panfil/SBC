@@ -536,9 +536,13 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                                             </div>
                                         )}
 
-                                        {match.is_club_referee && (
+                                        {match.is_club_referee ? (
                                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border bg-purple-50 text-purple-700 border-purple-200 whitespace-nowrap" title="Arbitres Club">
                                                 <i className="fas fa-whistle"></i> Club
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border bg-gray-100 text-gray-500 border-gray-200 whitespace-nowrap" title="Arbitres Fédération">
+                                                <i className="fas fa-user-tie"></i> Fédé
                                             </span>
                                         )}
                                     </div>

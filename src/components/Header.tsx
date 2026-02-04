@@ -52,6 +52,7 @@ export default function Header() {
                     <Link href="/equipes" className={linkClass("/equipes")}>Équipes</Link>
                     <Link href="/palmares" className={linkClass("/palmares")}>Palmarès</Link>
                     <Link href="/informations" className={linkClass("/informations")}>Infos</Link>
+                    <Link href="/buvette" className={linkClass("/buvette")}>Buvette</Link>
                     <Link href="/partenaires" className={linkClass("/partenaires")}>Partenaires</Link>
                     <Link href="/contact" className="bg-sbc hover:bg-sbc-light text-white px-4 py-2 rounded-full transition shadow-md">Contact</Link>
 
@@ -89,6 +90,7 @@ export default function Header() {
                     <Link href="/equipes" className={linkClass("/equipes", true)} onClick={() => setIsMobileMenuOpen(false)}>Nos Équipes</Link>
                     <Link href="/palmares" className={linkClass("/palmares", true)} onClick={() => setIsMobileMenuOpen(false)}>Palmarès</Link>
                     <Link href="/informations" className={linkClass("/informations", true)} onClick={() => setIsMobileMenuOpen(false)}>Infos Pratiques</Link>
+                    <Link href="/buvette" className={linkClass("/buvette", true)} onClick={() => setIsMobileMenuOpen(false)}>Buvette</Link>
                     <Link href="/partenaires" className={linkClass("/partenaires", true)} onClick={() => setIsMobileMenuOpen(false)}>Partenaires</Link>
                     <Link href="/contact" className="text-sbc-light font-bold py-2 bg-green-900/30 rounded-lg mt-2" onClick={() => setIsMobileMenuOpen(false)}>Nous Contacter</Link>
                     <Link href="/login" className="text-white font-bold py-2 bg-white/10 rounded-lg flex items-center justify-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>

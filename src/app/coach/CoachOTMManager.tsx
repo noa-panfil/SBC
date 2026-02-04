@@ -167,6 +167,65 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editForm, setEditForm] = useState<any>({});
     const [loading, setLoading] = useState(false);
+    const [helpRequests, setHelpRequests] = useState<any[]>([]);
+    const [resolvingRequest, setResolvingRequest] = useState<any>(null);
+
+    useEffect(() => {
+        fetchHelpRequests();
+    }, []);
+
+    const fetchHelpRequests = async () => {
+        try {
+            const res = await fetch('/api/otm/help');
+            if (res.ok) setHelpRequests(await res.json());
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const handleAskHelp = async (matchId: number, role: string) => {
+        if (!confirm("Voulez-vous demander de l'aide aux autres coachs pour ce rôle ?")) return;
+        try {
+            const res = await fetch('/api/otm/help', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ matchId, role })
+            });
+            if (res.ok) {
+                alert("Demande d'aide envoyée !");
+                fetchHelpRequests();
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const handleResolveHelp = async (player: string) => {
+        if (!resolvingRequest) return;
+        setLoading(true);
+        try {
+            const res = await fetch('/api/otm/help/resolve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    requestId: resolvingRequest.id,
+                    matchId: resolvingRequest.match_id,
+                    role: resolvingRequest.role,
+                    player
+                })
+            });
+            if (res.ok) {
+                alert("Merci pour votre aide ! Le rôle a été assigné.");
+                setResolvingRequest(null);
+                fetchHelpRequests();
+                router.refresh();
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const selectablePlayers = [
         ...(currentUser ? [{ fullname: currentUser, team: "Moi (Coach)", image_id: coachImageId }] : []),
@@ -315,6 +374,73 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
 
     return (
         <div className="space-y-8">
+            {/* Help Section */}
+            {helpRequests.length > 0 && (
+                <div className="bg-red-50 border-l-4 border-red-500 p-6 rounded-r-xl shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                        <i className="fas fa-life-ring text-9xl text-red-500"></i>
+                    </div>
+                    <h3 className="text-xl font-black text-red-600 mb-4 flex items-center gap-2">
+                        <i className="fas fa-exclamation-circle animate-pulse"></i> DEMANDES D'AIDE OTM
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 relative z-10">
+                        {helpRequests.map(req => {
+                            const labels: any = { scorer: 'Marqueur', timer: 'Chronométreur', hall_manager: 'Resp. Salle', bar_manager: 'Buvette', referee: 'Arbitre 1', referee_2: 'Arbitre 2' };
+                            const roleLabel = labels[req.role] || req.role;
+
+                            return (
+                                <div key={req.id} className="bg-white p-4 rounded-lg border border-red-100 shadow-sm flex flex-col justify-between gap-3">
+                                    <div>
+                                        <div className="flex justify-between items-start mb-2">
+                                            <span className="font-black text-gray-800 uppercase">{req.category} vs {req.opponent}</span>
+                                            <span className="text-[10px] font-bold text-red-500 bg-red-100 px-2 py-1 rounded uppercase tracking-wider">SOS</span>
+                                        </div>
+                                        <p className="text-sm text-gray-600 mb-1">
+                                            <i className="fas fa-calendar-alt mr-1 text-gray-400"></i>
+                                            {new Date(req.match_date).toLocaleDateString()} à {req.match_time.slice(0, 5)}
+                                        </p>
+                                        <p className="font-bold text-red-600">
+                                            Role requis : <span className="underline">{roleLabel}</span>
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => setResolvingRequest(req)}
+                                        className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <i className="fas fa-hand-holding-heart"></i> Je m'en occupe
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* Resolve Modal */}
+            {resolvingRequest && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl animate-fade-in relative">
+                        <button onClick={() => setResolvingRequest(null)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                            <i className="fas fa-times text-xl"></i>
+                        </button>
+                        <h3 className="text-xl font-black text-gray-900 mb-2">Assigner un joueur</h3>
+                        <p className="text-sm text-gray-500 mb-6">
+                            Choisissez un joueur de votre équipe ({myTeamNames.join(', ')}) pour aider sur le match <strong>{resolvingRequest.category}</strong> en tant que <strong>{resolvingRequest.role}</strong>.
+                        </p>
+
+                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 mb-4">
+                            <PlayerSelector
+                                players={selectablePlayers}
+                                value=""
+                                onChange={(val) => { if (val) handleResolveHelp(val); }}
+                                label={<span className="text-xs font-bold text-gray-400 uppercase mb-2 block">Sélectionner un volontaire</span>}
+                                theme="orange"
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Week Navigation */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
                 <div className="flex flex-wrap items-center justify-center gap-3 w-full sm:w-auto">
@@ -581,9 +707,25 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
                                                                             highlight={isAllowed}
                                                                             theme={isPlaying ? 'green' : isOpen ? 'orange' : 'blue'}
                                                                             label={
-                                                                                <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 flex items-center gap-2">
-                                                                                    <i className={`fas ${field.icon} opacity-50`}></i> {field.label}
-                                                                                </label>
+                                                                                <div className="flex items-center justify-between w-full mb-1">
+                                                                                    <label className="text-[10px] font-bold text-gray-400 uppercase flex items-center gap-2">
+                                                                                        <i className={`fas ${field.icon} opacity-50`}></i> {field.label}
+                                                                                    </label>
+                                                                                    {isAllowed && !editForm[field.key] && !helpRequests.some(r => r.match_id === match.id && r.role === field.key) && (
+                                                                                        <button
+                                                                                            onClick={() => handleAskHelp(match.id, field.key)}
+                                                                                            className="text-[10px] font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-0.5 rounded transition-colors"
+                                                                                            title="Demander de l'aide aux autres coachs"
+                                                                                        >
+                                                                                            <i className="fas fa-life-ring mr-1"></i> SOS
+                                                                                        </button>
+                                                                                    )}
+                                                                                    {helpRequests.some(r => r.match_id === match.id && r.role === field.key) && (
+                                                                                        <span className="text-[10px] font-bold text-orange-500 bg-orange-50 px-2 py-0.5 rounded">
+                                                                                            <i className="fas fa-spinner fa-spin mr-1"></i> Aide demandée...
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
                                                                             }
                                                                         />
                                                                     </div>

@@ -275,7 +275,7 @@ export default async function AdminDashboard() {
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
                 {[
                     { label: "Joueurs", value: stats.players, icon: "fas fa-users", color: "from-blue-500 to-indigo-600", link: "/admin/players" },
-                    { label: "Coachs", value: stats.coaches, icon: "fas fa-user-tie", color: "from-emerald-500 to-teal-600", link: null },
+                    { label: "Coachs", value: stats.coaches, icon: "fas fa-user-tie", color: "from-emerald-500 to-teal-600", link: "/admin/coaches" },
                     { label: "Équipes", value: teams.length, icon: "fas fa-shield-alt", color: "from-sbc to-sbc-dark", link: "#teams", fullMobile: true },
                 ].map((stat, i) => (
                     <div key={i} className={`group relative ${stat.fullMobile ? 'col-span-2 lg:col-span-1' : 'col-span-1'}`}>

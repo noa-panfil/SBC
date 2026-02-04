@@ -109,6 +109,29 @@ async function getAllPlayers() {
     }
 }
 
+async function getOtherCoaches(teamIds: number[], currentPersonId: number) {
+    if (teamIds.length === 0) return [];
+    try {
+        const [rows] = await pool.query<RowDataPacket[]>(`
+            SELECT p.id, p.firstname, p.lastname, p.image_id, t.name as team_name
+            FROM persons p
+            JOIN team_members tm ON p.id = tm.person_id
+            JOIN teams t ON tm.team_id = t.id
+            WHERE tm.team_id IN (?) AND tm.role LIKE '%Coach%' AND p.id != ?
+            ORDER BY p.lastname, p.firstname
+        `, [teamIds, currentPersonId]);
+        return rows.map((r: any) => ({
+            id: r.id,
+            fullname: `${r.lastname.toUpperCase()} ${r.firstname}`,
+            team: `${r.team_name} (Coach)`,
+            image_id: r.image_id
+        }));
+    } catch (e) {
+        console.error("Error fetching other coaches", e);
+        return [];
+    }
+}
+
 export default async function CoachDashboard() {
     const session: any = await getServerSession(authOptions);
 
@@ -332,7 +355,7 @@ export default async function CoachDashboard() {
                     <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Planning OTM</h2>
                     <div className="h-px flex-grow bg-gray-200"></div>
                 </div>
-                <CoachOTMManager matches={otmMatches} myTeamNames={teams.map(t => t.name)} players={players} allPlayers={allPlayers} currentUser={session.user.name} coachImageId={coachImageId} />
+                <CoachOTMManager matches={otmMatches} myTeamNames={teams.map(t => t.name)} players={players} otherCoaches={await getOtherCoaches(teams.map(t => t.id), personId)} allPlayers={allPlayers} currentUser={session.user.name} coachImageId={coachImageId} />
             </section>
 
             <section id="otm-leaderboard" className="mt-12 scroll-mt-24">

@@ -566,7 +566,13 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                                 </td>
                                 <td className="p-4 font-bold text-gray-700">{match.opponent}</td>
                                 <td className="p-4 font-mono text-xs">{match.match_code}</td>
-                                <td className="p-4 text-xs max-w-[150px] truncate" title={match.designation}>{match.designation}</td>
+                                <td className="p-4 text-xs max-w-[150px] truncate" title={match.designation}>
+                                    {match.designation === 'OPEN' ? (
+                                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider bg-orange-100 text-orange-700 border border-orange-200">
+                                            <i className="fas fa-lock-open"></i> Open
+                                        </span>
+                                    ) : match.designation}
+                                </td>
                                 <td className="p-4 text-xs text-gray-500">
                                     <div className="grid grid-cols-[70px_1fr] gap-y-1 items-center">
                                         {match.scorer && <><span className="font-bold text-gray-400 uppercase text-[10px]">Marqueur:</span> <span className="text-gray-900 font-semibold truncate">{match.scorer}</span></>}
@@ -772,12 +778,27 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                                     <option value="Amical">Amical</option>
                                 </select>
                             </div>
-                            <div className="col-span-2">
-                                <DesignationEditor
-                                    teams={teams}
-                                    value={currentMatch.designation}
-                                    onChange={(val) => setCurrentMatch({ ...currentMatch, designation: val })}
-                                />
+                            <div className="col-span-2 space-y-4">
+                                <label className="flex items-center gap-2 cursor-pointer bg-orange-50 p-3 rounded-lg border border-orange-100">
+                                    <input
+                                        type="checkbox"
+                                        checked={currentMatch.designation === "OPEN"}
+                                        onChange={e => setCurrentMatch({ ...currentMatch, designation: e.target.checked ? "OPEN" : "" })}
+                                        className="w-5 h-5 text-orange-500 rounded focus:ring-orange-500"
+                                    />
+                                    <div>
+                                        <p className="text-sm font-bold text-gray-900 uppercase">Match Open (Sans Désignation)</p>
+                                        <p className="text-xs text-gray-500">Tous les coachs pourront inscrire leurs joueurs.</p>
+                                    </div>
+                                </label>
+
+                                {currentMatch.designation !== "OPEN" && (
+                                    <DesignationEditor
+                                        teams={teams}
+                                        value={currentMatch.designation}
+                                        onChange={(val) => setCurrentMatch({ ...currentMatch, designation: val })}
+                                    />
+                                )}
                             </div>
                         </div>
 

@@ -62,10 +62,10 @@ export default async function CoachEditPage({ params }: { params: Promise<{ id: 
             </header>
 
             <CoachEditForm
-                coach={coachData}
+                coach={coachData as any}
                 id={resolvedParams.id === 'new' ? null : Number(resolvedParams.id)}
                 assignedTeamIds={assignedTeamIds}
-                allTeams={allTeams}
+                allTeams={allTeams as any[]}
             />
         </div>
     );

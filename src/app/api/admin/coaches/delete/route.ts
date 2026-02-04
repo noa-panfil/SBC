@@ -15,6 +15,7 @@ export async function DELETE(req: Request) {
     if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });
 
     try {
+        await pool.query("DELETE FROM team_members WHERE person_id = ?", [id]);
         await pool.query("DELETE FROM persons WHERE id = ?", [id]);
         return NextResponse.json({ success: true });
     } catch (e) {

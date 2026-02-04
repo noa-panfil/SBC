@@ -53,7 +53,7 @@ export default async function PlanningPage() {
                         </p>
                     </div>
 
-                    <PlanningList matches={matches} />
+                    <PlanningList matches={matches as any} />
                 </div>
             </main>
 

@@ -228,11 +228,31 @@ export default async function AdminDashboard() {
         nameCounts[p.fullname] = (nameCounts[p.fullname] || 0) + 1;
     });
 
-    const officials = rawOfficials.map((p: any) => ({
+    const processedOfficials = rawOfficials.map((p: any) => ({
         ...p,
         originalName: p.fullname,
-        fullname: nameCounts[p.fullname] > 1 ? `${p.fullname} (${p.team})` : p.fullname
+        displayName: nameCounts[p.fullname] > 1 ? `${p.fullname} (${p.team || '?'})` : p.fullname
     }));
+
+    const displayCounts: Record<string, number> = {};
+    processedOfficials.forEach((p: any) => {
+        displayCounts[p.displayName] = (displayCounts[p.displayName] || 0) + 1;
+    });
+
+    const seenCounts: Record<string, number> = {};
+    const officials = processedOfficials.map((p: any) => {
+        if (displayCounts[p.displayName] > 1) {
+            seenCounts[p.displayName] = (seenCounts[p.displayName] || 0) + 1;
+            return {
+                ...p,
+                fullname: `${p.displayName} ${seenCounts[p.displayName]}`
+            };
+        }
+        return {
+            ...p,
+            fullname: p.displayName
+        };
+    });
 
     return (
         <div className="w-full max-w-7xl mx-auto p-4 md:p-8 space-y-6 md:space-y-10 pb-20 overflow-x-hidden">
@@ -255,7 +275,7 @@ export default async function AdminDashboard() {
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
                 {[
                     { label: "Joueurs", value: stats.players, icon: "fas fa-users", color: "from-blue-500 to-indigo-600", link: "/admin/players" },
-                    { label: "Coachs", value: stats.coaches, icon: "fas fa-user-tie", color: "from-emerald-500 to-teal-600", link: null },
+                    { label: "Coachs", value: stats.coaches, icon: "fas fa-user-tie", color: "from-emerald-500 to-teal-600", link: "/admin/coaches" },
                     { label: "Équipes", value: teams.length, icon: "fas fa-shield-alt", color: "from-sbc to-sbc-dark", link: "#teams", fullMobile: true },
                 ].map((stat, i) => (
                     <div key={i} className={`group relative ${stat.fullMobile ? 'col-span-2 lg:col-span-1' : 'col-span-1'}`}>

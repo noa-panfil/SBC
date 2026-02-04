@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-function PlayerSelector({ players, value, onChange, label, disabled = false, highlight = false, theme = 'green' }: { players: any[], value: string, onChange: (val: string) => void, label: any, disabled?: boolean, highlight?: boolean, theme?: 'green' | 'blue' }) {
+function PlayerSelector({ players, value, onChange, label, disabled = false, highlight = false, theme = 'green' }: { players: any[], value: string, onChange: (val: string) => void, label: any, disabled?: boolean, highlight?: boolean, theme?: 'green' | 'blue' | 'orange' }) {
     const [isOpen, setIsOpen] = useState(false);
     const [isTyping, setIsTyping] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -28,6 +28,14 @@ function PlayerSelector({ players, value, onChange, label, disabled = false, hig
             text: 'text-blue-600',
             bgIcon: 'bg-blue-100',
             borderIcon: 'border-blue-200'
+        },
+        orange: {
+            ring: 'ring-orange-500',
+            bgHighlight: 'bg-orange-50/30',
+            border: 'border-orange-500',
+            text: 'text-orange-600',
+            bgIcon: 'bg-orange-100',
+            borderIcon: 'border-orange-200'
         }
     };
     const t = themeColors[theme];
@@ -154,21 +162,82 @@ function PlayerSelector({ players, value, onChange, label, disabled = false, hig
 }
 
 
-export default function CoachOTMManager({ matches, myTeamNames, players, allPlayers, currentUser, coachImageId }: { matches: any[], myTeamNames: string[], players?: any[], allPlayers?: any[], currentUser?: string, coachImageId?: number | null }) {
+export default function CoachOTMManager({ matches, myTeamNames, players, otherCoaches, allPlayers, currentUser, coachImageId }: { matches: any[], myTeamNames: string[], players?: any[], otherCoaches?: any[], allPlayers?: any[], currentUser?: string, coachImageId?: number | null }) {
     const router = useRouter();
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editForm, setEditForm] = useState<any>({});
     const [loading, setLoading] = useState(false);
+    const [helpRequests, setHelpRequests] = useState<any[]>([]);
+    const [resolvingRequest, setResolvingRequest] = useState<any>(null);
+
+    useEffect(() => {
+        fetchHelpRequests();
+    }, []);
+
+    const fetchHelpRequests = async () => {
+        try {
+            const res = await fetch('/api/otm/help');
+            if (res.ok) setHelpRequests(await res.json());
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const handleAskHelp = async (matchId: number, role: string) => {
+        if (!confirm("Voulez-vous demander de l'aide aux autres coachs pour ce rôle ?")) return;
+        try {
+            const res = await fetch('/api/otm/help', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ matchId, role })
+            });
+            if (res.ok) {
+                alert("Demande d'aide envoyée !");
+                fetchHelpRequests();
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const handleResolveHelp = async (player: string) => {
+        if (!resolvingRequest) return;
+        setLoading(true);
+        try {
+            const res = await fetch('/api/otm/help/resolve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    requestId: resolvingRequest.id,
+                    matchId: resolvingRequest.match_id,
+                    role: resolvingRequest.role,
+                    player
+                })
+            });
+            if (res.ok) {
+                alert("Merci pour votre aide ! Le rôle a été assigné.");
+                setResolvingRequest(null);
+                fetchHelpRequests();
+                router.refresh();
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const selectablePlayers = [
         ...(currentUser ? [{ fullname: currentUser, team: "Moi (Coach)", image_id: coachImageId }] : []),
+        ...(otherCoaches || []),
         ...(players || [])
     ];
 
     const getAllowedRoles = (match: any) => {
         const allowed = new Set<string>();
+        const isOpen = match.designation === 'OPEN';
 
-        if (myTeamNames.includes(match.category)) {
+        if (myTeamNames.includes(match.category) || isOpen) {
             allowed.add('scorer');
             allowed.add('timer');
             allowed.add('hall_manager');
@@ -249,7 +318,7 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
     };
 
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [viewFilter, setViewFilter] = useState<'all' | 'my_matches' | 'my_designations'>('all');
+    const [viewFilter, setViewFilter] = useState<'all' | 'my_matches' | 'my_designations' | 'open_matches'>('all');
 
     // Helper to get Monday of the week
     const getStartOfWeek = (d: Date) => {
@@ -286,6 +355,7 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
             const isAssignedOTM = !isPlaying && match.designation && myTeamNames.some(name => match.designation.includes(name));
             return isAssignedOTM;
         }
+        if (viewFilter === 'open_matches') return match.designation === 'OPEN';
         return true;
     });
 
@@ -304,6 +374,73 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
 
     return (
         <div className="space-y-8">
+            {/* Help Section */}
+            {helpRequests.length > 0 && (
+                <div className="bg-red-50 border-l-4 border-red-500 p-6 rounded-r-xl shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                        <i className="fas fa-life-ring text-9xl text-red-500"></i>
+                    </div>
+                    <h3 className="text-xl font-black text-red-600 mb-4 flex items-center gap-2">
+                        <i className="fas fa-exclamation-circle animate-pulse"></i> DEMANDES D'AIDE OTM
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 relative z-10">
+                        {helpRequests.map(req => {
+                            const labels: any = { scorer: 'Marqueur', timer: 'Chronométreur', hall_manager: 'Resp. Salle', bar_manager: 'Buvette', referee: 'Arbitre 1', referee_2: 'Arbitre 2' };
+                            const roleLabel = labels[req.role] || req.role;
+
+                            return (
+                                <div key={req.id} className="bg-white p-4 rounded-lg border border-red-100 shadow-sm flex flex-col justify-between gap-3">
+                                    <div>
+                                        <div className="flex justify-between items-start mb-2">
+                                            <span className="font-black text-gray-800 uppercase">{req.category} vs {req.opponent}</span>
+                                            <span className="text-[10px] font-bold text-red-500 bg-red-100 px-2 py-1 rounded uppercase tracking-wider">SOS</span>
+                                        </div>
+                                        <p className="text-sm text-gray-600 mb-1">
+                                            <i className="fas fa-calendar-alt mr-1 text-gray-400"></i>
+                                            {new Date(req.match_date).toLocaleDateString()} à {req.match_time.slice(0, 5)}
+                                        </p>
+                                        <p className="font-bold text-red-600">
+                                            Role requis : <span className="underline">{roleLabel}</span>
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => setResolvingRequest(req)}
+                                        className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <i className="fas fa-hand-holding-heart"></i> Je m'en occupe
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* Resolve Modal */}
+            {resolvingRequest && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl animate-fade-in relative">
+                        <button onClick={() => setResolvingRequest(null)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                            <i className="fas fa-times text-xl"></i>
+                        </button>
+                        <h3 className="text-xl font-black text-gray-900 mb-2">Assigner un joueur</h3>
+                        <p className="text-sm text-gray-500 mb-6">
+                            Choisissez un joueur de votre équipe ({myTeamNames.join(', ')}) pour aider sur le match <strong>{resolvingRequest.category}</strong> en tant que <strong>{resolvingRequest.role}</strong>.
+                        </p>
+
+                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 mb-4">
+                            <PlayerSelector
+                                players={selectablePlayers}
+                                value=""
+                                onChange={(val) => { if (val) handleResolveHelp(val); }}
+                                label={<span className="text-xs font-bold text-gray-400 uppercase mb-2 block">Sélectionner un volontaire</span>}
+                                theme="orange"
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Week Navigation */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
                 <div className="flex flex-wrap items-center justify-center gap-3 w-full sm:w-auto">
@@ -331,11 +468,18 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
                     <select
                         value={viewFilter}
                         onChange={(e) => setViewFilter(e.target.value as any)}
-                        className="bg-white border border-gray-200 text-gray-700 text-xs font-bold uppercase rounded-lg px-3 py-2 outline-none focus:border-sbc focus:ring-1 focus:ring-sbc transition-all cursor-pointer shadow-sm hover:border-gray-300 w-full sm:w-auto"
+                        className={`bg-white border text-xs font-bold uppercase rounded-lg px-3 py-2 outline-none focus:ring-1 transition-all cursor-pointer shadow-sm w-full sm:w-auto
+                            ${viewFilter === 'my_matches' ? 'border-sbc text-sbc focus:border-sbc focus:ring-sbc' :
+                                viewFilter === 'my_designations' ? 'border-blue-500 text-blue-600 focus:border-blue-500 focus:ring-blue-500' :
+                                    viewFilter === 'open_matches' ? 'border-orange-500 text-orange-600 focus:border-orange-500 focus:ring-orange-500' :
+                                        'border-gray-200 text-gray-700 focus:border-sbc focus:ring-sbc'
+                            }
+                        `}
                     >
-                        <option value="all">Tous les matchs</option>
-                        <option value="my_matches">Mes Matchs</option>
-                        <option value="my_designations">Mes Désignations</option>
+                        <option value="all" className="text-gray-700">Tous les matchs</option>
+                        <option value="my_matches" className="text-sbc font-bold">Mes Matchs</option>
+                        <option value="my_designations" className="text-blue-600 font-bold">Mes Désignations</option>
+                        <option value="open_matches" className="text-orange-600 font-bold">Matchs Open</option>
                     </select>
                 </div>
 
@@ -345,6 +489,25 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
                         <i className="fas fa-calendar-alt text-sbc"></i>
                         {startOfWeek.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} au {endOfWeek.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </h3>
+                </div>
+            </div>
+
+            <div className="flex items-center gap-4 py-4 px-1 overflow-x-auto no-scrollbar">
+                <div className="flex items-center gap-2 whitespace-nowrap">
+                    <span className="w-3 h-3 rounded-full bg-sbc border border-sbc ring-2 ring-sbc/20"></span>
+                    <span className="text-xs font-bold text-gray-600">Votre Match</span>
+                </div>
+                <div className="flex items-center gap-2 whitespace-nowrap">
+                    <span className="w-3 h-3 rounded-full bg-blue-500 border border-blue-500 ring-2 ring-blue-500/20"></span>
+                    <span className="text-xs font-bold text-gray-600">Désignation OTM</span>
+                </div>
+                <div className="flex items-center gap-2 whitespace-nowrap">
+                    <span className="w-3 h-3 rounded-full bg-orange-500 border border-orange-500 ring-2 ring-orange-500/20"></span>
+                    <span className="text-xs font-bold text-gray-600">Match Open</span>
+                </div>
+                <div className="flex items-center gap-2 whitespace-nowrap">
+                    <span className="w-3 h-3 rounded-full bg-white border border-gray-200 ring-2 ring-gray-100"></span>
+                    <span className="text-xs font-bold text-gray-400">Autre Match</span>
                 </div>
             </div>
 
@@ -361,6 +524,7 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
                             {dateMatches.map((match: any) => {
                                 const isPlaying = myTeamNames.includes(match.category);
                                 const isAssignedOTM = !isPlaying && match.designation && myTeamNames.some(name => match.designation.includes(name));
+                                const isOpen = match.designation === 'OPEN';
                                 const allowedRoles = getAllowedRoles(match);
 
                                 return (
@@ -369,7 +533,9 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
                                             ? 'bg-green-50/60 border-sbc ring-1 ring-sbc'
                                             : isAssignedOTM
                                                 ? 'bg-blue-50/60 border-blue-400 ring-1 ring-blue-400'
-                                                : 'bg-white border-gray-100'
+                                                : isOpen
+                                                    ? 'bg-orange-50/60 border-orange-400 ring-1 ring-orange-400'
+                                                    : 'bg-white border-gray-100'
                                         }`}>
                                         <div className="grid grid-cols-1 lg:grid-cols-12">
                                             <div className={`lg:col-span-4 p-6 flex flex-col justify-between border-b lg:border-b-0 lg:border-r relative overflow-hidden
@@ -377,12 +543,14 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
                                                     ? 'bg-green-100/30 border-green-200'
                                                     : isAssignedOTM
                                                         ? 'bg-blue-100/30 border-blue-200'
-                                                        : 'bg-gray-50 border-gray-100'
+                                                        : isOpen
+                                                            ? 'bg-orange-100/30 border-orange-200'
+                                                            : 'bg-gray-50 border-gray-100'
                                                 }`}>
 
                                                 {/* Background Gradient */}
                                                 <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r opacity-30
-                                                    ${isPlaying ? 'from-sbc to-green-300' : isAssignedOTM ? 'from-blue-500 to-indigo-400' : 'from-gray-300 to-gray-200'}
+                                                    ${isPlaying ? 'from-sbc to-green-300' : isAssignedOTM ? 'from-blue-500 to-indigo-400' : isOpen ? 'from-orange-500 to-amber-400' : 'from-gray-300 to-gray-200'}
                                                 `}></div>
 
                                                 <div className="space-y-4">
@@ -395,21 +563,28 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
                                                     </div>
 
                                                     {/* Context Badge */}
-                                                    {(isPlaying || isAssignedOTM) && (
+                                                    {(isPlaying || isAssignedOTM || isOpen) && (
                                                         <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-widest mb-1
                                                             ${isPlaying
                                                                 ? 'bg-sbc/10 border-sbc/20 text-sbc'
-                                                                : 'bg-blue-50 border-blue-200 text-blue-600'
+                                                                : isAssignedOTM
+                                                                    ? 'bg-blue-50 border-blue-200 text-blue-600'
+                                                                    : 'bg-orange-50 border-orange-200 text-orange-600'
                                                             }`}>
                                                             {isPlaying ? (
                                                                 <>
                                                                     <i className="fas fa-basketball-ball"></i>
                                                                     Votre Match
                                                                 </>
-                                                            ) : (
+                                                            ) : isAssignedOTM ? (
                                                                 <>
                                                                     <i className="fas fa-clipboard-list"></i>
                                                                     Désignation OTM
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <i className="fas fa-lock-open"></i>
+                                                                    Match Open
                                                                 </>
                                                             )}
                                                         </div>
@@ -432,13 +607,13 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
                                                         </div>
 
                                                         <div className={`flex items-center gap-3 p-3 rounded-xl border shadow-sm
-                                                            ${isPlaying ? 'text-sbc bg-sbc/5 border-sbc/10' : 'text-blue-600 bg-blue-50/50 border-blue-100'}
+                                                            ${isPlaying ? 'text-sbc bg-sbc/5 border-sbc/10' : isOpen ? 'text-orange-600 bg-orange-50/50 border-orange-100' : 'text-blue-600 bg-blue-50/50 border-blue-100'}
                                                         `}>
                                                             <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm">
-                                                                <i className={`fas fa-map-marker-alt ${isPlaying ? 'text-sbc' : 'text-blue-500'}`}></i>
+                                                                <i className={`fas fa-map-marker-alt ${isPlaying ? 'text-sbc' : isOpen ? 'text-orange-500' : 'text-blue-500'}`}></i>
                                                             </div>
                                                             <div>
-                                                                <p className={`text-[10px] uppercase font-bold ${isPlaying ? 'text-sbc/60' : 'text-blue-400'}`}>Rendez-vous (OTM)</p>
+                                                                <p className={`text-[10px] uppercase font-bold ${isPlaying ? 'text-sbc/60' : isOpen ? 'text-orange-400' : 'text-blue-400'}`}>Rendez-vous (OTM)</p>
                                                                 <p className="font-black text-lg">{match.meeting_time}</p>
                                                             </div>
                                                         </div>
@@ -464,6 +639,18 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
                                                             Arb. Fédération
                                                         </span>
                                                     )}
+                                                    {match.match_type === 'Coupe' && (
+                                                        <span className="inline-flex items-center gap-2 px-3 py-2 rounded-lg font-bold shadow-sm bg-yellow-100 border border-yellow-200 text-yellow-700">
+                                                            <i className="fas fa-trophy"></i>
+                                                            Coupe
+                                                        </span>
+                                                    )}
+                                                    {match.match_type === 'Amical' && (
+                                                        <span className="inline-flex items-center gap-2 px-3 py-2 rounded-lg font-bold shadow-sm bg-blue-100 border border-blue-200 text-blue-700">
+                                                            <i className="fas fa-handshake"></i>
+                                                            Amical
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -473,13 +660,15 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
                                                         <i className="fas fa-users text-gray-400"></i>
                                                         Officiels de Table
                                                     </h4>
-                                                    {!editingId && (isPlaying || isAssignedOTM) && (
+                                                    {!editingId && (isPlaying || isAssignedOTM || isOpen) && (
                                                         <button
                                                             onClick={() => handleEdit(match)}
                                                             className={`rounded-lg px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2
                                                                 ${isPlaying
                                                                     ? 'bg-sbc/10 text-sbc hover:bg-sbc hover:text-white'
-                                                                    : 'bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white'
+                                                                    : isOpen
+                                                                        ? 'bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white'
+                                                                        : 'bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white'
                                                                 }`}
                                                         >
                                                             <i className="fas fa-edit"></i> Modifier
@@ -494,8 +683,8 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
                                                 </div>
 
                                                 {editingId === match.id ? (
-                                                    <div className={`bg-gray-50 rounded-2xl p-6 border animate-fade-in relative overflow-hidden ${isPlaying ? 'border-sbc/20' : 'border-blue-200'}`}>
-                                                        <div className={`absolute top-0 right-0 w-16 h-16 opacity-5 rounded-bl-full pointer-events-none ${isPlaying ? 'bg-sbc' : 'bg-blue-600'}`}></div>
+                                                    <div className={`bg-gray-50 rounded-2xl p-6 border animate-fade-in relative ${isPlaying ? 'border-sbc/20' : isOpen ? 'border-orange-200' : 'border-blue-200'}`}>
+                                                        <div className={`absolute top-0 right-0 w-16 h-16 opacity-5 rounded-bl-full rounded-tr-2xl pointer-events-none ${isPlaying ? 'bg-sbc' : isOpen ? 'bg-orange-500' : 'bg-blue-600'}`}></div>
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                             {[
                                                                 { label: "Marqueur", key: "scorer", icon: "fa-pen" },
@@ -516,11 +705,27 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
                                                                             onChange={(val) => setEditForm({ ...editForm, [field.key]: val })}
                                                                             disabled={!isAllowed}
                                                                             highlight={isAllowed}
-                                                                            theme={isPlaying ? 'green' : 'blue'}
+                                                                            theme={isPlaying ? 'green' : isOpen ? 'orange' : 'blue'}
                                                                             label={
-                                                                                <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 flex items-center gap-2">
-                                                                                    <i className={`fas ${field.icon} opacity-50`}></i> {field.label}
-                                                                                </label>
+                                                                                <div className="flex items-center justify-between w-full mb-1">
+                                                                                    <label className="text-[10px] font-bold text-gray-400 uppercase flex items-center gap-2">
+                                                                                        <i className={`fas ${field.icon} opacity-50`}></i> {field.label}
+                                                                                    </label>
+                                                                                    {isAllowed && !editForm[field.key] && !helpRequests.some(r => r.match_id === match.id && r.role === field.key) && (
+                                                                                        <button
+                                                                                            onClick={() => handleAskHelp(match.id, field.key)}
+                                                                                            className="text-[10px] font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-0.5 rounded transition-colors"
+                                                                                            title="Demander de l'aide aux autres coachs"
+                                                                                        >
+                                                                                            <i className="fas fa-life-ring mr-1"></i> SOS
+                                                                                        </button>
+                                                                                    )}
+                                                                                    {helpRequests.some(r => r.match_id === match.id && r.role === field.key) && (
+                                                                                        <span className="text-[10px] font-bold text-orange-500 bg-orange-50 px-2 py-0.5 rounded">
+                                                                                            <i className="fas fa-spinner fa-spin mr-1"></i> Aide demandée...
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
                                                                             }
                                                                         />
                                                                     </div>
@@ -529,7 +734,7 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
                                                         </div>
                                                         <div className="flex justify-end gap-3 mt-6">
                                                             <button onClick={handleCancel} className="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-700 uppercase transition-colors">Annuler</button>
-                                                            <button onClick={handleSave} disabled={loading} className={`${isPlaying ? 'bg-sbc hover:bg-sbc-dark shadow-sbc/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'} text-white px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest shadow-lg transition-all transform active:scale-95 disabled:opacity-70 flex items-center gap-2`}>
+                                                            <button onClick={handleSave} disabled={loading} className={`${isPlaying ? 'bg-sbc hover:bg-sbc-dark shadow-sbc/20' : isOpen ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'} text-white px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest shadow-lg transition-all transform active:scale-95 disabled:opacity-70 flex items-center gap-2`}>
                                                                 {loading ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-check"></i>}
                                                                 Enregistrer
                                                             </button>
@@ -555,7 +760,9 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
                                                                 ${isMissing
                                                                         ? isPlaying
                                                                             ? 'bg-green-50 border-green-300 ring-2 ring-green-500 shadow-md transform scale-[1.02]'
-                                                                            : 'bg-blue-50 border-blue-300 ring-2 ring-blue-500 shadow-md transform scale-[1.02]'
+                                                                            : isOpen
+                                                                                ? 'bg-orange-50 border-orange-300 ring-2 ring-orange-500 shadow-md transform scale-[1.02]'
+                                                                                : 'bg-blue-50 border-blue-300 ring-2 ring-blue-500 shadow-md transform scale-[1.02]'
                                                                         : item.val
                                                                             ? 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-sm'
                                                                             : 'bg-gray-50/50 border-transparent border-dashed'
@@ -591,8 +798,8 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
                                                                             );
                                                                         })()
                                                                     ) : (
-                                                                        <p className={`text-xs italic flex items-center gap-1 ${isMissing ? (isPlaying ? 'text-green-700 font-bold animate-pulse' : 'text-blue-700 font-bold animate-pulse') : 'text-gray-400'}`}>
-                                                                            <span className={`w-1.5 h-1.5 rounded-full ${isMissing ? (isPlaying ? 'bg-green-600' : 'bg-blue-600') : 'bg-red-400'}`}></span>
+                                                                        <p className={`text-xs italic flex items-center gap-1 ${isMissing ? (isPlaying ? 'text-green-700 font-bold animate-pulse' : isOpen ? 'text-orange-700 font-bold animate-pulse' : 'text-blue-700 font-bold animate-pulse') : 'text-gray-400'}`}>
+                                                                            <span className={`w-1.5 h-1.5 rounded-full ${isMissing ? (isPlaying ? 'bg-green-600' : isOpen ? 'bg-orange-600' : 'bg-blue-600') : 'bg-red-400'}`}></span>
                                                                             {isMissing ? 'À définir (Vous)' : 'À définir'}
                                                                         </p>
                                                                     )}

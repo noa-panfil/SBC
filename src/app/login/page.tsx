@@ -16,17 +16,6 @@ export default function LoginPage() {
     const router = useRouter();
 
     useEffect(() => {
-        // Check for existing session
-        getSession().then((session: any) => {
-            if (session?.user) {
-                if (session.user.role === 'coach') {
-                    router.push("/coach");
-                } else {
-                    router.push("/admin");
-                }
-            }
-        });
-
         // Load saved account
         const saved = localStorage.getItem('sbc_saved_account');
         if (saved) {

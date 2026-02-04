@@ -46,8 +46,16 @@ export default function HomeMatches({ matches }: { matches: Match[] }) {
                                     <i className="fas fa-basketball-ball text-9xl text-white transform rotate-45"></i>
                                 </div>
 
-                                <div className="inline-block bg-sbc text-black px-4 py-1.5 rounded-full font-black text-xs uppercase tracking-widest mb-6">
-                                    <i className="fas fa-fire mr-1"></i> Match à la une
+                                <div className="flex flex-wrap gap-3 mb-6">
+                                    <div className="inline-block bg-sbc text-black px-4 py-1.5 rounded-full font-black text-xs uppercase tracking-widest">
+                                        <i className="fas fa-fire mr-1"></i> Match à la une
+                                    </div>
+                                    <div className={`inline-block px-4 py-1.5 rounded-full font-black text-xs uppercase tracking-widest border ${nextMatch.match_type === 'Coupe' ? 'bg-yellow-500/20 text-yellow-500 border-yellow-500/50' :
+                                            nextMatch.match_type === 'Amical' ? 'bg-blue-500/20 text-blue-500 border-blue-500/50' :
+                                                'bg-white/10 text-gray-300 border-white/10'
+                                        }`}>
+                                        {nextMatch.match_type}
+                                    </div>
                                 </div>
 
                                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">

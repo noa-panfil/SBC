@@ -95,8 +95,7 @@ export default function PlanningList({ matches }: { matches: Match[] }) {
 
 function MatchCard({ match }: { match: Match }) {
     const date = new Date(match.match_date);
-
-    const isFeatured = match.is_featured;
+    const isFeatured = !!match.is_featured;
 
     return (
         <div className={`group relative rounded-2xl p-6 transition-all duration-300 hover:transform hover:-translate-y-1 hover:shadow-2xl overflow-hidden border ${isFeatured ? 'bg-gray-900 border-sbc shadow-[0_0_30px_rgba(34,197,94,0.15)] z-10 scale-[1.02] hover:shadow-[0_0_50px_rgba(34,197,94,0.3)]' : 'bg-gray-800 hover:bg-gray-700 border-white/5 hover:border-sbc/50'}`}>

@@ -274,6 +274,7 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
     }, [initialMatches]);
     const [isEditing, setIsEditing] = useState(false);
     const [currentMatch, setCurrentMatch] = useState<any>({});
+    const [sortBy, setSortBy] = useState<'total' | 'scorer' | 'timer' | 'hall_manager' | 'bar_manager' | 'referee'>('total');
 
     const [leaderboardPage, setLeaderboardPage] = useState(1);
     const LEADERBOARD_ITEMS_PER_PAGE = 10;
@@ -283,6 +284,8 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
             name: string,
             scorer: number,
             timer: number,
+            hall_manager: number,
+            bar_manager: number,
             referee: number,
             total: number,
             teams: Record<string, number>,
@@ -291,7 +294,7 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
             is_coach?: boolean
         }>();
 
-        const addStat = (name: string, role: 'scorer' | 'timer' | 'referee', match: any) => {
+        const addStat = (name: string, role: 'scorer' | 'timer' | 'referee' | 'hall_manager' | 'bar_manager', match: any) => {
             if (!name || name.trim() === "") return;
             const cleanName = name.trim();
 
@@ -321,6 +324,8 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                     name: selectedOfficial ? selectedOfficial.fullname : cleanName,
                     scorer: 0,
                     timer: 0,
+                    hall_manager: 0,
+                    bar_manager: 0,
                     referee: 0,
                     total: 0,
                     teams: {},
@@ -355,16 +360,23 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
         rawMatches.forEach(m => {
             addStat(m.scorer, 'scorer', m);
             addStat(m.timer, 'timer', m);
+            addStat(m.hall_manager, 'hall_manager', m);
+            addStat(m.bar_manager, 'bar_manager', m);
             addStat(m.referee, 'referee', m);
             addStat(m.referee_2, 'referee', m);
         });
 
-        return Array.from(stats.values())
-            .sort((a, b) => b.total - a.total);
+        return Array.from(stats.values());
     }, [rawMatches, officials]);
 
-    const totalLeaderboardPages = Math.ceil(officialStats.length / LEADERBOARD_ITEMS_PER_PAGE);
-    const paginatedStats = officialStats.slice((leaderboardPage - 1) * LEADERBOARD_ITEMS_PER_PAGE, leaderboardPage * LEADERBOARD_ITEMS_PER_PAGE);
+    const sortedStats = useMemo(() => {
+        return [...officialStats].sort((a, b) => {
+            return b[sortBy] - a[sortBy] || b.total - a.total;
+        });
+    }, [officialStats, sortBy]);
+
+    const totalLeaderboardPages = Math.ceil(sortedStats.length / LEADERBOARD_ITEMS_PER_PAGE);
+    const paginatedStats = sortedStats.slice((leaderboardPage - 1) * LEADERBOARD_ITEMS_PER_PAGE, leaderboardPage * LEADERBOARD_ITEMS_PER_PAGE);
 
     const teamNames = teams.map(t => t.name).sort();
 
@@ -609,10 +621,42 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                             <tr>
                                 <th className="p-4 text-xs font-black text-gray-400 uppercase tracking-wider text-center w-16">#</th>
                                 <th className="p-4 text-xs font-black text-gray-400 uppercase tracking-wider">Nom</th>
-                                <th className="p-4 text-xs font-black text-gray-400 uppercase tracking-wider text-center">Marqueur</th>
-                                <th className="p-4 text-xs font-black text-gray-400 uppercase tracking-wider text-center">Chrono</th>
-                                <th className="p-4 text-xs font-black text-gray-400 uppercase tracking-wider text-center">Arbitre</th>
-                                <th className="p-4 text-xs font-black text-gray-400 uppercase tracking-wider text-right">Total</th>
+                                <th className={`p-4 text-xs font-black uppercase tracking-wider text-center cursor-pointer hover:bg-gray-100 transition-colors select-none ${sortBy === 'scorer' ? 'text-sbc' : 'text-gray-400'}`} onClick={() => setSortBy('scorer')}>
+                                    <div className="flex items-center justify-center gap-1">
+                                        <span>Marqueur</span>
+                                        {sortBy === 'scorer' && <i className="fas fa-caret-down"></i>}
+                                    </div>
+                                </th>
+                                <th className={`p-4 text-xs font-black uppercase tracking-wider text-center cursor-pointer hover:bg-gray-100 transition-colors select-none ${sortBy === 'timer' ? 'text-sbc' : 'text-gray-400'}`} onClick={() => setSortBy('timer')}>
+                                    <div className="flex items-center justify-center gap-1">
+                                        <span>Chrono</span>
+                                        {sortBy === 'timer' && <i className="fas fa-caret-down"></i>}
+                                    </div>
+                                </th>
+                                <th className={`p-4 text-xs font-black uppercase tracking-wider text-center cursor-pointer hover:bg-gray-100 transition-colors select-none ${sortBy === 'hall_manager' ? 'text-sbc' : 'text-gray-400'}`} onClick={() => setSortBy('hall_manager')}>
+                                    <div className="flex items-center justify-center gap-1">
+                                        <span>Resp. Salle</span>
+                                        {sortBy === 'hall_manager' && <i className="fas fa-caret-down"></i>}
+                                    </div>
+                                </th>
+                                <th className={`p-4 text-xs font-black uppercase tracking-wider text-center cursor-pointer hover:bg-gray-100 transition-colors select-none ${sortBy === 'bar_manager' ? 'text-sbc' : 'text-gray-400'}`} onClick={() => setSortBy('bar_manager')}>
+                                    <div className="flex items-center justify-center gap-1">
+                                        <span>Buvette</span>
+                                        {sortBy === 'bar_manager' && <i className="fas fa-caret-down"></i>}
+                                    </div>
+                                </th>
+                                <th className={`p-4 text-xs font-black uppercase tracking-wider text-center cursor-pointer hover:bg-gray-100 transition-colors select-none ${sortBy === 'referee' ? 'text-sbc' : 'text-gray-400'}`} onClick={() => setSortBy('referee')}>
+                                    <div className="flex items-center justify-center gap-1">
+                                        <span>Arbitre</span>
+                                        {sortBy === 'referee' && <i className="fas fa-caret-down"></i>}
+                                    </div>
+                                </th>
+                                <th className={`p-4 text-xs font-black uppercase tracking-wider text-right cursor-pointer hover:bg-gray-100 transition-colors select-none ${sortBy === 'total' ? 'text-sbc' : 'text-gray-400'}`} onClick={() => setSortBy('total')}>
+                                    <div className="flex items-center justify-end gap-1">
+                                        <span>Total</span>
+                                        {sortBy === 'total' && <i className="fas fa-caret-down"></i>}
+                                    </div>
+                                </th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
@@ -672,18 +716,24 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="p-4 text-center text-gray-500 text-xs font-bold">
+                                        <td className={`p-4 text-center text-gray-500 text-xs font-bold transition-opacity ${sortBy !== 'total' && sortBy !== 'scorer' ? 'opacity-20' : ''}`}>
                                             {data.scorer > 0 && <span className="px-2 py-1 rounded bg-blue-50 text-blue-600 border border-blue-100">{data.scorer}</span>}
                                         </td>
-                                        <td className="p-4 text-center text-gray-500 text-xs font-bold">
+                                        <td className={`p-4 text-center text-gray-500 text-xs font-bold transition-opacity ${sortBy !== 'total' && sortBy !== 'timer' ? 'opacity-20' : ''}`}>
                                             {data.timer > 0 && <span className="px-2 py-1 rounded bg-orange-50 text-orange-600 border border-orange-100">{data.timer}</span>}
                                         </td>
-                                        <td className="p-4 text-center text-gray-500 text-xs font-bold">
+                                        <td className={`p-4 text-center text-gray-500 text-xs font-bold transition-opacity ${sortBy !== 'total' && sortBy !== 'hall_manager' ? 'opacity-20' : ''}`}>
+                                            {data.hall_manager > 0 && <span className="px-2 py-1 rounded bg-green-50 text-green-600 border border-green-100">{data.hall_manager}</span>}
+                                        </td>
+                                        <td className={`p-4 text-center text-gray-500 text-xs font-bold transition-opacity ${sortBy !== 'total' && sortBy !== 'bar_manager' ? 'opacity-20' : ''}`}>
+                                            {data.bar_manager > 0 && <span className="px-2 py-1 rounded bg-yellow-50 text-yellow-600 border border-yellow-100">{data.bar_manager}</span>}
+                                        </td>
+                                        <td className={`p-4 text-center text-gray-500 text-xs font-bold transition-opacity ${sortBy !== 'total' && sortBy !== 'referee' ? 'opacity-20' : ''}`}>
                                             {data.referee > 0 && <span className="px-2 py-1 rounded bg-purple-50 text-purple-600 border border-purple-100">{data.referee}</span>}
                                         </td>
                                         <td className="p-4 text-right">
                                             <span className="inline-flex items-center justify-center min-w-[32px] h-8 px-2 rounded-full font-black text-sm bg-sbc text-white shadow-md shadow-sbc/30">
-                                                {data.total}
+                                                {sortBy === 'total' ? data.total : data[sortBy]}
                                             </span>
                                         </td>
                                     </tr>

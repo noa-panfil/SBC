@@ -3,6 +3,25 @@ import HomeClient from "@/components/HomeClient";
 import Link from "next/link";
 import pool from "@/lib/db";
 import { RowDataPacket } from "mysql2";
+import HomeMatches from "@/components/HomeMatches";
+
+async function getUpcomingMatches() {
+  try {
+    const [rows] = await pool.query<RowDataPacket[]>(`
+            SELECT * FROM otm_matches 
+            WHERE match_date >= CURDATE() 
+            ORDER BY is_featured DESC, match_date ASC, match_time ASC 
+            LIMIT 6
+        `);
+    return rows.map(r => ({
+      ...r,
+      match_date: r.match_date.toISOString(),
+    }));
+  } catch (e) {
+    console.error("Error fetching upcoming matches", e);
+    return [];
+  }
+}
 
 export default async function Home() {
   let logoUrl = "/img/logo.png";
@@ -16,6 +35,8 @@ export default async function Home() {
   } catch (e) {
     console.error("Error fetching home logo:", e);
   }
+
+  const matches = await getUpcomingMatches();
 
   return (
     <>
@@ -47,6 +68,7 @@ export default async function Home() {
         </div>
       </header>
 
+      <HomeMatches matches={matches} />
       <HomeClient />
     </>
   );

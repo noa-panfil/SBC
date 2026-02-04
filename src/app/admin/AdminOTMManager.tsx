@@ -278,6 +278,28 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
 
     const [leaderboardPage, setLeaderboardPage] = useState(1);
     const LEADERBOARD_ITEMS_PER_PAGE = 10;
+    const [canFeature, setCanFeature] = useState(true);
+
+    useEffect(() => {
+        if (!isEditing || !currentMatch.match_date) return;
+
+        const check = async () => {
+            try {
+                const res = await fetch('/api/otm/check-featured', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        date: currentMatch.match_date,
+                        excludeId: currentMatch.id
+                    })
+                });
+                const data = await res.json();
+                setCanFeature(!data.hasFeatured);
+            } catch (e) {
+                console.error(e);
+            }
+        };
+        check();
+    }, [currentMatch.match_date, currentMatch.id, isEditing]);
 
     const officialStats = useMemo(() => {
         const stats = new Map<string, {
@@ -428,13 +450,14 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
             meeting_time: calculateMeetingTime(defaultTime),
             category: teamNames[0] || "",
             match_type: "Championnat",
+            is_featured: false
         });
         setIsEditing(true);
     };
 
     const handleEdit = (match: any) => {
         const date = new Date(match.match_date).toISOString().split('T')[0];
-        setCurrentMatch({ ...match, match_date: date });
+        setCurrentMatch({ ...match, match_date: date, is_featured: !!match.is_featured });
         setIsEditing(true);
     };
 
@@ -849,6 +872,26 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                                         onChange={(val) => setCurrentMatch({ ...currentMatch, designation: val })}
                                     />
                                 )}
+                            </div>
+
+                            <div className="col-span-2 space-y-4">
+                                <label className={`flex items-center gap-2 p-3 rounded-lg border transition ${currentMatch.is_featured ? 'bg-sbc/10 border-sbc' : 'bg-gray-50 border-gray-100'} ${(canFeature || currentMatch.is_featured) ? 'cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}>
+                                    <input
+                                        type="checkbox"
+                                        checked={currentMatch.is_featured || false}
+                                        onChange={e => setCurrentMatch({ ...currentMatch, is_featured: e.target.checked })}
+                                        disabled={!canFeature && !currentMatch.is_featured}
+                                        className="w-5 h-5 text-sbc rounded focus:ring-sbc"
+                                    />
+                                    <div>
+                                        <p className="text-sm font-bold text-gray-900 uppercase flex items-center gap-2">
+                                            <i className="fas fa-fire text-sbc"></i> Match à la une
+                                        </p>
+                                        {!canFeature && !currentMatch.is_featured && (
+                                            <p className="text-xs text-red-500 font-bold">Un match est déjà à la une cette semaine.</p>
+                                        )}
+                                    </div>
+                                </label>
                             </div>
                         </div>
 

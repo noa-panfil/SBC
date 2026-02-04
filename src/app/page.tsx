@@ -68,7 +68,7 @@ export default async function Home() {
         </div>
       </header>
 
-      <HomeMatches matches={matches} />
+      <HomeMatches matches={matches as any} />
       <HomeClient />
     </>
   );

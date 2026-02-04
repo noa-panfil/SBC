@@ -415,6 +415,7 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
             match_time: defaultTime,
             meeting_time: calculateMeetingTime(defaultTime),
             category: teamNames[0] || "",
+            match_type: "Championnat",
         });
         setIsEditing(true);
     };
@@ -519,7 +520,19 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                     <tbody className="divide-y divide-gray-100 text-sm">
                         {filteredMatches.map(match => (
                             <tr key={match.id} className="hover:bg-gray-50">
-                                <td className="p-4 font-bold">{match.category}</td>
+                                <td className="p-4">
+                                    <div className="font-bold">{match.category}</div>
+                                    {match.match_type === 'Coupe' && (
+                                        <span className="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-yellow-100 text-yellow-700 border border-yellow-200">
+                                            <i className="fas fa-trophy mr-1"></i> Coupe
+                                        </span>
+                                    )}
+                                    {match.match_type === 'Amical' && (
+                                        <span className="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-blue-100 text-blue-700 border border-blue-200">
+                                            <i className="fas fa-handshake mr-1"></i> Amical
+                                        </span>
+                                    )}
+                                </td>
                                 <td className="p-4 text-center pb-2">
                                     <div className="flex flex-col items-center gap-1">
                                         {match.is_white_jersey ? (
@@ -746,6 +759,18 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Code Rencontre</label>
                                 <input className="w-full p-2 border rounded-lg font-mono" value={currentMatch.match_code || ''} onChange={e => setCurrentMatch({ ...currentMatch, match_code: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Type de Match</label>
+                                <select
+                                    className="w-full p-2 border rounded-lg font-bold bg-white"
+                                    value={currentMatch.match_type || 'Championnat'}
+                                    onChange={e => setCurrentMatch({ ...currentMatch, match_type: e.target.value })}
+                                >
+                                    <option value="Championnat">Championnat</option>
+                                    <option value="Coupe">Coupe</option>
+                                    <option value="Amical">Amical</option>
+                                </select>
                             </div>
                             <div className="col-span-2">
                                 <DesignationEditor

@@ -464,6 +464,18 @@ export default function CoachOTMManager({ matches, myTeamNames, players, allPlay
                                                             Arb. Fédération
                                                         </span>
                                                     )}
+                                                    {match.match_type === 'Coupe' && (
+                                                        <span className="inline-flex items-center gap-2 px-3 py-2 rounded-lg font-bold shadow-sm bg-yellow-100 border border-yellow-200 text-yellow-700">
+                                                            <i className="fas fa-trophy"></i>
+                                                            Coupe
+                                                        </span>
+                                                    )}
+                                                    {match.match_type === 'Amical' && (
+                                                        <span className="inline-flex items-center gap-2 px-3 py-2 rounded-lg font-bold shadow-sm bg-blue-100 border border-blue-200 text-blue-700">
+                                                            <i className="fas fa-handshake"></i>
+                                                            Amical
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
 

@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const {
             category, is_white_jersey, match_date, match_time,
-            opponent, match_code, designation
+            opponent, match_code, designation, match_type
         } = body;
 
         if (!category || !match_date || !match_time || !opponent) {
@@ -54,15 +54,16 @@ export async function POST(request: NextRequest) {
         }
 
         const is_club_referee = body.is_club_referee || false;
+        const type = match_type || 'Championnat';
 
         const [result]: any = await pool.query(`
             INSERT INTO otm_matches (
                 category, is_white_jersey, match_date, match_time, meeting_time, 
-                opponent, match_code, designation, referee_2, is_club_referee
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                opponent, match_code, designation, referee_2, is_club_referee, match_type
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
             category, is_white_jersey || false, match_date, match_time, meeting_time,
-            opponent, match_code, designation, null, is_club_referee
+            opponent, match_code, designation, null, is_club_referee, type
         ]);
 
         return NextResponse.json({
@@ -76,6 +77,7 @@ export async function POST(request: NextRequest) {
             match_code,
             designation,
             is_club_referee,
+            match_type: type,
             scorer: null,
             timer: null,
             hall_manager: null,

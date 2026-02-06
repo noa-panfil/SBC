@@ -12,7 +12,7 @@ interface Match {
 }
 
 export default function HomeMatches({ matches }: { matches: Match[] }) {
-    if (matches.length === 0) return null;
+    // We always want to render the section, even if empty (to show "No matches" states)
 
     const nextMatch = matches[0];
     const upcomingMatches = matches.slice(1, 4);

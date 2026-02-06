@@ -23,8 +23,6 @@ async function getUpcomingMatches() {
       _rawDate: new Date(r.match_date)
     }));
 
-    if (validMatches.length === 0) return [];
-
     const oneWeekFromNow = new Date();
     oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
 

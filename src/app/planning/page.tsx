@@ -2,6 +2,12 @@ import Link from "next/link";
 import pool from "@/lib/db";
 import { RowDataPacket } from "mysql2";
 import PlanningList from "./PlanningList";
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: 'Planning | Seclin Basket Club',
+    description: 'Consultez les dates et horaires des prochains matchs de toutes les équipes du Seclin Basket Club.',
+};
 
 async function getMatches() {
     try {

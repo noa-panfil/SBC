@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import BuvetteImage from "./BuvetteImage";
 
 export const metadata: Metadata = {
-    title: "Buvette - Seclin Basket Club",
+    title: "Buvette | Seclin Basket Club",
     description: "Le menu de la buvette du SBC. Boissons, snacks et convivialité.",
 };
 

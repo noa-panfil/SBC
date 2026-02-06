@@ -1,3 +1,10 @@
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+    title: "Mentions Légales | Seclin Basket Club",
+    description: "Mentions légales, politique de confidentialité et conditions d'utilisation du site du Seclin Basket Club.",
+};
+
 export default function MentionsLegales() {
     return (
         <>

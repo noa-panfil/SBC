@@ -3,7 +3,7 @@ import pool from "@/lib/db";
 import { RowDataPacket } from "mysql2";
 
 export const metadata: Metadata = {
-    title: "Informations Pratiques - Seclin Basket Club",
+    title: "Informations Pratiques | Seclin Basket Club",
     description: "Tarifs des licences, organigramme, salle Jesse Owens... Retrouvez toutes les infos pratiques du SBC.",
 };
 

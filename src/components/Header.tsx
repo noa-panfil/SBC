@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 
 export default function Header() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isUtilsOpen, setIsUtilsOpen] = useState(false);
     const [logoUrl, setLogoUrl] = useState("/img/logo.png");
     const pathname = usePathname();
 
@@ -52,7 +53,26 @@ export default function Header() {
                     <Link href="/equipes" className={linkClass("/equipes")}>Équipes</Link>
                     <Link href="/palmares" className={linkClass("/palmares")}>Palmarès</Link>
                     <Link href="/informations" className={linkClass("/informations")}>Infos</Link>
-                    <Link href="/buvette" className={linkClass("/buvette")}>Buvette</Link>
+
+                    {/* Utils Dropdown */}
+                    <div className="relative group">
+                        <button className={`flex items-center gap-1 ${isActive("/buvette") || isActive("/fonds-ecran") ? 'text-sbc-light border-sbc-light border-b-2' : 'hover:text-sbc-light border-transparent border-b-2 hover:border-sbc-light'} transition pb-1`}>
+                            Utiles <i className="fas fa-angle-down text-xs mt-0.5 ml-1"></i>
+                        </button>
+                        <div className="absolute top-full text-left left-1/2 -translate-x-1/2 mt-2 w-48 bg-white text-gray-800 rounded-xl shadow-xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top pt-1">
+                            <Link href="/buvette" className="block px-4 py-3 hover:bg-gray-50 hover:text-sbc transition text-sm font-bold border-b border-gray-100 flex items-center">
+                                <i className="fas fa-utensils w-6 text-sbc/80"></i> Buvette
+                            </Link>
+                            <Link href="/fonds-ecran" className="block px-4 py-3 hover:bg-gray-50 hover:text-sbc transition text-sm font-bold flex items-center">
+                                <i className="fas fa-mobile-alt w-6 text-sbc/80"></i> Fonds d'écran
+                            </Link>
+                            <Link href="/planning" className="block px-4 py-3 hover:bg-gray-50 hover:text-sbc transition text-sm font-bold flex items-center">
+                                <i className="fas fa-calendar-alt w-6 text-sbc/80"></i> Planning
+                            </Link>
+                        </div>
+                    </div>
+
+                    <Link href="/boutique" className={linkClass("/boutique")}>Boutique</Link>
                     <Link href="/partenaires" className={linkClass("/partenaires")}>Partenaires</Link>
                     <Link href="/contact" className="bg-sbc hover:bg-sbc-light text-white px-4 py-2 rounded-full transition shadow-md">Contact</Link>
 
@@ -90,7 +110,29 @@ export default function Header() {
                     <Link href="/equipes" className={linkClass("/equipes", true)} onClick={() => setIsMobileMenuOpen(false)}>Nos Équipes</Link>
                     <Link href="/palmares" className={linkClass("/palmares", true)} onClick={() => setIsMobileMenuOpen(false)}>Palmarès</Link>
                     <Link href="/informations" className={linkClass("/informations", true)} onClick={() => setIsMobileMenuOpen(false)}>Infos Pratiques</Link>
-                    <Link href="/buvette" className={linkClass("/buvette", true)} onClick={() => setIsMobileMenuOpen(false)}>Buvette</Link>
+
+                    {/* Utils Mobile Accordion */}
+                    <div className="w-full">
+                        <button
+                            onClick={() => setIsUtilsOpen(!isUtilsOpen)}
+                            className={`${linkClass("/buvette", true)} w-full flex items-center justify-center gap-2`}
+                        >
+                            Utiles <i className={`fas fa-chevron-down text-sm transition-transform duration-300 ${isUtilsOpen ? 'rotate-180' : ''}`}></i>
+                        </button>
+                        <div className={`overflow-hidden transition-all duration-300 bg-sbc-dark/50 ${isUtilsOpen ? 'max-h-52 opacity-100 py-2' : 'max-h-0 opacity-0 py-0'}`}>
+                            <Link href="/buvette" className="block py-2 text-gray-300 hover:text-white" onClick={() => setIsMobileMenuOpen(false)}>
+                                <i className="fas fa-utensils w-6 text-center"></i> Buvette
+                            </Link>
+                            <Link href="/fonds-ecran" className="block py-2 text-gray-300 hover:text-white" onClick={() => setIsMobileMenuOpen(false)}>
+                                <i className="fas fa-mobile-alt w-6 text-center"></i> Fonds d'écran
+                            </Link>
+                            <Link href="/planning" className="block py-2 text-gray-300 hover:text-white" onClick={() => setIsMobileMenuOpen(false)}>
+                                <i className="fas fa-calendar-alt w-6 text-center"></i> Planning
+                            </Link>
+                        </div>
+                    </div>
+
+                    <Link href="/boutique" className={linkClass("/boutique", true)} onClick={() => setIsMobileMenuOpen(false)}>Boutique</Link>
                     <Link href="/partenaires" className={linkClass("/partenaires", true)} onClick={() => setIsMobileMenuOpen(false)}>Partenaires</Link>
                     <Link href="/contact" className="text-sbc-light font-bold py-2 bg-green-900/30 rounded-lg mt-2" onClick={() => setIsMobileMenuOpen(false)}>Nous Contacter</Link>
                     <Link href="/login" className="text-white font-bold py-2 bg-white/10 rounded-lg flex items-center justify-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>

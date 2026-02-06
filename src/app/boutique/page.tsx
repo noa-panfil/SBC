@@ -15,6 +15,14 @@ export default function BoutiquePage() {
                     La <span className="text-sbc">Boutique</span>
                 </h1>
                 <p className="text-gray-500 mt-2">Commandez vos équipements officiels directement via HelloAsso</p>
+                <div className="mt-6 flex justify-center">
+                    <div className="bg-blue-50 text-blue-800 px-4 py-3 rounded-lg border border-blue-100 inline-flex items-center gap-3 max-w-2xl text-left">
+                        <i className="fas fa-info-circle text-xl text-blue-600"></i>
+                        <p className="text-sm font-medium leading-relaxed">
+                            <strong>Information importante :</strong> Les commandes sont groupées et transmises à notre fournisseur <u>au début du mois suivant</u> votre commande. Merci de prendre en compte ce délai de traitement.
+                        </p>
+                    </div>
+                </div>
             </div>
 
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">

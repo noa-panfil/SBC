@@ -5,6 +5,8 @@ import pool from "@/lib/db";
 import { RowDataPacket } from "mysql2";
 import HomeMatches from "@/components/HomeMatches";
 
+export const dynamic = 'force-dynamic';
+
 async function getUpcomingMatches() {
   try {
 

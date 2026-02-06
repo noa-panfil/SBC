@@ -21,8 +21,8 @@ export default function BoutiqueEmbed() {
         <iframe
             id="haWidget"
             src="https://www.helloasso.com/associations/seclin-basket-club/boutiques/boutique-seclin-bc-2022-2023/widget"
-            style={{ width: "100%", height: "750px", border: "none" }}
-            scrolling="auto"
+            style={{ width: "100%", height: "750px", border: "none", overflow: "hidden" }}
+            scrolling="no"
             allowTransparency={true}
         ></iframe>
     );

@@ -7,16 +7,50 @@ import HomeMatches from "@/components/HomeMatches";
 
 async function getUpcomingMatches() {
   try {
+
     const [rows] = await pool.query<RowDataPacket[]>(`
             SELECT * FROM otm_matches 
             WHERE match_date >= CURDATE() 
-            ORDER BY is_featured DESC, match_date ASC, match_time ASC 
-            LIMIT 6
+            ORDER BY match_date ASC, match_time ASC 
+            LIMIT 15
         `);
-    return rows.map(r => ({
+
+    const validMatches = rows.map(r => ({
       ...r,
       match_date: r.match_date.toISOString(),
+      _rawDate: new Date(r.match_date)
     }));
+
+    if (validMatches.length === 0) return [];
+
+    const oneWeekFromNow = new Date();
+    oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
+
+    let featuredMatchIndex = validMatches.findIndex(m =>
+      (m as any).is_featured === 1 && m._rawDate <= oneWeekFromNow
+    );
+
+    let featuredMatch = null;
+    let upcomingList = [];
+
+    if (featuredMatchIndex !== -1) {
+      featuredMatch = validMatches[featuredMatchIndex];
+      upcomingList = validMatches
+        .filter((_, idx) => idx !== featuredMatchIndex)
+        .slice(0, 3);
+    } else {
+      upcomingList = validMatches.slice(0, 3);
+    }
+
+
+    const result = [featuredMatch, ...upcomingList].map(m => {
+      if (!m) return null;
+      const { _rawDate, ...rest } = m;
+      return rest;
+    });
+
+    return result;
+
   } catch (e) {
     console.error("Error fetching upcoming matches", e);
     return [];

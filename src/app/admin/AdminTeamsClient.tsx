@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
+import ImageCropper from "@/components/ImageCropper";
 
 interface Member {
     person_id?: number;
@@ -38,6 +40,10 @@ export default function AdminTeamsClient({ teams }: { teams: Team[] }) {
     const [editingTeam, setEditingTeam] = useState<Team | null>(null);
     const [deletedMemberIds, setDeletedMemberIds] = useState<number[]>([]);
     const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+
+    // Cropper State
+    const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+    const [cropTarget, setCropTarget] = useState<{ type: 'players' | 'coaches', index: number } | null>(null);
 
     const showNotification = (message: string, type: 'success' | 'error') => {
         setNotification({ message, type });
@@ -80,6 +86,7 @@ export default function AdminTeamsClient({ teams }: { teams: Team[] }) {
             setEditingTeam(deepCopy);
             setDeletedMemberIds([]);
             setIsEditing(false);
+            setCropImageSrc(null);
         } else {
             setEditingTeam(null);
         }
@@ -119,13 +126,29 @@ export default function AdminTeamsClient({ teams }: { teams: Team[] }) {
         }
     };
 
-    const handleMemberImageChange = async (index: number, type: 'players' | 'coaches', e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!editingTeam || !e.target.files?.[0]) return;
+    const handleMemberImageChange = (index: number, type: 'players' | 'coaches', e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files?.[0]) return;
         const file = e.target.files[0];
 
-        // 1. Immediate Preview
-        const previewUrl = URL.createObjectURL(file);
+        // Initialiser le cropper avec l'image sélectionnée
+        const url = URL.createObjectURL(file);
+        setCropImageSrc(url);
+        setCropTarget({ type, index });
 
+        // Reset input value to allow selecting same file again if needed
+        e.target.value = "";
+    };
+
+    const handleCropComplete = async (croppedBlob: Blob) => {
+        if (!editingTeam || !cropTarget) return;
+
+        // Convert Blob to File
+        const file = new File([croppedBlob], "avatar.jpg", { type: "image/jpeg" });
+        const previewUrl = URL.createObjectURL(croppedBlob);
+
+        const { type, index } = cropTarget;
+
+        // 1. Mise à jour de l'image locale (Preview)
         setEditingTeam(prev => {
             if (!prev) return null;
             const list = type === 'players' ? [...prev.players] : [...prev.coaches];
@@ -133,7 +156,11 @@ export default function AdminTeamsClient({ teams }: { teams: Team[] }) {
             return { ...prev, [type]: list };
         });
 
-        // 2. Upload in background
+        // Fermer le cropper
+        setCropImageSrc(null);
+        setCropTarget(null);
+
+        // 2. Upload en arrière-plan
         const newImageId = await handleUpload(file);
         if (newImageId) {
             setEditingTeam(prev => {
@@ -143,6 +170,11 @@ export default function AdminTeamsClient({ teams }: { teams: Team[] }) {
                 return { ...prev, [type]: list };
             });
         }
+    };
+
+    const handleCropCancel = () => {
+        setCropImageSrc(null);
+        setCropTarget(null);
     };
 
     const handleMemberChange = (index: number, type: 'players' | 'coaches', field: keyof Member, value: any) => {
@@ -234,9 +266,26 @@ export default function AdminTeamsClient({ teams }: { teams: Team[] }) {
         });
     };
 
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    // ... (rest of the code)
+
     return (
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8 relative">
-            {/* Notification Toast */}
+            {/* Cropper Modal - Portaled to Body to win z-index war */}
+            {mounted && cropImageSrc && typeof document !== 'undefined' && createPortal(
+                <ImageCropper
+                    imageSrc={cropImageSrc}
+                    onCropComplete={handleCropComplete}
+                    onCancel={handleCropCancel}
+                />,
+                document.body
+            )}
+
+            {/* Notification Toast - also portal for safety if needed, but existing implementation is fine if ImageCropper handles z-index */}
             {notification && (
                 <div className={`fixed bottom-8 right-8 px-6 py-4 rounded-xl shadow-2xl text-white font-bold transition-all transform animate-bounce-in z-[100] flex items-center gap-3 ${notification.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
                     <i className={`fas ${notification.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'} text-xl`}></i>

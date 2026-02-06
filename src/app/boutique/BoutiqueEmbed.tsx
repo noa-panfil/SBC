@@ -23,7 +23,7 @@ export default function BoutiqueEmbed() {
             src="https://www.helloasso.com/associations/seclin-basket-club/boutiques/boutique-seclin-bc-2022-2023/widget"
             style={{ width: "100%", height: "750px", border: "none", overflow: "hidden", touchAction: "pan-y" }}
             scrolling="no"
-            allowTransparency={true}
+            allowtransparency="true"
         ></iframe>
     );
 }

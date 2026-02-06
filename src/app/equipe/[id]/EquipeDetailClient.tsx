@@ -8,8 +8,8 @@ interface Team {
     image: string;
     schedule: string;
     widgetId: string;
-    coaches: { name: string; role: string; img: string; firstname: string; lastname: string }[];
-    players: { name: string; num: number; img: string; firstname: string; lastname: string }[];
+    coaches: { name: string; role: string; img: string | null; firstname: string; lastname: string }[];
+    players: { name: string; num: number; img: string | null; firstname: string; lastname: string }[];
 }
 
 interface EquipeDetailClientProps {

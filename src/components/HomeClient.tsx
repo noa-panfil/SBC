@@ -214,10 +214,12 @@ function EventCard({ event, isPast }: { event: Event, isPast: boolean }) {
 function BirthdaySection() {
     const [birthdays, setBirthdays] = useState<Person[]>([]);
     const [monthName, setMonthName] = useState("");
+    const [todayDay, setTodayDay] = useState(0);
 
     useEffect(() => {
         const today = new Date();
         const currentMonth = today.getMonth();
+        setTodayDay(today.getDate());
         const monthNames = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
         setMonthName(monthNames[currentMonth]);
 
@@ -272,18 +274,83 @@ function BirthdaySection() {
 
     if (birthdays.length === 0) return null;
 
+    const todaysBirthdays = birthdays.filter(p => p.day === todayDay);
+    const otherBirthdays = birthdays.filter(p => p.day !== todayDay);
+
     return (
         <section id="birthday-section" className="py-12 bg-green-50 border-b border-green-100">
             <div className="container mx-auto px-4">
                 <div className="text-center mb-8">
                     <h2 className="text-3xl font-bold text-sbc-dark flex items-center justify-center gap-3">
                         <i className="fas fa-birthday-cake text-yellow-500 animate-bounce"></i>
-                        Joyeux Anniversaire !
+                        Anniversaires du mois
                     </h2>
                     <p className="text-gray-600 mt-2">Ils fêtent leur anniversaire en <span className="font-bold capitalize text-sbc">{monthName}</span></p>
                 </div>
+
+                {/* TODAY'S BIRTHDAYS - FEATURED */}
+                {todaysBirthdays.length > 0 && (
+                    <div className="mb-12">
+                        <div className="text-center mb-6">
+                            <span className="inline-block px-6 py-2 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-black uppercase tracking-widest shadow-lg animate-pulse">
+                                <i className="fas fa-star mr-2"></i> C'est aujourd'hui !
+                            </span>
+                        </div>
+                        <div className="flex flex-wrap justify-center gap-6">
+                            {todaysBirthdays.map((p, i) => {
+                                const parts = p.birth.split("/");
+                                let birthYear = parseInt(parts[2], 10);
+                                const currentYear = new Date().getFullYear();
+                                if (birthYear < 100) {
+                                    const currentYearShort = currentYear - 2000;
+                                    birthYear += birthYear > currentYearShort ? 1900 : 2000;
+                                }
+                                const age = currentYear - birthYear;
+
+                                return (
+                                    <div key={i} className="flex flex-col items-center max-w-xs w-full bg-white rounded-3xl p-6 shadow-[0_0_30px_rgba(234,179,8,0.2)] border-2 border-yellow-400 relative overflow-hidden transform hover:scale-105 transition duration-500">
+                                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-300 via-orange-500 to-red-500"></div>
+                                        <div className="absolute -right-4 -top-4 text-8xl opacity-5 text-yellow-500 rotate-12">
+                                            <i className="fas fa-gift"></i>
+                                        </div>
+
+                                        <div className="relative mb-4">
+                                            <div className="absolute inset-0 bg-yellow-400 rounded-full blur-xl opacity-40 animate-pulse"></div>
+                                            <Image
+                                                src={p.img}
+                                                alt={p.name}
+                                                width={96}
+                                                height={96}
+                                                className="relative w-24 h-24 rounded-full object-cover border-4 border-white shadow-md"
+                                            />
+                                            <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white w-10 h-10 flex items-center justify-center rounded-full font-black text-lg shadow-lg border-2 border-white transform rotate-6">
+                                                {age}
+                                            </div>
+                                        </div>
+
+                                        <h3 className="text-xl font-black text-gray-800 text-center mb-2 leading-tight">{p.name}</h3>
+
+                                        <div className="flex flex-wrap justify-center gap-1 mb-4">
+                                            {p.teamsData.map((t, idx) => (
+                                                <span key={idx} className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                                                    {t.name}
+                                                </span>
+                                            ))}
+                                        </div>
+
+                                        <div className="text-center">
+                                            <p className="text-lg font-bold text-sbc mb-1">Joyeux Anniversaire !</p>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {/* OTHER BIRTHDAYS */}
                 <div className="flex flex-wrap justify-center gap-6 w-full">
-                    {birthdays.map((p, i) => {
+                    {otherBirthdays.map((p, i) => {
                         const parts = p.birth.split("/");
                         let birthYear = parseInt(parts[2], 10);
                         const currentYear = new Date().getFullYear();
@@ -292,11 +359,10 @@ function BirthdaySection() {
                             birthYear += birthYear > currentYearShort ? 1900 : 2000;
                         }
                         const age = currentYear - birthYear;
-                        const suffix = age === 1 ? "er" : "ème";
                         const pronoun = p.sexe === "F" ? "Elle" : "Il";
 
                         return (
-                            <div key={i} className="bg-white rounded-xl shadow-md p-4 flex items-center gap-4 w-full md:w-[calc(50%-12px)] lg:w-[calc(33.33%-16px)] xl:w-[calc(25%-18px)] border-l-4 border-yellow-400 hover:shadow-lg transition transform hover:-translate-y-1">
+                            <div key={i} className={`bg-white rounded-xl shadow-md p-4 flex items-center gap-4 w-full md:w-[calc(50%-12px)] lg:w-[calc(33.33%-16px)] xl:w-[calc(25%-18px)] border-l-4 ${p.day < todayDay ? 'border-gray-200 grayscale opacity-60' : 'border-sbc hover:shadow-lg transition transform hover:-translate-y-1'}`}>
                                 <div className="relative flex-shrink-0">
                                     <Image
                                         src={p.img}
@@ -305,7 +371,7 @@ function BirthdaySection() {
                                         height={64}
                                         className="w-16 h-16 rounded-full object-cover border-2 border-gray-100"
                                     />
-                                    <div className="absolute -bottom-1 -right-1 bg-yellow-400 text-white text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full shadow">{p.day}</div>
+                                    <div className={`absolute -bottom-1 -right-1 text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full shadow ${p.day < todayDay ? 'bg-gray-200 text-gray-500' : 'bg-green-100 text-sbc'}`}>{p.day}</div>
                                 </div>
                                 <div className="flex-grow min-w-0">
                                     <h3 className="font-bold text-gray-800 text-lg leading-tight truncate mb-1">{p.name}</h3>
@@ -320,7 +386,7 @@ function BirthdaySection() {
                                             ))}
                                         </span>
                                     </div>
-                                    <p className="text-sbc font-bold text-sm border-t border-gray-100 pt-2"><i className="fas fa-gift mr-1"></i> {pronoun} fête son {age}{suffix} anniversaire !</p>
+                                    <p className="text-gray-400 text-xs"><i className="fas fa-calendar-day mr-1"></i> Le {p.day} {monthName} ({age} ans)</p>
                                 </div>
                             </div>
                         )

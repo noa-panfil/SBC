@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function LoginPage() {
-    const [logoUrl, setLogoUrl] = useState("/img/logo.png");
+    const [logoUrl, setLogoUrl] = useState("/logo.png");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [rememberMe, setRememberMe] = useState(false);
@@ -29,9 +29,11 @@ export default function LoginPage() {
         fetch('/api/settings')
             .then(res => res.json())
             .then(data => {
+                /*
                 if (data.site_logo_id) {
                     setLogoUrl(`/api/image/${data.site_logo_id}`);
                 }
+                */
             })
             .catch(console.error);
     }, [router]);

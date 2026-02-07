@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 
 export default function Partenaires() {
     const [partners, setPartners] = useState<{ name: string; img: string }[]>([]);
-    const [logoUrl, setLogoUrl] = useState("/img/logo.png");
+    const [logoUrl, setLogoUrl] = useState("/logo.png");
     const [modalOpen, setModalOpen] = useState(false);
     const [modalImage, setModalImage] = useState("");
     const [modalTitle, setModalTitle] = useState("");
@@ -19,6 +19,7 @@ export default function Partenaires() {
             })
             .catch(console.error);
 
+        /*
         fetch('/api/settings')
             .then(res => res.json())
             .then(data => {
@@ -27,6 +28,7 @@ export default function Partenaires() {
                 }
             })
             .catch(console.error);
+        */
     }, []);
 
     const openModal = (src: string, title: string) => {
@@ -72,7 +74,7 @@ export default function Partenaires() {
                             Nous contacter
                         </Link>
                     </div>
-                    <img src="/img/logo.png" alt="Logo Seclin Basket Club - SBC" className="absolute -bottom-10 -right-10 w-64 opacity-10" />
+                    <img src="/logo.png" alt="Logo Seclin Basket Club - SBC" className="absolute -bottom-10 -right-10 w-64 opacity-10" />
                 </div>
 
                 {modalOpen && (

@@ -7,16 +7,18 @@ import { useState, useEffect } from "react";
 export default function Header() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isUtilsOpen, setIsUtilsOpen] = useState(false);
-    const [logoUrl, setLogoUrl] = useState("/img/logo.png");
+    const [logoUrl, setLogoUrl] = useState("/logo.png");
     const pathname = usePathname();
 
     useEffect(() => {
         fetch('/api/settings')
             .then(res => res.json())
             .then(data => {
+                /*
                 if (data.site_logo_id) {
                     setLogoUrl(`/api/image/${data.site_logo_id}`);
                 }
+                */
             })
             .catch(console.error);
     }, []);

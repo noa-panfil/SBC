@@ -64,8 +64,8 @@ export default function RootLayout({
               "name": "Seclin Basket Club",
               "alternateName": "SBC",
               "url": "https://seclinbasketclub.fr",
-              "logo": "https://seclinbasketclub.fr/img/logo.png",
-              "image": "https://seclinbasketclub.fr/img/logo.png",
+              "logo": "https://seclinbasketclub.fr/logo.png",
+              "image": "https://seclinbasketclub.fr/logo.png",
               "description": "Club de basket et de sport à Seclin, proche de Lille dans le Nord. Pratique du basket en compétition et loisir pour tous les âges.",
               "address": {
                 "@type": "PostalAddress",

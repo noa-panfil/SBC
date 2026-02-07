@@ -58,7 +58,7 @@ async function getUpcomingMatches() {
 }
 
 export default async function Home() {
-  let logoUrl = "/img/logo.png";
+  let logoUrl = "/logo.png";
   let heroUrl = "https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=1920&auto=format&fit=crop";
 
   try {
@@ -71,9 +71,12 @@ export default async function Home() {
       settings[row.key_name] = row.value;
     });
 
+    /* 
+    // Force use of local logo.png
     if (settings.site_logo_id) {
       logoUrl = `/api/image/${settings.site_logo_id}`;
-    }
+    } 
+    */
 
     if (settings.hero_image_type === 'custom' && settings.hero_image_id) {
       heroUrl = `/api/image/${settings.hero_image_id}`;

@@ -4,15 +4,17 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 
 export default function Footer() {
-    const [logoUrl, setLogoUrl] = useState("/img/logo.png");
+    const [logoUrl, setLogoUrl] = useState("/logo.png");
 
     useEffect(() => {
         fetch('/api/settings')
             .then(res => res.json())
             .then(data => {
+                /*
                 if (data.site_logo_id) {
                     setLogoUrl(`/api/image/${data.site_logo_id}`);
                 }
+                */
             })
             .catch(console.error);
     }, []);

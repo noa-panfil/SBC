@@ -67,6 +67,7 @@ const getTeamData = cache(async (id: string) => {
 });
 
 async function getLogoUrl() {
+    /*
     try {
         const [rows] = await pool.query<RowDataPacket[]>(
             "SELECT value FROM settings WHERE key_name = 'site_logo_id'"
@@ -75,7 +76,8 @@ async function getLogoUrl() {
             return `/api/image/${rows[0].value}`;
         }
     } catch (e) { }
-    return "/img/logo.png";
+    */
+    return "/logo.png";
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {

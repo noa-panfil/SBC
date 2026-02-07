@@ -4,11 +4,12 @@ import { useEffect, useState } from "react";
 
 export default function Contact() {
     const [redirectUrl, setRedirectUrl] = useState("");
-    const [logoUrl, setLogoUrl] = useState("/img/logo.png");
+    const [logoUrl, setLogoUrl] = useState("/logo.png");
 
     useEffect(() => {
         setRedirectUrl(window.location.origin + "/merci");
 
+        /*
         fetch('/api/settings')
             .then(res => res.json())
             .then(data => {
@@ -17,6 +18,7 @@ export default function Contact() {
                 }
             })
             .catch(console.error);
+        */
     }, []);
 
     return (

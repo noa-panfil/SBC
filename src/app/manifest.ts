@@ -3,7 +3,8 @@ import pool from '@/lib/db'
 import { RowDataPacket } from 'mysql2'
 
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
-    let logoUrl = '/img/logo.png';
+    let logoUrl = '/logo.png';
+    /* 
     try {
         const [rows] = await pool.query<RowDataPacket[]>(
             "SELECT value FROM settings WHERE key_name = 'site_logo_id'"
@@ -14,6 +15,7 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     } catch (e) {
         console.error("Error fetching manifest logo:", e);
     }
+    */
 
     return {
         name: 'Seclin Basket Club',

@@ -14,6 +14,10 @@ export const metadata: Metadata = {
   title: "Seclin Basket Club (SBC) | Club de Basket & Sport à Seclin (Métropole Lilloise)",
   description: "Bienvenue au Seclin Basket Club (SBC). Votre club de sport référence à Seclin, au cœur de la Métropole Lilloise et du Nord. Rejoignez-nous pour pratiquer le basket en compétition ou loisir.",
   keywords: ["Seclin", "Ville de Seclin", "Seclin Basket Club", "SBC", "Sport Seclin", "Seclin Sport", "Basket Seclin", "Sport Nord", "Sport Lille", "Club de sport Seclin", "Association sportive Seclin", "Basket métropole lilloise"],
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
   other: {
     "google-site-verification": "verification_token",
   }

@@ -101,7 +101,7 @@ export default function Equipes() {
         else if (n.includes('U15') || n.includes('CADET')) score = 600;
         else if (n.includes('U17')) score = 700;
         else if (n.includes('U18')) score = 800;
-        else if (n.includes('U20') || n.includes('JUNIOR')) score = 900;
+        else if (n.includes('U20') || n.includes('U21') || n.includes('JUNIOR') || n.includes('ESPOIR')) score = 900;
         else if (n.includes('SENIOR')) score = 1000;
         else if (n.includes('LOISIR')) score = 1100;
         else score = 9999;

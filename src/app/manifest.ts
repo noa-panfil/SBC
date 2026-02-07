@@ -3,7 +3,7 @@ import pool from '@/lib/db'
 import { RowDataPacket } from 'mysql2'
 
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
-    let logoUrl = '/logo.png?v=2';
+    let logoUrl = '/logo.png?v=3';
     /* 
     try {
         const [rows] = await pool.query<RowDataPacket[]>(
@@ -35,12 +35,26 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
                 src: logoUrl,
                 sizes: '192x192',
                 type: 'image/png',
+                purpose: 'any'
             },
             {
                 src: logoUrl,
                 sizes: '512x512',
                 type: 'image/png',
+                purpose: 'any'
             },
+            {
+                src: logoUrl,
+                sizes: '512x512',
+                type: 'image/png',
+                purpose: 'maskable'
+            },
+            {
+                src: logoUrl,
+                sizes: '1024x1024',
+                type: 'image/png',
+                purpose: 'any'
+            }
         ],
     }
 }

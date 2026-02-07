@@ -59,15 +59,28 @@ async function getUpcomingMatches() {
 
 export default async function Home() {
   let logoUrl = "/img/logo.png";
+  let heroUrl = "https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=1920&auto=format&fit=crop";
+
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
-      "SELECT value FROM settings WHERE key_name = 'site_logo_id'"
+      "SELECT key_name, value FROM settings WHERE key_name IN ('site_logo_id', 'hero_image_type', 'hero_image_id')"
     );
-    if (rows.length > 0) {
-      logoUrl = `/api/image/${rows[0].value}`;
+
+    const settings: Record<string, string> = {};
+    rows.forEach((row: any) => {
+      settings[row.key_name] = row.value;
+    });
+
+    if (settings.site_logo_id) {
+      logoUrl = `/api/image/${settings.site_logo_id}`;
     }
+
+    if (settings.hero_image_type === 'custom' && settings.hero_image_id) {
+      heroUrl = `/api/image/${settings.hero_image_id}`;
+    }
+
   } catch (e) {
-    console.error("Error fetching home logo:", e);
+    console.error("Error fetching home settings:", e);
   }
 
   const matches = await getUpcomingMatches();
@@ -77,7 +90,7 @@ export default async function Home() {
       <header className="relative h-screen flex items-center justify-center bg-gray-900 text-white">
         <div className="absolute inset-0 overflow-hidden">
           <Image
-            src="https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=1920&auto=format&fit=crop"
+            src={heroUrl}
             alt="Terrain de basket - Seclin Basket Club"
             fill
             priority

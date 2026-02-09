@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export async function GET() {
+    const session: any = await getServerSession(authOptions);
+    if (!session || session.user.role !== 'admin') {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     try {
         const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM division_mappings');
         return NextResponse.json(rows);
@@ -12,6 +18,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+    const session: any = await getServerSession(authOptions);
+    if (!session || session.user.role !== 'admin') {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     try {
         const { division_excel, team_name_excel, team_id } = await request.json();
 
@@ -30,6 +40,10 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+    const session: any = await getServerSession(authOptions);
+    if (!session || session.user.role !== 'admin') {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     try {
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');

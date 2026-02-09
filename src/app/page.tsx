@@ -98,6 +98,7 @@ export default async function Home() {
             fill
             priority
             sizes="100vw"
+            quality={100}
             className="w-full h-full object-cover opacity-50"
           />
         </div>

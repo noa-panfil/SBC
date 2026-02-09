@@ -25,6 +25,8 @@ interface Team {
     category: string;
     image: string | null;
     image_id?: number; // Helper for banner update
+    storyImage?: string | null;
+    story_image_id?: number | null;
     schedule: string;
     widgetId: string;
     coaches: Member[];
@@ -51,6 +53,7 @@ export default function AdminTeamsClient({ teams }: { teams: Team[] }) {
     };
 
     const bannerInputRef = useRef<HTMLInputElement>(null);
+    const storyImageInputRef = useRef<HTMLInputElement>(null);
 
     // Helper: Convert DD/MM/YYYY to YYYY-MM-DD
     const toISO = (dateStr: string | null) => {
@@ -123,6 +126,21 @@ export default function AdminTeamsClient({ teams }: { teams: Team[] }) {
         const newImageId = await handleUpload(file);
         if (newImageId) {
             setEditingTeam(prev => prev ? ({ ...prev, image_id: newImageId }) : null);
+        }
+    };
+
+    const handleStoryImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!editingTeam || !e.target.files?.[0]) return;
+        const file = e.target.files[0];
+
+        // 1. Immediate Preview
+        const previewUrl = URL.createObjectURL(file);
+        setEditingTeam(prev => prev ? ({ ...prev, storyImage: previewUrl }) : null);
+
+        // 2. Upload in background
+        const newImageId = await handleUpload(file);
+        if (newImageId) {
+            setEditingTeam(prev => prev ? ({ ...prev, story_image_id: newImageId }) : null);
         }
     };
 
@@ -222,6 +240,7 @@ export default function AdminTeamsClient({ teams }: { teams: Team[] }) {
             const payload = {
                 teamId: editingTeam.id,
                 bannerId: editingTeam.image_id,
+                storyImageId: editingTeam.story_image_id,
                 category: editingTeam.category,
                 schedule: editingTeam.schedule,
                 deletedMemberIds,
@@ -372,6 +391,32 @@ export default function AdminTeamsClient({ teams }: { teams: Team[] }) {
                                                     onClick={() => bannerInputRef.current?.click()}>
                                                     <span className="text-white font-bold bg-sbc px-4 py-2 rounded-full"><i className="fas fa-camera mr-2"></i> Changer la photo</span>
                                                     <input type="file" ref={bannerInputRef} className="hidden" accept="image/*" onChange={handleBannerChange} />
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Story Image UI */}
+                                        <div className="group relative rounded-lg shadow-md border border-gray-200 overflow-hidden bg-gray-100 flex-shrink-0">
+                                            <div className="absolute top-2 left-2 bg-purple-600/80 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded uppercase font-bold z-10 shadow-sm">
+                                                <i className="fas fa-mobile-alt mr-1"></i> Format Story
+                                            </div>
+                                            <div className="aspect-[9/16] w-full relative bg-gray-200">
+                                                <img
+                                                    src={editingTeam.storyImage || editingTeam.image || "/img/default-team.png"}
+                                                    className={`w-full h-full object-cover transition duration-300 ${!editingTeam.storyImage ? 'opacity-50 grayscale' : ''}`}
+                                                    alt="Story representation"
+                                                />
+                                                {!editingTeam.storyImage && (
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <span className="text-gray-500 font-bold text-xs uppercase text-center px-4">Utilise le logo par défaut</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            {isEditing && (
+                                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                                                    onClick={() => storyImageInputRef.current?.click()}>
+                                                    <span className="text-white font-bold bg-sbc px-4 py-2 rounded-full text-xs text-center shadow-lg transform hover:scale-105 transition"><i className="fas fa-camera mr-2"></i> Photo Story</span>
+                                                    <input type="file" ref={storyImageInputRef} className="hidden" accept="image/*" onChange={handleStoryImageChange} />
                                                 </div>
                                             )}
                                         </div>

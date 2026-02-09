@@ -10,13 +10,13 @@ export async function POST(request: Request) {
     }
     try {
         const body = await request.json();
-        const { teamId, bannerId, category, schedule, members, deletedMemberIds } = body;
+        const { teamId, bannerId, storyImageId, category, schedule, members, deletedMemberIds } = body;
 
-        // 1. Update Team Info (Banner, Category, Schedule)
-        // We build a dynamic update query or just update all 3 fields.
+        // 1. Update Team Info (Banner, Story Image, Category, Schedule)
+        // We build a dynamic update query or just update all 4 fields.
         await pool.query(
-            'UPDATE teams SET image_id = ?, category = ?, schedule = ? WHERE id = ?',
-            [bannerId, category, schedule, teamId]
+            'UPDATE teams SET image_id = ?, story_image_id = ?, category = ?, schedule = ? WHERE id = ?',
+            [bannerId, storyImageId, category, schedule, teamId]
         );
 
         // 2. Handle Deletions

@@ -9,6 +9,7 @@ interface Team {
     name: string;
     category: string;
     image: string | null;
+    storyImage?: string | null;
 }
 
 interface Mapping {
@@ -218,7 +219,7 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
                     teamName: foundTeam?.name,
                     homeDisplay,
                     visitorDisplay,
-                    teamImage: foundTeam?.image || "/logo.png",
+                    teamImage: foundTeam?.storyImage || foundTeam?.image || "/logo.png",
                     seclinSide
                 };
             });
@@ -313,7 +314,7 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
                     teamName: foundTeam?.name,
                     homeDisplay,
                     visitorDisplay,
-                    teamImage: foundTeam?.image || "/logo.png",
+                    teamImage: foundTeam?.storyImage || foundTeam?.image || "/logo.png",
                     seclinSide
                 };
             });

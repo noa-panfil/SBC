@@ -51,7 +51,7 @@ async function getCoachLogins() {
 async function getTeams() {
     try {
         const [teamRows] = await pool.query<RowDataPacket[]>(
-            'SELECT id, name, category, schedule, widget_id, image_id FROM teams ORDER BY name'
+            'SELECT id, name, category, schedule, widget_id, image_id, story_image_id FROM teams ORDER BY name'
         );
         const [memberRows] = await pool.query<RowDataPacket[]>(
             `SELECT tm.person_id, tm.team_id, tm.role, tm.number, p.firstname, p.lastname, p.birthdate, p.gender, p.image_id
@@ -90,6 +90,8 @@ async function getTeams() {
                 category: team.category,
                 image: team.image_id ? `/api/image/${team.image_id}` : null,
                 image_id: team.image_id, // Added: Essential for persistence on edit!
+                storyImage: team.story_image_id ? `/api/image/${team.story_image_id}` : null,
+                story_image_id: team.story_image_id,
                 schedule: team.schedule,
                 widgetId: team.widget_id,
                 coaches: coaches,

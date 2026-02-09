@@ -232,7 +232,21 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
         if (!el) return;
 
         try {
-            const dataUrl = await toPng(el, { quality: 1.0, pixelRatio: 2 });
+            const dataUrl = await toPng(el, {
+                quality: 1.0,
+                pixelRatio: 1, // 1 is enough if we are at full 1080x1920 size. 2 makes it 4k massive.
+                width: 1080,
+                height: 1920,
+                cacheBust: true,
+                style: {
+                    transform: 'none',
+                    transformOrigin: 'top left',
+                    marginBottom: '0',
+                    marginRight: '0',
+                    width: '1080px',
+                    height: '1920px'
+                }
+            });
             const link = document.createElement('a');
             const filename = (mode === 'planning-semaine' || mode === 'resultats-semaine')
                 ? `${mode}-partie-${index + 1}.png`

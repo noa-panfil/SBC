@@ -45,6 +45,7 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
     const [mode, setMode] = useState<Mode>('match-affiche');
     const [file, setFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
+    const [showTeamPhoto, setShowTeamPhoto] = useState(true);
 
     // Mapping Form
     const [newDivisionCode, setNewDivisionCode] = useState("");
@@ -490,6 +491,19 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
                         </button>
                     </div>
 
+                    <div className="flex items-center gap-2 mb-6">
+                        <input
+                            type="checkbox"
+                            id="showTeamPhoto"
+                            checked={showTeamPhoto}
+                            onChange={(e) => setShowTeamPhoto(e.target.checked)}
+                            className="w-5 h-5 text-sbc rounded focus:ring-sbc border-gray-300"
+                        />
+                        <label htmlFor="showTeamPhoto" className="text-gray-700 font-bold cursor-pointer select-none">
+                            Afficher la photo d'équipe (si disponible)
+                        </label>
+                    </div>
+
                     {matches.length > 0 && (
                         <>
                             {/* GLOBAL VIEWS (Planning / Results) */}
@@ -693,8 +707,21 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
                                                         >
 
                                                             {/* Background Decoration */}
-                                                            <div className="absolute top-0 w-full h-1/2 bg-sbc skew-y-12 transform -translate-y-1/2 opacity-20"></div>
-                                                            <div className="absolute bottom-0 w-full h-1/3 bg-black/50 backdrop-blur-3xl"></div>
+                                                            {match.teamImage && match.teamImage !== '/logo.png' && showTeamPhoto ? (
+                                                                <div className="absolute inset-0 z-0">
+                                                                    <img
+                                                                        src={match.teamImage}
+                                                                        className="w-full h-full object-cover opacity-50 mix-blend-overlay"
+                                                                        alt=""
+                                                                    />
+                                                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-90"></div>
+                                                                </div>
+                                                            ) : (
+                                                                <>
+                                                                    <div className="absolute top-0 w-full h-1/2 bg-sbc skew-y-12 transform -translate-y-1/2 opacity-20"></div>
+                                                                    <div className="absolute bottom-0 w-full h-1/3 bg-black/50 backdrop-blur-3xl"></div>
+                                                                </>
+                                                            )}
                                                             <div className="absolute inset-0 bg-[url('/img/pattern.png')] opacity-5"></div>
 
                                                             {/* Header */}

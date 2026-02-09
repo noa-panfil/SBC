@@ -11,6 +11,8 @@ const menuItems = [
     { name: "Joueurs", icon: "fas fa-user-friends", href: "/admin/players" },
     { name: "OTM", icon: "fas fa-table", href: "/admin#otm" },
     { name: "Événements", icon: "fas fa-calendar-alt", href: "/admin#events" },
+    { name: "Stories", icon: "fas fa-mobile-alt", href: "/admin#stories" },
+    { name: "Apparence", icon: "fas fa-paint-brush", href: "/admin#appearance" },
     { name: "Médiathèque", icon: "fas fa-images", href: "/admin/images" },
 ];
 

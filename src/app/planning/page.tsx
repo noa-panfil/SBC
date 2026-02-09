@@ -9,6 +9,8 @@ export const metadata: Metadata = {
     description: 'Consultez les dates et horaires des prochains matchs de toutes les équipes du Seclin Basket Club.',
 };
 
+export const dynamic = 'force-dynamic';
+
 async function getMatches() {
     try {
         const [rows] = await pool.query<RowDataPacket[]>(`

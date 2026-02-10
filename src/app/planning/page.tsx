@@ -47,8 +47,8 @@ async function getMatches() {
 
         // Combine and format
         const combined = [
-            ...homeMatches.map(r => ({ ...r, is_home: true })),
-            ...awayMatches.map(r => ({ ...r, is_home: false }))
+            ...(homeMatches as any[]).map(r => ({ ...r, is_home: true })),
+            ...(awayMatches as any[]).map(r => ({ ...r, is_home: false }))
         ];
 
         // Sort by date then time

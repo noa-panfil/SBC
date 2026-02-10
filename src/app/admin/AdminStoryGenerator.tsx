@@ -153,12 +153,19 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
                     timeStr = `${hours.toString().padStart(2, '0')}H${mins.toString().padStart(2, '0')}`;
                 }
 
+                const homeName = row[colIdx.home]?.toString() || "";
+                const visitorName = row[colIdx.visitor]?.toString() || "";
+
+                if (homeName.toLowerCase().includes('exempt') || visitorName.toLowerCase().includes('exempt')) {
+                    continue;
+                }
+
                 parsedMatches.push({
                     division: division.toString().trim(),
                     date: dateStr?.toString() || "",
                     time: timeStr?.toString() || "",
-                    home: row[colIdx.home]?.toString() || "",
-                    visitor: row[colIdx.visitor]?.toString() || "",
+                    home: homeName,
+                    visitor: visitorName,
                     location: row[colIdx.location]?.toString() || "",
                     scoreHome: colIdx.scoreHome !== -1 && row[colIdx.scoreHome] !== undefined ? row[colIdx.scoreHome]?.toString() : undefined,
                     scoreVisitor: colIdx.scoreVisitor !== -1 && row[colIdx.scoreVisitor] !== undefined ? row[colIdx.scoreVisitor]?.toString() : undefined,

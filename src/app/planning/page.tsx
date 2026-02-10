@@ -26,7 +26,7 @@ async function getMatches() {
                 match_type,
                 NULL as location
             FROM otm_matches 
-            WHERE match_date >= CURDATE()
+            WHERE match_date >= CURDATE() AND opponent NOT LIKE '%Exempt%'
         `);
 
         // Fetch Away Matches
@@ -42,7 +42,7 @@ async function getMatches() {
                 'Championnat' as match_type,
                 location
             FROM external_matches 
-            WHERE match_date >= CURDATE()
+            WHERE match_date >= CURDATE() AND opponent NOT LIKE '%Exempt%'
         `);
 
         // Combine and format

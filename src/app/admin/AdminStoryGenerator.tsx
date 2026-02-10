@@ -46,7 +46,8 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
     const [mode, setMode] = useState<Mode>('match-affiche');
     const [file, setFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
-    const [showTeamPhoto, setShowTeamPhoto] = useState(true);
+    const [storyBackgroundType, setStoryBackgroundType] = useState<'default' | 'team' | 'custom'>('default');
+    const [customBackground, setCustomBackground] = useState<string | null>(null);
 
     // Mapping Form
     const [newDivisionCode, setNewDivisionCode] = useState("");
@@ -98,6 +99,8 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const uploadedFile = e.target.files?.[0];
         if (!uploadedFile) return;
+
+        setFile(uploadedFile);
 
         setFile(uploadedFile);
         const reader = new FileReader();
@@ -234,6 +237,17 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
             setMatches(mapped);
         };
         reader.readAsBinaryString(uploadedFile);
+    };
+
+    const handleBackgroundUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                setCustomBackground(evt.target?.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
     };
 
     const downloadStory = async (index: number) => {
@@ -544,17 +558,86 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
                         </button>
                     </div>
 
-                    <div className="flex items-center gap-2 mb-6">
-                        <input
-                            type="checkbox"
-                            id="showTeamPhoto"
-                            checked={showTeamPhoto}
-                            onChange={(e) => setShowTeamPhoto(e.target.checked)}
-                            className="w-5 h-5 text-sbc rounded focus:ring-sbc border-gray-300"
-                        />
-                        <label htmlFor="showTeamPhoto" className="text-gray-700 font-bold cursor-pointer select-none">
-                            Afficher la photo d'équipe (si disponible)
-                        </label>
+                    {/* Checkbox removed, replaced by background mode selection */}
+
+                    <div className="border border-gray-200 rounded-xl p-6 mb-8 bg-white">
+                        <label className="block text-sm font-bold text-gray-700 mb-4">Fond de la story</label>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {/* Option 1: Default (Gradient) */}
+                            <div
+                                onClick={() => setStoryBackgroundType('default')}
+                                className={`relative rounded-2xl border-2 overflow-hidden cursor-pointer transition-all group ${storyBackgroundType === 'default' ? 'border-sbc ring-4 ring-sbc/10 scale-[1.02]' : 'border-gray-100 hover:border-gray-200'}`}
+                            >
+                                <div className="aspect-[9/16] h-48 mx-auto relative bg-gradient-to-tr from-sbc-dark to-gray-900 flex items-center justify-center">
+                                    <div className="absolute top-0 w-full h-1/2 bg-sbc skew-y-12 transform -translate-y-1/2 opacity-20"></div>
+                                    <div className="absolute bottom-0 w-full h-1/3 bg-black/50 backdrop-blur-3xl"></div>
+                                    <div className="text-white text-center p-2 z-10">
+                                        <i className="fas fa-paint-brush text-2xl mb-1"></i>
+                                        <div className="font-bold text-sm">Style SBC</div>
+                                    </div>
+                                    {storyBackgroundType === 'default' && (
+                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                            <i className="fas fa-check-circle text-3xl text-white drop-shadow-lg"></i>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Option 2: Team Photo */}
+                            <div
+                                onClick={() => setStoryBackgroundType('team')}
+                                className={`relative rounded-2xl border-2 overflow-hidden cursor-pointer transition-all group ${storyBackgroundType === 'team' ? 'border-sbc ring-4 ring-sbc/10 scale-[1.02]' : 'border-gray-100 hover:border-gray-200'}`}
+                            >
+                                <div className="aspect-[9/16] h-48 mx-auto relative bg-gray-800 flex items-center justify-center overflow-hidden">
+                                    <img src="https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=1080&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover opacity-60" alt="Team representation" />
+                                    <div className="text-white text-center p-2 z-10 relative">
+                                        <i className="fas fa-users text-2xl mb-1"></i>
+                                        <div className="font-bold text-sm">Photo d'équipe</div>
+                                    </div>
+                                    {storyBackgroundType === 'team' && (
+                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-20">
+                                            <i className="fas fa-check-circle text-3xl text-white drop-shadow-lg"></i>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Option 3: Custom */}
+                            <div
+                                onClick={() => setStoryBackgroundType('custom')}
+                                className={`relative rounded-2xl border-2 overflow-hidden cursor-pointer transition-all group ${storyBackgroundType === 'custom' ? 'border-sbc ring-4 ring-sbc/10 scale-[1.02]' : 'border-gray-100 hover:border-gray-200'}`}
+                            >
+                                <div className="aspect-[9/16] h-48 mx-auto relative bg-gray-100 flex items-center justify-center overflow-hidden">
+                                    {customBackground ? (
+                                        <img src={customBackground} className="w-full h-full object-cover" alt="Custom" />
+                                    ) : (
+                                        <div className="text-gray-400 text-center p-2">
+                                            <i className="fas fa-image text-2xl mb-1"></i>
+                                            <div className="font-bold text-sm">Image perso.</div>
+                                        </div>
+                                    )}
+                                    {storyBackgroundType === 'custom' && (
+                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity hover:opacity-0">
+                                            <i className="fas fa-check-circle text-3xl text-white drop-shadow-lg"></i>
+                                        </div>
+                                    )}
+                                </div>
+                                {storyBackgroundType === 'custom' && (
+                                    <div className="p-2 bg-gray-50 border-t border-gray-100">
+                                        <label className="block w-full cursor-pointer bg-white border border-gray-300 hover:border-sbc text-gray-700 hover:text-sbc px-2 py-1 rounded text-center font-bold text-xs transition-colors shadow-sm">
+                                            <i className="fas fa-upload mr-1"></i>
+                                            {customBackground ? "Changer" : "Importer"}
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handleBackgroundUpload}
+                                                className="hidden"
+                                            />
+                                        </label>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
 
                     {matches.length > 0 && (
@@ -585,8 +668,11 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
                                                 <div className="relative overflow-hidden shadow-2xl rounded-xl bg-white">
                                                     <div
                                                         ref={el => { storyRefs.current[slideIndex] = el }}
-                                                        className="w-[1080px] h-[1920px] bg-gradient-to-tr from-sbc-dark to-gray-900 text-white relative flex flex-col items-center overflow-hidden"
+                                                        className={`w-[1080px] h-[1920px] text-white relative flex flex-col items-center overflow-hidden ${storyBackgroundType === 'custom' && customBackground ? 'bg-black' : 'bg-gradient-to-tr from-sbc-dark to-gray-900'}`}
                                                         style={{
+                                                            backgroundImage: storyBackgroundType === 'custom' && customBackground ? `url(${customBackground})` : undefined,
+                                                            backgroundSize: 'cover',
+                                                            backgroundPosition: 'center',
                                                             transform: 'scale(0.25)',
                                                             transformOrigin: 'top left',
                                                             width: '1080px',
@@ -595,10 +681,15 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
                                                             marginRight: '-810px'
                                                         }}
                                                     >
-                                                        {/* Background Decoration */}
-                                                        <div className="absolute top-0 w-full h-1/2 bg-sbc skew-y-12 transform -translate-y-1/2 opacity-20"></div>
-                                                        <div className="absolute bottom-0 w-full h-1/3 bg-black/50 backdrop-blur-3xl"></div>
-                                                        <div className="absolute inset-0 bg-[url('/img/pattern.png')] opacity-5"></div>
+                                                        {/* Background Decoration (Only if not custom) */}
+                                                        {storyBackgroundType !== 'custom' && (
+                                                            <>
+                                                                <div className="absolute top-0 w-full h-1/2 bg-sbc skew-y-12 transform -translate-y-1/2 opacity-20"></div>
+                                                                <div className="absolute bottom-0 w-full h-1/3 bg-black/50 backdrop-blur-3xl"></div>
+                                                                <div className="absolute inset-0 bg-[url('/img/pattern.png')] opacity-5"></div>
+                                                            </>
+                                                        )}
+                                                        {storyBackgroundType === 'custom' && customBackground && <div className="absolute inset-0 bg-black/30"></div>}
 
                                                         {/* Header */}
                                                         <div className="pt-24 text-center z-10 w-full px-12 pb-8">
@@ -756,8 +847,11 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
                                                         {/* Actual 9:16 layout rendered here */}
                                                         <div
                                                             ref={el => { storyRefs.current[i] = el }}
-                                                            className={`w-[1080px] h-[1920px] bg-gradient-to-tr ${bgGradient} text-white relative flex flex-col items-center overflow-hidden`}
+                                                            className={`w-[1080px] h-[1920px] bg-gradient-to-tr ${storyBackgroundType === 'custom' && customBackground ? 'bg-black' : bgGradient} text-white relative flex flex-col items-center overflow-hidden`}
                                                             style={{
+                                                                backgroundImage: storyBackgroundType === 'custom' && customBackground ? `url(${customBackground})` : undefined,
+                                                                backgroundSize: 'cover',
+                                                                backgroundPosition: 'center',
                                                                 transform: 'scale(0.25)',
                                                                 transformOrigin: 'top left',
                                                                 width: '1080px',
@@ -768,22 +862,27 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
                                                         >
 
                                                             {/* Background Decoration */}
-                                                            {match.teamImage && match.teamImage !== '/logo.png' && showTeamPhoto ? (
-                                                                <div className="absolute inset-0 z-0">
-                                                                    <img
-                                                                        src={match.teamImage}
-                                                                        className="w-full h-full object-cover opacity-50 mix-blend-overlay"
-                                                                        alt=""
-                                                                    />
-                                                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-90"></div>
-                                                                </div>
-                                                            ) : (
+                                                            {storyBackgroundType !== 'custom' && (
                                                                 <>
-                                                                    <div className="absolute top-0 w-full h-1/2 bg-sbc skew-y-12 transform -translate-y-1/2 opacity-20"></div>
-                                                                    <div className="absolute bottom-0 w-full h-1/3 bg-black/50 backdrop-blur-3xl"></div>
+                                                                    {match.teamImage && match.teamImage !== '/logo.png' && storyBackgroundType === 'team' ? (
+                                                                        <div className="absolute inset-0 z-0">
+                                                                            <img
+                                                                                src={match.teamImage}
+                                                                                className="w-full h-full object-cover opacity-50 mix-blend-overlay"
+                                                                                alt=""
+                                                                            />
+                                                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-90"></div>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <>
+                                                                            <div className="absolute top-0 w-full h-1/2 bg-sbc skew-y-12 transform -translate-y-1/2 opacity-20"></div>
+                                                                            <div className="absolute bottom-0 w-full h-1/3 bg-black/50 backdrop-blur-3xl"></div>
+                                                                        </>
+                                                                    )}
+                                                                    <div className="absolute inset-0 bg-[url('/img/pattern.png')] opacity-5"></div>
                                                                 </>
                                                             )}
-                                                            <div className="absolute inset-0 bg-[url('/img/pattern.png')] opacity-5"></div>
+                                                            {storyBackgroundType === 'custom' && customBackground && <div className="absolute inset-0 bg-black/30"></div>}
 
                                                             {/* Header */}
                                                             <div className="pt-24 text-center z-10 w-full px-12">

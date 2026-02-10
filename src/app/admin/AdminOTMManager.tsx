@@ -477,10 +477,12 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
             const method = currentMatch.id ? "PUT" : "POST";
             const url = currentMatch.id ? `/api/otm/${currentMatch.id}` : "/api/otm";
 
+            const payload = { ...currentMatch, is_prefilled: false };
+
             const res = await fetch(url, {
                 method,
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(currentMatch)
+                body: JSON.stringify(payload)
             });
 
             if (!res.ok) {
@@ -533,9 +535,78 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                     </div>
                 </div>
 
-                <button onClick={handleAdd} className="bg-sbc text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-sbc-dark transition shadow-lg shadow-sbc/20">
-                    + Ajouter Match
-                </button>
+                <div className="flex gap-2">
+                    <label className="bg-green-600 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-green-700 transition shadow-lg shadow-green-600/20 cursor-pointer flex items-center gap-2">
+                        <i className="fas fa-file-excel"></i> Importer
+                        <input
+                            type="file"
+                            accept=".xlsx, .xls"
+                            className="hidden"
+                            onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+
+                                if (!confirm("Importer ce fichier et générer les matchs ?")) return;
+
+                                const formData = new FormData();
+                                formData.append('file', file);
+
+                                try {
+                                    const res = await fetch('/api/admin/otm/import', {
+                                        method: 'POST',
+                                        body: formData
+                                    });
+                                    const data = await res.json();
+                                    if (res.ok) {
+                                        let message = `Import terminé !\n- Importés : ${data.imported}\n- Doublons (déjà existants ou présents plusieurs fois dans le fichier) : ${data.duplicated}\n- Ignorés (sans mapping) : ${data.skipped}`;
+
+                                        if (data.duplicated > 0 && data.duplicateDetails?.length > 0) {
+                                            message += `\n\nExemples de doublons :\n- ${data.duplicateDetails.slice(0, 5).join('\n- ')}`;
+                                            if (data.duplicated > 5) message += `\n... et ${data.duplicated - 5} autres.`;
+                                        }
+                                        alert(message);
+                                        router.refresh();
+                                    } else {
+                                        alert("Erreur : " + data.error);
+                                    }
+                                } catch (err) {
+                                    console.error(err);
+                                    alert("Erreur lors de l'import");
+                                }
+                                e.target.value = ""; // Reset
+                            }}
+                        />
+                    </label>
+
+
+                    <button
+                        onClick={async () => {
+                            if (!confirm("ATTENTION : Cela va supprimer TOUS les matchs (Domicile et Extérieur) de la base de données. Êtes-vous sûr ?")) return;
+
+                            try {
+                                const res = await fetch('/api/admin/otm/clear', { method: 'DELETE' });
+                                const data = await res.json();
+                                if (res.ok) {
+                                    alert(data.message);
+                                    router.refresh();
+                                } else {
+                                    alert('Erreur: ' + data.error);
+                                }
+                            } catch (e) {
+                                console.error(e);
+                                alert("Erreur lors de la suppression");
+                            }
+                        }}
+                        className="bg-red-500 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-600 transition shadow-lg shadow-red-500/20 flex items-center gap-2"
+                        title="Vider la table des matchs pour réimporter proprement"
+                    >
+                        <i className="fas fa-trash-alt"></i> Tout Vider
+                    </button>
+
+                    <button onClick={handleAdd} className="bg-sbc text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-sbc-dark transition shadow-lg shadow-sbc/20">
+                        + Ajouter Match
+                    </button>
+                </div>
             </div>
 
             <div className="overflow-x-auto bg-white rounded-2xl shadow-sm border border-gray-100">
@@ -554,9 +625,14 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                     </thead>
                     <tbody className="divide-y divide-gray-100 text-sm">
                         {filteredMatches.map(match => (
-                            <tr key={match.id} className="hover:bg-gray-50">
+                            <tr key={match.id} className={`${match.is_prefilled ? 'bg-orange-50/50 hover:bg-orange-50' : 'hover:bg-gray-50'}`}>
                                 <td className="p-4">
-                                    <div className="font-bold">{match.category}</div>
+                                    <div className="font-bold flex items-center gap-2">
+                                        {match.category}
+                                        {!!match.is_prefilled && (
+                                            <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" title="Match pré-rempli (à valider)"></span>
+                                        )}
+                                    </div>
                                     {match.match_type === 'Coupe' && (
                                         <span className="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-yellow-100 text-yellow-700 border border-yellow-200">
                                             <i className="fas fa-trophy mr-1"></i> Coupe
@@ -620,6 +696,11 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                                     </div>
                                 </td>
                                 <td className="p-4 text-right flex gap-2 justify-end">
+                                    {!!match.is_prefilled && (
+                                        <button onClick={() => handleEdit(match)} className="bg-orange-100 text-orange-600 hover:bg-orange-200 p-2 rounded transition" title="Valider / Compléter">
+                                            <i className="fas fa-check-circle"></i>
+                                        </button>
+                                    )}
                                     <button onClick={() => handleEdit(match)} className="text-sbc hover:bg-sbc/10 p-2 rounded transition">
                                         <i className="fas fa-edit"></i>
                                     </button>
@@ -791,131 +872,133 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                 </div>
             </div>
 
-            {isEditing && (
-                <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto p-8 animate-fade-in-up">
-                        <h3 className="text-xl font-black mb-6 uppercase">
-                            {currentMatch.id ? 'Modifier Match OTM' : 'Nouveau Match OTM'}
-                        </h3>
+            {
+                isEditing && (
+                    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto p-8 animate-fade-in-up">
+                            <h3 className="text-xl font-black mb-6 uppercase">
+                                {currentMatch.id ? 'Modifier Match OTM' : 'Nouveau Match OTM'}
+                            </h3>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <TeamSelector
-                                    teams={teams}
-                                    value={currentMatch.category}
-                                    onChange={(val) => setCurrentMatch({ ...currentMatch, category: val })}
-                                    label="Catégorie (Équipe à domicile)"
-                                />
-                            </div>
-                            <div className="flex flex-col gap-2 pb-3">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" checked={currentMatch.is_white_jersey || false} onChange={e => setCurrentMatch({ ...currentMatch, is_white_jersey: e.target.checked })} className="w-5 h-5 text-sbc rounded" />
-                                    <span className="text-sm font-bold text-gray-700 uppercase">Maillots Blancs ?</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" checked={currentMatch.is_club_referee || false} onChange={e => setCurrentMatch({ ...currentMatch, is_club_referee: e.target.checked })} className="w-5 h-5 text-sbc rounded" />
-                                    <span className="text-sm font-bold text-gray-700 uppercase">Arbitres Club ?</span>
-                                </label>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Date</label>
-                                <input type="date" className="w-full p-2 border rounded-lg" value={currentMatch.match_date || ''} onChange={e => setCurrentMatch({ ...currentMatch, match_date: e.target.value })} />
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">H. Match</label>
-                                    <input type="time" className="w-full p-2 border rounded-lg" value={currentMatch.match_time || ''} onChange={handleMatchTimeChange} />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">H. RDV (Auto -30min)</label>
-                                    <input type="time" className="w-full p-2 border rounded-lg" value={currentMatch.meeting_time || ''} onChange={e => setCurrentMatch({ ...currentMatch, meeting_time: e.target.value })} />
-                                </div>
-                            </div>
-                            <div className="col-span-2">
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Adversaire</label>
-                                <input className="w-full p-2 border rounded-lg font-bold" value={currentMatch.opponent || ''} onChange={e => setCurrentMatch({ ...currentMatch, opponent: e.target.value })} />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Code Rencontre</label>
-                                <input className="w-full p-2 border rounded-lg font-mono" value={currentMatch.match_code || ''} onChange={e => setCurrentMatch({ ...currentMatch, match_code: e.target.value })} />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Type de Match</label>
-                                <select
-                                    className="w-full p-2 border rounded-lg font-bold bg-white"
-                                    value={currentMatch.match_type || 'Championnat'}
-                                    onChange={e => setCurrentMatch({ ...currentMatch, match_type: e.target.value })}
-                                >
-                                    <option value="Championnat">Championnat</option>
-                                    <option value="Coupe">Coupe</option>
-                                    <option value="Amical">Amical</option>
-                                </select>
-                            </div>
-                            <div className="col-span-2 space-y-4">
-                                <label className="flex items-center gap-2 cursor-pointer bg-orange-50 p-3 rounded-lg border border-orange-100">
-                                    <input
-                                        type="checkbox"
-                                        checked={currentMatch.designation === "OPEN"}
-                                        onChange={e => setCurrentMatch({ ...currentMatch, designation: e.target.checked ? "OPEN" : "" })}
-                                        className="w-5 h-5 text-orange-500 rounded focus:ring-orange-500"
-                                    />
-                                    <div>
-                                        <p className="text-sm font-bold text-gray-900 uppercase">Match Open (Sans Désignation)</p>
-                                        <p className="text-xs text-gray-500">Tous les coachs pourront inscrire leurs joueurs.</p>
-                                    </div>
-                                </label>
-
-                                {currentMatch.designation !== "OPEN" && (
-                                    <DesignationEditor
+                                    <TeamSelector
                                         teams={teams}
-                                        value={currentMatch.designation}
-                                        onChange={(val) => setCurrentMatch({ ...currentMatch, designation: val })}
+                                        value={currentMatch.category}
+                                        onChange={(val) => setCurrentMatch({ ...currentMatch, category: val })}
+                                        label="Catégorie (Équipe à domicile)"
                                     />
-                                )}
-                            </div>
-
-                            <div className="col-span-2 space-y-4">
-                                <label className={`flex items-center gap-2 p-3 rounded-lg border transition ${currentMatch.is_featured ? 'bg-sbc/10 border-sbc' : 'bg-gray-50 border-gray-100'} ${(canFeature || currentMatch.is_featured) ? 'cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}>
-                                    <input
-                                        type="checkbox"
-                                        checked={currentMatch.is_featured || false}
-                                        onChange={e => setCurrentMatch({ ...currentMatch, is_featured: e.target.checked })}
-                                        disabled={!canFeature && !currentMatch.is_featured}
-                                        className="w-5 h-5 text-sbc rounded focus:ring-sbc"
-                                    />
+                                </div>
+                                <div className="flex flex-col gap-2 pb-3">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" checked={currentMatch.is_white_jersey || false} onChange={e => setCurrentMatch({ ...currentMatch, is_white_jersey: e.target.checked })} className="w-5 h-5 text-sbc rounded" />
+                                        <span className="text-sm font-bold text-gray-700 uppercase">Maillots Blancs ?</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" checked={currentMatch.is_club_referee || false} onChange={e => setCurrentMatch({ ...currentMatch, is_club_referee: e.target.checked })} className="w-5 h-5 text-sbc rounded" />
+                                        <span className="text-sm font-bold text-gray-700 uppercase">Arbitres Club ?</span>
+                                    </label>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Date</label>
+                                    <input type="date" className="w-full p-2 border rounded-lg" value={currentMatch.match_date || ''} onChange={e => setCurrentMatch({ ...currentMatch, match_date: e.target.value })} />
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
                                     <div>
-                                        <p className="text-sm font-bold text-gray-900 uppercase flex items-center gap-2">
-                                            <i className="fas fa-fire text-sbc"></i> Match à la une
-                                        </p>
-                                        {!canFeature && !currentMatch.is_featured && (
-                                            <p className="text-xs text-red-500 font-bold">Un match est déjà à la une cette semaine.</p>
-                                        )}
+                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">H. Match</label>
+                                        <input type="time" className="w-full p-2 border rounded-lg" value={currentMatch.match_time || ''} onChange={handleMatchTimeChange} />
                                     </div>
-                                </label>
-                            </div>
-                        </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">H. RDV (Auto -30min)</label>
+                                        <input type="time" className="w-full p-2 border rounded-lg" value={currentMatch.meeting_time || ''} onChange={e => setCurrentMatch({ ...currentMatch, meeting_time: e.target.value })} />
+                                    </div>
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Adversaire</label>
+                                    <input className="w-full p-2 border rounded-lg font-bold" value={currentMatch.opponent || ''} onChange={e => setCurrentMatch({ ...currentMatch, opponent: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Code Rencontre</label>
+                                    <input className="w-full p-2 border rounded-lg font-mono" value={currentMatch.match_code || ''} onChange={e => setCurrentMatch({ ...currentMatch, match_code: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Type de Match</label>
+                                    <select
+                                        className="w-full p-2 border rounded-lg font-bold bg-white"
+                                        value={currentMatch.match_type || 'Championnat'}
+                                        onChange={e => setCurrentMatch({ ...currentMatch, match_type: e.target.value })}
+                                    >
+                                        <option value="Championnat">Championnat</option>
+                                        <option value="Coupe">Coupe</option>
+                                        <option value="Amical">Amical</option>
+                                    </select>
+                                </div>
+                                <div className="col-span-2 space-y-4">
+                                    <label className="flex items-center gap-2 cursor-pointer bg-orange-50 p-3 rounded-lg border border-orange-100">
+                                        <input
+                                            type="checkbox"
+                                            checked={currentMatch.designation === "OPEN"}
+                                            onChange={e => setCurrentMatch({ ...currentMatch, designation: e.target.checked ? "OPEN" : "" })}
+                                            className="w-5 h-5 text-orange-500 rounded focus:ring-orange-500"
+                                        />
+                                        <div>
+                                            <p className="text-sm font-bold text-gray-900 uppercase">Match Open (Sans Désignation)</p>
+                                            <p className="text-xs text-gray-500">Tous les coachs pourront inscrire leurs joueurs.</p>
+                                        </div>
+                                    </label>
 
-                        {currentMatch.id && (
-                            <div className="mt-6 pt-6 border-t border-gray-100">
-                                <h4 className="text-sm font-black uppercase text-gray-400 mb-4">Affectations (Optionnel pour admin)</h4>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <input className="p-2 border rounded text-sm" placeholder="Marqueur" value={currentMatch.scorer || ''} onChange={e => setCurrentMatch({ ...currentMatch, scorer: e.target.value })} />
-                                    <input className="p-2 border rounded text-sm" placeholder="Chronométreur" value={currentMatch.timer || ''} onChange={e => setCurrentMatch({ ...currentMatch, timer: e.target.value })} />
-                                    <input className="p-2 border rounded text-sm" placeholder="Resp. Salle" value={currentMatch.hall_manager || ''} onChange={e => setCurrentMatch({ ...currentMatch, hall_manager: e.target.value })} />
-                                    <input className="p-2 border rounded text-sm" placeholder="Buvette" value={currentMatch.bar_manager || ''} onChange={e => setCurrentMatch({ ...currentMatch, bar_manager: e.target.value })} />
-                                    <input className="p-2 border rounded text-sm" placeholder="Arbitre Club 1" value={currentMatch.referee || ''} onChange={e => setCurrentMatch({ ...currentMatch, referee: e.target.value })} />
-                                    <input className="p-2 border rounded text-sm" placeholder="Arbitre Club 2" value={currentMatch.referee_2 || ''} onChange={e => setCurrentMatch({ ...currentMatch, referee_2: e.target.value })} />
+                                    {currentMatch.designation !== "OPEN" && (
+                                        <DesignationEditor
+                                            teams={teams}
+                                            value={currentMatch.designation}
+                                            onChange={(val) => setCurrentMatch({ ...currentMatch, designation: val })}
+                                        />
+                                    )}
+                                </div>
+
+                                <div className="col-span-2 space-y-4">
+                                    <label className={`flex items-center gap-2 p-3 rounded-lg border transition ${currentMatch.is_featured ? 'bg-sbc/10 border-sbc' : 'bg-gray-50 border-gray-100'} ${(canFeature || currentMatch.is_featured) ? 'cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}>
+                                        <input
+                                            type="checkbox"
+                                            checked={currentMatch.is_featured || false}
+                                            onChange={e => setCurrentMatch({ ...currentMatch, is_featured: e.target.checked })}
+                                            disabled={!canFeature && !currentMatch.is_featured}
+                                            className="w-5 h-5 text-sbc rounded focus:ring-sbc"
+                                        />
+                                        <div>
+                                            <p className="text-sm font-bold text-gray-900 uppercase flex items-center gap-2">
+                                                <i className="fas fa-fire text-sbc"></i> Match à la une
+                                            </p>
+                                            {!canFeature && !currentMatch.is_featured && (
+                                                <p className="text-xs text-red-500 font-bold">Un match est déjà à la une cette semaine.</p>
+                                            )}
+                                        </div>
+                                    </label>
                                 </div>
                             </div>
-                        )}
 
-                        <div className="flex justify-end gap-3 mt-8">
-                            <button onClick={() => setIsEditing(false)} className="px-4 py-2 font-bold text-gray-500 hover:text-gray-700">Annuler</button>
-                            <button onClick={handleSave} className="bg-sbc text-white px-6 py-2 rounded-xl font-black uppercase tracking-widest shadow-lg hover:bg-sbc-dark">Enregistrer</button>
+                            {currentMatch.id && (
+                                <div className="mt-6 pt-6 border-t border-gray-100">
+                                    <h4 className="text-sm font-black uppercase text-gray-400 mb-4">Affectations (Optionnel pour admin)</h4>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <input className="p-2 border rounded text-sm" placeholder="Marqueur" value={currentMatch.scorer || ''} onChange={e => setCurrentMatch({ ...currentMatch, scorer: e.target.value })} />
+                                        <input className="p-2 border rounded text-sm" placeholder="Chronométreur" value={currentMatch.timer || ''} onChange={e => setCurrentMatch({ ...currentMatch, timer: e.target.value })} />
+                                        <input className="p-2 border rounded text-sm" placeholder="Resp. Salle" value={currentMatch.hall_manager || ''} onChange={e => setCurrentMatch({ ...currentMatch, hall_manager: e.target.value })} />
+                                        <input className="p-2 border rounded text-sm" placeholder="Buvette" value={currentMatch.bar_manager || ''} onChange={e => setCurrentMatch({ ...currentMatch, bar_manager: e.target.value })} />
+                                        <input className="p-2 border rounded text-sm" placeholder="Arbitre Club 1" value={currentMatch.referee || ''} onChange={e => setCurrentMatch({ ...currentMatch, referee: e.target.value })} />
+                                        <input className="p-2 border rounded text-sm" placeholder="Arbitre Club 2" value={currentMatch.referee_2 || ''} onChange={e => setCurrentMatch({ ...currentMatch, referee_2: e.target.value })} />
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="flex justify-end gap-3 mt-8">
+                                <button onClick={() => setIsEditing(false)} className="px-4 py-2 font-bold text-gray-500 hover:text-gray-700">Annuler</button>
+                                <button onClick={handleSave} className="bg-sbc text-white px-6 py-2 rounded-xl font-black uppercase tracking-widest shadow-lg hover:bg-sbc-dark">Enregistrer</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 }

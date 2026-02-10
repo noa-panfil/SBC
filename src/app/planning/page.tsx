@@ -14,13 +14,46 @@ export const dynamic = 'force-dynamic';
 async function getMatches() {
     try {
         const [rows] = await pool.query<RowDataPacket[]>(`
-            SELECT * FROM otm_matches 
-            WHERE match_date >= CURDATE() 
+            SELECT 
+                id, 
+                match_date, 
+                match_time, 
+                category, 
+                opponent, 
+                is_white_jersey, 
+                is_featured,
+                match_type,
+                NULL as location,
+                TRUE as is_home
+            FROM otm_matches 
+            WHERE match_date >= CURDATE()
+
+            UNION ALL
+
+            SELECT 
+                id, 
+                match_date, 
+                match_time, 
+                category, 
+                opponent, 
+                NULL as is_white_jersey, 
+                FALSE as is_featured,
+                'Championnat' as match_type,
+                location,
+                FALSE as is_home
+            FROM external_matches 
+            WHERE match_date >= CURDATE()
+
             ORDER BY match_date ASC, match_time ASC 
         `);
+
         return rows.map(r => ({
             ...r,
             match_date: r.match_date.toISOString(),
+            // Ensure boolean fields are actually booleans for the client
+            is_home: !!r.is_home,
+            is_featured: !!r.is_featured,
+            is_white_jersey: r.is_white_jersey === 1 || r.is_white_jersey === true
         }));
     } catch (e) {
         console.error("Error fetching matches", e);

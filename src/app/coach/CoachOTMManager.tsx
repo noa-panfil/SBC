@@ -372,6 +372,15 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
         setCurrentDate(newDate);
     };
 
+    const cleanTeamName = (name: string) => {
+        if (!name) return "";
+        return name
+            .split('(')[0]
+            .replace(/\s+-\s+.*/, '')   // Remove " - ..."
+            .replace(/-(\d+.*)/, '')    // Remove "-2..."
+            .trim();
+    };
+
     return (
         <div className="space-y-8">
             {/* Help Section */}
@@ -392,7 +401,7 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
                                 <div key={req.id} className="bg-white p-4 rounded-lg border border-red-100 shadow-sm flex flex-col justify-between gap-3">
                                     <div>
                                         <div className="flex justify-between items-start mb-2">
-                                            <span className="font-black text-gray-800 uppercase">{req.category} vs {req.opponent}</span>
+                                            <span className="font-black text-gray-800 uppercase">{req.category} vs {cleanTeamName(req.opponent)}</span>
                                             <span className="text-[10px] font-bold text-red-500 bg-red-100 px-2 py-1 rounded uppercase tracking-wider">SOS</span>
                                         </div>
                                         <p className="text-sm text-gray-600 mb-1">
@@ -592,7 +601,7 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
 
                                                     <div>
                                                         <p className="text-xs font-bold text-gray-400 uppercase mb-1">Adversaire</p>
-                                                        <h4 className="text-xl font-black text-gray-900 leading-tight uppercase">{match.opponent}</h4>
+                                                        <h4 className="text-xl font-black text-gray-900 leading-tight uppercase">{cleanTeamName(match.opponent)}</h4>
                                                     </div>
 
                                                     <div className="flex flex-col gap-2 pt-2">

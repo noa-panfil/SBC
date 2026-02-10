@@ -65,11 +65,11 @@ async function getMyPlayers(teamIds: number[]) {
 
 async function getOtmMatches(days?: number) {
     try {
-        let query = `SELECT * FROM otm_matches`;
+        let query = `SELECT * FROM otm_matches WHERE (is_prefilled = 0 OR is_prefilled IS NULL)`;
         const params: any[] = [];
 
         if (days) {
-            query += ` WHERE match_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 2 DAY) AND DATE_ADD(CURDATE(), INTERVAL ? DAY)`;
+            query += ` AND match_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 2 DAY) AND DATE_ADD(CURDATE(), INTERVAL ? DAY)`;
             params.push(days);
         }
 
@@ -142,9 +142,11 @@ export default async function CoachDashboard() {
     const personId = session.user.personId;
     const teams: any[] = await getCoachTeams(personId);
     const playersCount = await getMyPlayersCount(teams.map(t => t.id));
-    const otmMatches = await getOtmMatches(7);
 
-    const allOtmMatches = await getOtmMatches();
+    // Fetch ALL OTM matches (validated) so the calendar navigation works for any date
+    // and for the stats calculation
+    const otmMatches = await getOtmMatches();
+
     const rawAllPlayers = await getAllPlayers();
 
     // Disambiguate players with same name
@@ -200,7 +202,7 @@ export default async function CoachDashboard() {
     const playerStatsMap = new Map<number, number>();
     players.forEach((p: any) => playerStatsMap.set(p.id, 0));
 
-    allOtmMatches.forEach((m: any) => {
+    otmMatches.forEach((m: any) => {
         [m.scorer, m.timer, m.hall_manager, m.bar_manager, m.referee].forEach(name => {
             if (name) {
                 // 1. Try exact match (handles "Axel (U11)" vs "Axel (U13)")

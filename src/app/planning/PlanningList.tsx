@@ -22,18 +22,19 @@ export default function PlanningList({ matches }: { matches: Match[] }) {
     const [filter, setFilter] = useState('');
 
     // Group matches by month
-    const groupedMatches = matches.reduce((acc, match) => {
+    const filteredMatches = matches.filter(m =>
+        m.category.toLowerCase().includes(filter.toLowerCase()) ||
+        m.opponent.toLowerCase().includes(filter.toLowerCase())
+    );
+
+    // Group filtered matches by month
+    const groupedMatches = filteredMatches.reduce((acc, match) => {
         const date = new Date(match.match_date);
         const key = format(date, 'MMMM yyyy', { locale: fr });
         if (!acc[key]) acc[key] = [];
         acc[key].push(match);
         return acc;
     }, {} as Record<string, Match[]>);
-
-    const filteredMatches = matches.filter(m =>
-        m.category.toLowerCase().includes(filter.toLowerCase()) ||
-        m.opponent.toLowerCase().includes(filter.toLowerCase())
-    );
 
     // If filtering, don't group by month, just show list. If not, show grouped.
     const isFiltering = filter.length > 0;
@@ -68,29 +69,25 @@ export default function PlanningList({ matches }: { matches: Match[] }) {
                 </div>
             )}
 
-            {isFiltering ? (
-                <div className="grid gap-4">
-                    {filteredMatches.length === 0 && (
-                        <div className="text-center py-10 text-gray-500 font-bold">Aucun résultat trouvé pour "{filter}"</div>
-                    )}
-                    {filteredMatches.map(match => <MatchCard key={match.id} match={match} />)}
-                </div>
-            ) : (
-                <div className="space-y-16">
-                    {Object.entries(groupedMatches).map(([month, monthMatches]) => (
-                        <div key={month} className="relative">
-                            <div className="sticky top-24 z-20 bg-white/95 backdrop-blur py-4 mb-6 border-b border-gray-200 flex items-center gap-4">
-                                <div className="w-2 h-8 bg-sbc rounded-full"></div>
-                                <h3 className="text-2xl font-black text-gray-800 capitalize italic tracking-tight">{month}</h3>
-                                <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-500 border border-gray-200">{monthMatches.length} Matchs</span>
-                            </div>
-                            <div className="grid gap-4">
-                                {monthMatches.map(match => <MatchCard key={match.id} match={match} />)}
-                            </div>
+            <div className="space-y-16">
+                {Object.entries(groupedMatches).length === 0 && (
+                    <div className="text-center py-10 text-gray-500 font-bold">Aucun résultat trouvé{filter && ` pour "${filter}"`}</div>
+                )}
+                {Object.entries(groupedMatches).map(([month, monthMatches]) => (
+                    <div key={month} className="relative">
+                        <div className="sticky top-24 z-20 bg-white/95 backdrop-blur py-4 mb-6 border-b border-gray-200 flex items-center gap-4">
+                            <div className="w-2 h-8 bg-sbc rounded-full"></div>
+                            <h3 className="text-2xl font-black text-gray-800 capitalize italic tracking-tight">{month}</h3>
+                            <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-500 border border-gray-200">{monthMatches.length} Matchs</span>
                         </div>
-                    ))}
-                </div>
-            )}
+                        <div className="grid gap-4">
+                            {monthMatches.map(match => (
+                                <MatchCard key={`${match.id}-${match.is_home ? 'home' : 'away'}`} match={match} />
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }

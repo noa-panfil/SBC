@@ -11,6 +11,7 @@ import AdminCoachLoginsManager from "./AdminCoachLoginsManager";
 import AdminOTMManager from "./AdminOTMManager";
 import AdminAppearanceManager from "./AdminAppearanceManager";
 import AdminStoryGenerator from "./AdminStoryGenerator";
+import AdminBirthdayGenerator from "./AdminBirthdayGenerator";
 import { authOptions } from "@/lib/auth";
 import InstallPWA from "@/components/InstallPWA";
 
@@ -348,6 +349,14 @@ export default async function AdminDashboard() {
                     <div className="h-px flex-grow bg-gray-200"></div>
                 </div>
                 <AdminAppearanceManager />
+            </section>
+
+            <section id="birthdays" className="scroll-mt-24">
+                <div className="flex items-center gap-3 mb-6">
+                    <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Générateur Anniversaires</h2>
+                    <div className="h-px flex-grow bg-gray-200"></div>
+                </div>
+                <AdminBirthdayGenerator teams={teams} />
             </section>
 
             <div className="bg-sbc-dark rounded-3xl md:rounded-[2.5rem] p-6 md:p-10 text-white overflow-hidden relative shadow-2xl">

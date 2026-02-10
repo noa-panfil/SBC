@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import * as XLSX from "xlsx";
-import { toPng } from "html-to-image";
+import { toPng, toBlob } from "html-to-image";
 
 interface Team {
     id: string;
@@ -258,6 +258,51 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
             link.click();
         } catch (err) {
             console.error(err);
+        }
+    };
+
+    const shareStory = async (index: number) => {
+        const el = storyRefs.current[index];
+        if (!el) return;
+
+        try {
+            if (!navigator.share) {
+                alert("Le partage n'est pas supporté sur ce navigateur.");
+                return;
+            }
+
+            const blob = await toBlob(el, {
+                quality: 1.0,
+                pixelRatio: 1,
+                width: 1080,
+                height: 1920,
+                cacheBust: true,
+                style: {
+                    transform: 'none',
+                    transformOrigin: 'top left',
+                    marginBottom: '0',
+                    marginRight: '0',
+                    width: '1080px',
+                    height: '1920px'
+                }
+            });
+
+            if (!blob) return;
+
+            const file = new File([blob], "story-sbc.png", { type: "image/png" });
+
+            await navigator.share({
+                files: [file],
+                title: 'Story SBC',
+                text: 'Découvrez la story SBC !'
+            });
+
+        } catch (err) {
+            console.error("Erreur partage:", err);
+            // Don't alert if user cancelled share
+            if ((err as Error).name !== 'AbortError') {
+                alert("Impossible de partager l'image.");
+            }
         }
     };
 
@@ -520,9 +565,14 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
                                             <div key={slideIndex} className="flex flex-col gap-4 items-center">
                                                 <div className="flex justify-between items-center w-full max-w-[400px]">
                                                     <h3 className="font-bold text-lg">Page {slideIndex + 1}</h3>
-                                                    <button onClick={() => downloadStory(slideIndex)} className="text-sbc hover:underline font-bold">
-                                                        <i className="fas fa-download mr-2"></i> Télécharger
-                                                    </button>
+                                                    <div className="flex gap-4">
+                                                        <button onClick={() => shareStory(slideIndex)} className="text-sbc hover:underline font-bold">
+                                                            <i className="fas fa-share-alt mr-2"></i> Partager
+                                                        </button>
+                                                        <button onClick={() => downloadStory(slideIndex)} className="text-sbc hover:underline font-bold">
+                                                            <i className="fas fa-download mr-2"></i> Télécharger
+                                                        </button>
+                                                    </div>
                                                 </div>
 
                                                 <div className="relative overflow-hidden shadow-2xl rounded-xl bg-white">
@@ -686,6 +736,9 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
                                                                 Assigner ?
                                                             </button>
                                                         )}
+                                                        <button onClick={() => shareStory(i)} title="Partager" className="text-gray-500 hover:text-black mr-2">
+                                                            <i className="fas fa-share-alt"></i>
+                                                        </button>
                                                         <button onClick={() => downloadStory(i)} title="Télécharger" className="text-gray-500 hover:text-black">
                                                             <i className="fas fa-download"></i>
                                                         </button>

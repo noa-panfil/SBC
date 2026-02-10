@@ -13,7 +13,8 @@ export const dynamic = 'force-dynamic';
 
 async function getMatches() {
     try {
-        const [rows] = await pool.query<RowDataPacket[]>(`
+        // Fetch Home Matches
+        const [homeMatches] = await pool.query<RowDataPacket[]>(`
             SELECT 
                 id, 
                 match_date, 
@@ -23,13 +24,13 @@ async function getMatches() {
                 is_white_jersey, 
                 is_featured,
                 match_type,
-                NULL as location,
-                TRUE as is_home
+                NULL as location
             FROM otm_matches 
             WHERE match_date >= CURDATE()
+        `);
 
-            UNION ALL
-
+        // Fetch Away Matches
+        const [awayMatches] = await pool.query<RowDataPacket[]>(`
             SELECT 
                 id, 
                 match_date, 
@@ -37,24 +38,36 @@ async function getMatches() {
                 category, 
                 opponent, 
                 NULL as is_white_jersey, 
-                FALSE as is_featured,
+                NULL as is_featured,
                 'Championnat' as match_type,
-                location,
-                FALSE as is_home
+                location
             FROM external_matches 
             WHERE match_date >= CURDATE()
-
-            ORDER BY match_date ASC, match_time ASC 
         `);
 
-        return rows.map(r => ({
+        // Combine and format
+        const combined = [
+            ...homeMatches.map(r => ({ ...r, is_home: true })),
+            ...awayMatches.map(r => ({ ...r, is_home: false }))
+        ];
+
+        // Sort by date then time
+        combined.sort((a, b) => {
+            const dateA = new Date(a.match_date).getTime();
+            const dateB = new Date(b.match_date).getTime();
+            if (dateA !== dateB) return dateA - dateB;
+            return a.match_time.localeCompare(b.match_time);
+        });
+
+        return combined.map(r => ({
             ...r,
-            match_date: r.match_date.toISOString(),
-            // Ensure boolean fields are actually booleans for the client
-            is_home: !!r.is_home,
+            match_date: r.match_date instanceof Date ? r.match_date.toISOString() : new Date(r.match_date).toISOString(),
+            is_home: r.is_home,
             is_featured: !!r.is_featured,
-            is_white_jersey: r.is_white_jersey === 1 || r.is_white_jersey === true
+            is_white_jersey: !!r.is_white_jersey,
+            location: r.location || null
         }));
+
     } catch (e) {
         console.error("Error fetching matches", e);
         return [];

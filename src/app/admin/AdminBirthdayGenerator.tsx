@@ -186,6 +186,17 @@ export default function AdminBirthdayGenerator({ teams }: { teams: any[] }) {
         }
     };
 
+    const [bgImage, setBgImage] = useState<string | null>(null);
+    const bgInputRef = useRef<HTMLInputElement>(null);
+
+    const handleBgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const url = URL.createObjectURL(file);
+            setBgImage(url);
+        }
+    };
+
     return (
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
@@ -217,7 +228,32 @@ export default function AdminBirthdayGenerator({ teams }: { teams: any[] }) {
                     </button>
                 </div>
 
-                <div className="flex gap-4">
+                <div className="flex gap-4 items-center">
+                    <div className="relative">
+                        <button
+                            onClick={() => bgInputRef.current?.click()}
+                            className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg transition"
+                            title="Changer l'arrière-plan"
+                        >
+                            <i className="fas fa-image mr-2"></i> Fond
+                        </button>
+                        <input
+                            type="file"
+                            ref={bgInputRef}
+                            onChange={handleBgUpload}
+                            className="hidden"
+                            accept="image/*"
+                        />
+                        {bgImage && (
+                            <button
+                                onClick={() => setBgImage(null)}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow-md hover:bg-red-600"
+                            >
+                                <i className="fas fa-times"></i>
+                            </button>
+                        )}
+                    </div>
+
                     <button onClick={handleShare} className="bg-gray-100 hover:bg-gray-200 text-sbc font-bold py-2 px-4 rounded-lg transition">
                         <i className="fas fa-share-alt mr-2"></i> Partager
                     </button>
@@ -232,18 +268,30 @@ export default function AdminBirthdayGenerator({ teams }: { teams: any[] }) {
                     {/* Canvas Container - 1080x1350 (4:5 Ratio) Scaled down for preview */}
                     <div
                         ref={postRef}
-                        className="w-[1080px] h-[1350px] bg-gradient-to-br from-white to-gray-100 relative text-sbc-dark flex flex-col"
+                        className={`w-[1080px] h-[1350px] relative text-sbc-dark flex flex-col ${bgImage ? '' : 'bg-gradient-to-br from-white to-gray-100'}`}
                         style={{
                             transform: 'scale(0.35)',
                             transformOrigin: 'top left',
                             marginBottom: '-877px', // 1350 * (1 - 0.35) roughly
-                            marginRight: '-702px' // 1080 * (1 - 0.35) roughly
+                            marginRight: '-702px', // 1080 * (1 - 0.35) roughly
+                            backgroundImage: bgImage ? `url(${bgImage})` : 'none',
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center'
                         }}
                     >
-                        {/* Background Elements */}
-                        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-sbc rounded-full blur-[150px] opacity-10 translate-x-1/2 -translate-y-1/2"></div>
-                        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-sbc-dark rounded-full blur-[150px] opacity-10 -translate-x-1/2 translate-y-1/2"></div>
-                        <div className="absolute inset-0 bg-[url('/img/pattern.png')] opacity-[0.03]"></div>
+                        {/* Background Elements - Only show if no custom image */}
+                        {!bgImage && (
+                            <>
+                                <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-sbc rounded-full blur-[150px] opacity-10 translate-x-1/2 -translate-y-1/2"></div>
+                                <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-sbc-dark rounded-full blur-[150px] opacity-10 -translate-x-1/2 translate-y-1/2"></div>
+                                <div className="absolute inset-0 bg-[url('/img/pattern.png')] opacity-[0.03]"></div>
+                            </>
+                        )}
+
+                        {/* Overlay for custom bg to ensure readability */}
+                        {bgImage && (
+                            <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px]"></div>
+                        )}
 
                         {/* Decoration Top */}
                         <div className="w-full h-4 bg-gradient-to-r from-sbc to-sbc-dark"></div>

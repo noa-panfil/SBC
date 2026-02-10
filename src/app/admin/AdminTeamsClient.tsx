@@ -157,6 +157,15 @@ export default function AdminTeamsClient({ teams }: { teams: Team[] }) {
         e.target.value = "";
     };
 
+    const handleMemberImageRecrop = (index: number, type: 'players' | 'coaches') => {
+        if (!editingTeam) return;
+        const member = type === 'players' ? editingTeam.players[index] : editingTeam.coaches[index];
+        if (!member.img) return;
+
+        setCropImageSrc(member.img);
+        setCropTarget({ type, index });
+    };
+
     const handleCropComplete = async (croppedBlob: Blob) => {
         if (!editingTeam || !cropTarget) return;
 
@@ -468,15 +477,27 @@ export default function AdminTeamsClient({ teams }: { teams: Team[] }) {
                                             </h4>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 {editingTeam.coaches.map((coach, i) => (
-                                                    <div key={i} className="flex items-center gap-4 bg-white p-4 rounded-xl border border-gray-200 shadow-sm relative group">
-                                                        {isEditing && (
-                                                            <label className="absolute inset-0 z-10 cursor-pointer group-hover:bg-black/5 rounded-xl transition">
-                                                                <input type="file" className="hidden" accept="image/*" onChange={(e) => handleMemberImageChange(i, 'coaches', e)} />
-                                                            </label>
-                                                        )}
-                                                        <div className="w-14 h-14 rounded-full bg-gray-100 overflow-hidden flex-shrink-0 border-2 border-white shadow-md relative">
+                                                    <div key={i} className="flex items-center gap-4 bg-white p-4 rounded-xl border border-gray-200 shadow-sm relative group overflow-hidden">
+                                                        <div className="w-14 h-14 rounded-full bg-gray-100 overflow-hidden flex-shrink-0 border-2 border-white shadow-md relative group/avatar">
                                                             {coach.img ? <img src={coach.img} className="w-full h-full object-cover" /> : <i className="fas fa-user text-gray-400 w-full h-full flex items-center justify-center"></i>}
-                                                            {isEditing && <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white text-xs opacity-0 group-hover:opacity-100"><i className="fas fa-camera"></i></div>}
+                                                            {isEditing && (
+                                                                <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white opacity-0 group-hover/avatar:opacity-100 transition duration-200">
+                                                                    <label className="cursor-pointer w-full h-1/2 flex items-center justify-center hover:bg-white/20 transition" title="Changer la photo">
+                                                                        <i className="fas fa-camera text-xs"></i>
+                                                                        <input type="file" className="hidden" accept="image/*" onChange={(e) => handleMemberImageChange(i, 'coaches', e)} />
+                                                                    </label>
+                                                                    {coach.img && (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleMemberImageRecrop(i, 'coaches')}
+                                                                            className="w-full h-1/2 flex items-center justify-center hover:bg-white/20 transition border-t border-white/20"
+                                                                            title="Recadrer la photo"
+                                                                        >
+                                                                            <i className="fas fa-crop-alt text-xs"></i>
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                         <div className="flex-grow z-20">
                                                             {isEditing ? (
@@ -519,9 +540,9 @@ export default function AdminTeamsClient({ teams }: { teams: Team[] }) {
                                                             </button>
                                                         )}
 
-                                                        <div className="relative group/img cursor-pointer flex flex-col items-center">
+                                                        <div className="relative group/img flex flex-col items-center">
                                                             {/* Player Image or Number if no image */}
-                                                            <div className="w-16 h-16 rounded-full bg-gray-100 overflow-hidden border-2 border-white shadow-md relative mb-3">
+                                                            <div className="w-16 h-16 rounded-full bg-gray-100 overflow-hidden border-2 border-white shadow-md relative mb-3 group/avatar">
                                                                 {player.img ? (
                                                                     <img src={player.img} className="w-full h-full object-cover" />
                                                                 ) : (
@@ -531,9 +552,24 @@ export default function AdminTeamsClient({ teams }: { teams: Team[] }) {
                                                                 )}
 
                                                                 {isEditing && (
-                                                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition z-20">
-                                                                        <i className="fas fa-camera"></i>
-                                                                        <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" onChange={(e) => handleMemberImageChange(i, 'players', e)} />
+                                                                    <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white opacity-0 group-hover/avatar:opacity-100 transition duration-200 z-20">
+                                                                        <label className="cursor-pointer w-full h-full flex items-center justify-center hover:bg-white/20 transition" title="Changer la photo">
+                                                                            <i className="fas fa-camera"></i>
+                                                                            <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" onChange={(e) => handleMemberImageChange(i, 'players', e)} />
+                                                                        </label>
+                                                                        {player.img && (
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    handleMemberImageRecrop(i, 'players');
+                                                                                }}
+                                                                                className="absolute bottom-0 left-0 right-0 h-1/2 bg-sbc/80 hover:bg-sbc flex items-center justify-center transition border-t border-white/20"
+                                                                                title="Recadrer"
+                                                                            >
+                                                                                <i className="fas fa-crop-alt"></i>
+                                                                            </button>
+                                                                        )}
                                                                     </div>
                                                                 )}
                                                             </div>

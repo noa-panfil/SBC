@@ -319,264 +319,266 @@ export default function AdminBirthdayGenerator({ teams }: { teams: any[] }) {
             <div className="flex justify-center bg-gray-50 p-4 md:p-8 rounded-xl overflow-hidden">
                 <div className="relative shadow-2xl overflow-hidden bg-white group select-none transition-all duration-300 w-[270px] h-[338px] md:w-[378px] md:h-[473px]">
                     {/* Canvas Container - 1080x1350 (4:5 Ratio) - Scaled via CSS classes */}
-                    <div
-                        ref={postRef}
-                        className={`w-[1080px] h-[1350px] relative text-sbc-dark flex flex-col origin-top-left transition-transform duration-300 scale-[0.25] md:scale-[0.35] ${backgroundType === 'custom' && customBackground ? '' : 'bg-gradient-to-br from-white to-gray-100'}`}
-                        style={{
-                            backgroundImage: backgroundType === 'custom' && customBackground ? `url(${customBackground})` : 'none',
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                            backgroundColor: backgroundType === 'default' ? 'white' : 'transparent'
-                        }}
-                    >
-                        {/* Background Elements - Only show if no custom image */}
-                        {backgroundType === 'default' && (
-                            <>
-                                <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-sbc rounded-full blur-[150px] opacity-10 translate-x-1/2 -translate-y-1/2"></div>
-                                <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-sbc-dark rounded-full blur-[150px] opacity-10 -translate-x-1/2 translate-y-1/2"></div>
-                                <div className="absolute inset-0 bg-[url('/img/pattern.png')] opacity-[0.03]"></div>
-                            </>
-                        )}
+                    <div className="origin-top-left transition-transform duration-300 scale-[0.25] md:scale-[0.35]">
+                        <div
+                            ref={postRef}
+                            className={`w-[1080px] h-[1350px] relative text-sbc-dark flex flex-col ${backgroundType === 'custom' && customBackground ? '' : 'bg-gradient-to-br from-white to-gray-100'}`}
+                            style={{
+                                backgroundImage: backgroundType === 'custom' && customBackground ? `url(${customBackground})` : 'none',
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                backgroundColor: backgroundType === 'default' ? 'white' : 'transparent'
+                            }}
+                        >
+                            {/* Background Elements - Only show if no custom image */}
+                            {backgroundType === 'default' && (
+                                <>
+                                    <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-sbc rounded-full blur-[150px] opacity-10 translate-x-1/2 -translate-y-1/2"></div>
+                                    <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-sbc-dark rounded-full blur-[150px] opacity-10 -translate-x-1/2 translate-y-1/2"></div>
+                                    <div className="absolute inset-0 bg-[url('/img/pattern.png')] opacity-[0.03]"></div>
+                                </>
+                            )}
 
-                        {/* Overlay for custom bg to ensure readability */}
-                        {backgroundType === 'custom' && customBackground && (
-                            <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px]"></div>
-                        )}
+                            {/* Overlay for custom bg to ensure readability */}
+                            {backgroundType === 'custom' && customBackground && (
+                                <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px]"></div>
+                            )}
 
-                        {/* Decoration Top */}
-                        <div className="w-full h-4 bg-gradient-to-r from-sbc to-sbc-dark"></div>
+                            {/* Decoration Top */}
+                            <div className="w-full h-4 bg-gradient-to-r from-sbc to-sbc-dark"></div>
 
-                        {/* Header */}
-                        <div className="pt-16 pb-8 px-16 text-center z-10">
-                            <img src="/logo.png" alt="SBC" className="w-32 h-32 mx-auto mb-6 drop-shadow-xl" />
-                            <h2 className={`text-4xl font-black uppercase tracking-widest mb-2 ${backgroundType === 'custom' && customBackground ? 'text-white drop-shadow-md' : 'text-gray-400'}`}>Joyeux Anniversaire</h2>
-                            <h1 className="text-8xl font-black uppercase text-sbc tracking-tighter drop-shadow-sm" style={{
-                                WebkitTextStroke: backgroundType === 'custom' && customBackground ? '3px white' : undefined,
-                                paintOrder: 'stroke fill'
-                            }}>{MONTHS[selectedMonth]}</h1>
-                        </div>
+                            {/* Header */}
+                            <div className="pt-16 pb-8 px-16 text-center z-10">
+                                <img src="/logo.png" alt="SBC" className="w-32 h-32 mx-auto mb-6 drop-shadow-xl" />
+                                <h2 className={`text-4xl font-black uppercase tracking-widest mb-2 ${backgroundType === 'custom' && customBackground ? 'text-white drop-shadow-md' : 'text-gray-400'}`}>Joyeux Anniversaire</h2>
+                                <h1 className="text-8xl font-black uppercase text-sbc tracking-tighter drop-shadow-sm" style={{
+                                    WebkitTextStroke: backgroundType === 'custom' && customBackground ? '3px white' : undefined,
+                                    paintOrder: 'stroke fill'
+                                }}>{MONTHS[selectedMonth]}</h1>
+                            </div>
 
 
 
-                        {/* Content List - Conditional Render */}
-                        <div className="flex-grow px-12 py-4 overflow-hidden relative z-10">
-                            {displayMode === 'list' ? (
-                                // LIST MODE - Premium Dynamic Design
-                                <div>
-                                    {(() => {
-                                        const count = birthdays.reduce((acc, curr) => acc + curr.members.length, 0);
+                            {/* Content List - Conditional Render */}
+                            <div className="flex-grow px-12 py-4 overflow-hidden relative z-10">
+                                {displayMode === 'list' ? (
+                                    // LIST MODE - Premium Dynamic Design
+                                    <div>
+                                        {(() => {
+                                            const count = birthdays.reduce((acc, curr) => acc + curr.members.length, 0);
 
-                                        // Improved Tiers for better responsiveness
-                                        const isSuperDense = count > 20; // 4 Cols
-                                        const isXDense = count >= 15 && count <= 20; // 3 Cols (Smaller)
-                                        const isDense = count >= 10 && count < 15; // 3 Cols (Larger)
-                                        const isMedium = count > 5 && count < 10; // 2 Cols
-                                        const isSpacious = count <= 5; // 1 Col
+                                            // Improved Tiers for better responsiveness
+                                            const isSuperDense = count > 20; // 4 Cols
+                                            const isXDense = count >= 15 && count <= 20; // 3 Cols (Smaller)
+                                            const isDense = count >= 10 && count < 15; // 3 Cols (Larger)
+                                            const isMedium = count > 5 && count < 10; // 2 Cols
+                                            const isSpacious = count <= 5; // 1 Col
 
-                                        // Container scaling
-                                        const containerClass = isSpacious
-                                            ? "flex flex-col gap-6 justify-center h-full px-20"
-                                            : isSuperDense
-                                                ? "grid grid-cols-4 gap-x-4 gap-y-4 px-4 content-start h-full"
-                                                : (isXDense || isDense)
-                                                    ? `grid grid-cols-3 gap-x-6 ${isXDense ? 'gap-y-4' : 'gap-y-8'} px-6 content-start h-full`
-                                                    : "grid grid-cols-2 gap-x-12 gap-y-12 px-12 content-center h-full";
+                                            // Container scaling
+                                            const containerClass = isSpacious
+                                                ? "flex flex-col gap-6 justify-center h-full px-20"
+                                                : isSuperDense
+                                                    ? "grid grid-cols-4 gap-x-4 gap-y-4 px-4 content-start h-full"
+                                                    : (isXDense || isDense)
+                                                        ? `grid grid-cols-3 gap-x-6 ${isXDense ? 'gap-y-4' : 'gap-y-8'} px-6 content-start h-full`
+                                                        : "grid grid-cols-2 gap-x-12 gap-y-12 px-12 content-center h-full";
 
-                                        // Item scaling - Grid items default behavior
-                                        const itemClass = "w-full";
-                                        const itemMargin = ""; // Grid handles gaps, no margins needed
+                                            // Item scaling - Grid items default behavior
+                                            const itemClass = "w-full";
+                                            const itemMargin = ""; // Grid handles gaps, no margins needed
 
-                                        // Element sizing - 5 tiers of scaling
-                                        const dateSize = isSpacious
-                                            ? "w-28 h-28 text-6xl rounded-3xl"
-                                            : isSuperDense ? "w-8 h-8 text-xs rounded-lg"
-                                                : isXDense ? "w-11 h-11 text-lg rounded-xl"
-                                                    : isDense ? "w-14 h-14 text-2xl rounded-xl"
-                                                        : "w-20 h-20 text-4xl rounded-2xl";
+                                            // Element sizing - 5 tiers of scaling
+                                            const dateSize = isSpacious
+                                                ? "w-28 h-28 text-6xl rounded-3xl"
+                                                : isSuperDense ? "w-8 h-8 text-xs rounded-lg"
+                                                    : isXDense ? "w-11 h-11 text-lg rounded-xl"
+                                                        : isDense ? "w-14 h-14 text-2xl rounded-xl"
+                                                            : "w-20 h-20 text-4xl rounded-2xl";
 
-                                        const gapGroup = isSpacious ? "gap-6" : isSuperDense ? "gap-1.5" : isXDense ? "gap-3" : "gap-4";
-                                        const containerGap = isSpacious ? "gap-4 pt-4" : isSuperDense ? "gap-0.5 pt-0" : isXDense ? "gap-1 pt-0.5" : "gap-2 pt-1.5";
+                                            const gapGroup = isSpacious ? "gap-6" : isSuperDense ? "gap-1.5" : isXDense ? "gap-3" : "gap-4";
+                                            const containerGap = isSpacious ? "gap-4 pt-4" : isSuperDense ? "gap-0.5 pt-0" : isXDense ? "gap-1 pt-0.5" : "gap-2 pt-1.5";
 
-                                        const cardPadding = isSpacious
-                                            ? "p-6 pr-10 rounded-3xl"
-                                            : isSuperDense ? "p-1 pr-2 rounded-md"
-                                                : isXDense ? "p-2 pr-3.5 rounded-xl"
-                                                    : isDense ? "p-3.5 pr-5 rounded-2xl"
-                                                        : "p-5 pr-8 rounded-3xl";
+                                            const cardPadding = isSpacious
+                                                ? "p-6 pr-10 rounded-3xl"
+                                                : isSuperDense ? "p-1 pr-2 rounded-md"
+                                                    : isXDense ? "p-2 pr-3.5 rounded-xl"
+                                                        : isDense ? "p-3.5 pr-5 rounded-2xl"
+                                                            : "p-5 pr-8 rounded-3xl";
 
-                                        const avatarSize = isSpacious
-                                            ? "w-28 h-28 border-[6px]"
-                                            : isSuperDense ? "w-7 h-7 border"
-                                                : isXDense ? "w-10 h-10 border-2"
-                                                    : isDense ? "w-14 h-14 border-2"
-                                                        : "w-18 h-18 border-4";
+                                            const avatarSize = isSpacious
+                                                ? "w-28 h-28 border-[6px]"
+                                                : isSuperDense ? "w-7 h-7 border"
+                                                    : isXDense ? "w-10 h-10 border-2"
+                                                        : isDense ? "w-14 h-14 border-2"
+                                                            : "w-18 h-18 border-4";
 
-                                        const nameSize = isSpacious
-                                            ? "text-5xl"
-                                            : isSuperDense ? "text-[10px]"
-                                                : isXDense ? "text-base"
-                                                    : isDense ? "text-xl"
-                                                        : "text-3xl";
+                                            const nameSize = isSpacious
+                                                ? "text-5xl"
+                                                : isSuperDense ? "text-[10px]"
+                                                    : isXDense ? "text-base"
+                                                        : isDense ? "text-xl"
+                                                            : "text-3xl";
 
-                                        const roleSize = isSpacious
-                                            ? "text-2xl mt-2"
-                                            : isSuperDense ? "text-[7px] mt-0"
-                                                : isXDense ? "text-[9px] mt-0.5"
-                                                    : isDense ? "text-xs mt-1"
-                                                        : "text-base mt-2";
+                                            const roleSize = isSpacious
+                                                ? "text-2xl mt-2"
+                                                : isSuperDense ? "text-[7px] mt-0"
+                                                    : isXDense ? "text-[9px] mt-0.5"
+                                                        : isDense ? "text-xs mt-1"
+                                                            : "text-base mt-2";
 
-                                        return (
-                                            <div className={containerClass}>
-                                                {birthdays.map((b, i) => (
-                                                    <div key={i} className={`flex items-start ${gapGroup} w-full min-w-0`}>
-                                                        {/* Date Badge */}
-                                                        <div className={`${dateSize} bg-gradient-to-br from-sbc to-sbc-dark text-white flex flex-col items-center justify-center shrink-0 z-10 border border-white/20 shadow-lg`}>
-                                                            <span className="font-black leading-none tracking-tighter">{b.dateStr}</span>
-                                                        </div>
+                                            return (
+                                                <div className={containerClass}>
+                                                    {birthdays.map((b, i) => (
+                                                        <div key={i} className={`flex items-start ${gapGroup} w-full min-w-0`}>
+                                                            {/* Date Badge */}
+                                                            <div className={`${dateSize} bg-gradient-to-br from-sbc to-sbc-dark text-white flex flex-col items-center justify-center shrink-0 z-10 border border-white/20 shadow-lg`}>
+                                                                <span className="font-black leading-none tracking-tighter">{b.dateStr}</span>
+                                                            </div>
 
-                                                        {/* Members Group */}
-                                                        <div className={`flex flex-col flex-1 min-w-0 ${containerGap}`}>
-                                                            {b.members.map((member, idx) => (
-                                                                <div key={idx} className={`flex items-center gap-3 bg-white/60 backdrop-blur-sm ${cardPadding} border border-gray-100 shadow-sm relative overflow-hidden group hover:bg-white/80 transition-colors w-full max-w-full`}>
-                                                                    {/* Avatar */}
-                                                                    <div className={`${avatarSize} rounded-full overflow-hidden shrink-0 border-white shadow-sm bg-gray-100 flex items-center justify-center`}>
-                                                                        {member.img ? (
-                                                                            <img src={member.img} className="w-full h-full object-cover" alt="" />
-                                                                        ) : (
-                                                                            <i className={`fas fa-user text-gray-300 ${isSpacious ? 'text-5xl' : isSuperDense ? 'text-[9px]' : 'text-sm'}`}></i>
-                                                                        )}
+                                                            {/* Members Group */}
+                                                            <div className={`flex flex-col flex-1 min-w-0 ${containerGap}`}>
+                                                                {b.members.map((member, idx) => (
+                                                                    <div key={idx} className={`flex items-center gap-3 bg-white/60 backdrop-blur-sm ${cardPadding} border border-gray-100 shadow-sm relative overflow-hidden group hover:bg-white/80 transition-colors w-full max-w-full`}>
+                                                                        {/* Avatar */}
+                                                                        <div className={`${avatarSize} rounded-full overflow-hidden shrink-0 border-white shadow-sm bg-gray-100 flex items-center justify-center`}>
+                                                                            {member.img ? (
+                                                                                <img src={member.img} className="w-full h-full object-cover" alt="" />
+                                                                            ) : (
+                                                                                <i className={`fas fa-user text-gray-300 ${isSpacious ? 'text-5xl' : isSuperDense ? 'text-[9px]' : 'text-sm'}`}></i>
+                                                                            )}
+                                                                        </div>
+
+                                                                        {/* Text Info */}
+                                                                        <div className="flex flex-col min-w-0 justify-center flex-grow">
+                                                                            <span className={`font-bold text-gray-800 truncate block leading-tight ${nameSize}`}>{member.name}</span>
+                                                                            <span className={`text-sbc font-bold uppercase tracking-wider truncate block opacity-80 group-hover:opacity-100 transition-opacity ${roleSize}`}>
+                                                                                {(() => {
+                                                                                    const roles = member.role.replace(/[()]/g, '').split(',').map(r => r.trim());
+                                                                                    if (roles.length > 2) {
+                                                                                        return roles.slice(0, 2).join(', ') + '...';
+                                                                                    }
+                                                                                    return roles.join(', ');
+                                                                                })()}
+                                                                            </span>
+                                                                        </div>
                                                                     </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    {birthdays.length === 0 && (
+                                                        <div className={`text-center text-4xl text-gray-400 mt-20 italic col-span-full`}>
+                                                            Aucun anniversaire ce mois-ci
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })()}
+                                    </div>
+                                ) : (
+                                    // PHOTO GRID MODE
+                                    <div>
+                                        {(() => {
+                                            // Flatten members
+                                            const allMembers = birthdays.flatMap(dayGroup =>
+                                                dayGroup.members.map(member => ({ ...member, dateStr: dayGroup.dateStr }))
+                                            );
 
-                                                                    {/* Text Info */}
-                                                                    <div className="flex flex-col min-w-0 justify-center flex-grow">
-                                                                        <span className={`font-bold text-gray-800 truncate block leading-tight ${nameSize}`}>{member.name}</span>
-                                                                        <span className={`text-sbc font-bold uppercase tracking-wider truncate block opacity-80 group-hover:opacity-100 transition-opacity ${roleSize}`}>
-                                                                            {(() => {
-                                                                                const roles = member.role.replace(/[()]/g, '').split(',').map(r => r.trim());
-                                                                                if (roles.length > 2) {
-                                                                                    return roles.slice(0, 2).join(', ') + '...';
-                                                                                }
-                                                                                return roles.join(', ');
-                                                                            })()}
-                                                                        </span>
+                                            const total = allMembers.length;
+                                            // Dynamic columns: 6 if > 10 items, else 5
+                                            const cols = total > 10 ? 6 : 5;
+                                            const remainder = total % cols;
+                                            const mainCount = remainder === 0 ? total : total - remainder;
+
+                                            const mainItems = allMembers.slice(0, mainCount);
+                                            const lastItems = allMembers.slice(mainCount);
+
+                                            // Dynamic width for flex items
+                                            // gap-3 (0.75rem). For N cols, width = (100% - (N-1)*gap) / N
+                                            // For 5 cols: (100% - 3rem) / 5
+                                            // For 6 cols: (100% - 3.75rem) / 6
+                                            const flexBasis = total > 10 ? 'calc((100% - 3.75rem) / 6)' : 'calc((100% - 3rem) / 5)';
+
+                                            return (
+                                                <div className="flex flex-col gap-3 content-start h-full">
+                                                    {/* Main Grid for full rows */}
+                                                    {mainItems.length > 0 && (
+                                                        <div className={`grid gap-3 ${total > 10 ? 'grid-cols-6' : 'grid-cols-5'}`}>
+                                                            {mainItems.map((member, idx) => (
+                                                                <div key={`main-${idx}`} className="bg-white rounded-lg shadow-sm border border-gray-100 flex flex-col overflow-hidden relative group">
+                                                                    <div className="relative aspect-[2/3] bg-gray-100 w-full">
+                                                                        <img
+                                                                            src={member.img || "/logo.png"}
+                                                                            alt={member.name}
+                                                                            className={`w-full h-full object-cover ${!member.img ? 'p-6 opacity-20' : ''}`}
+                                                                        />
+                                                                        <div className="absolute top-2 right-2 bg-sbc text-white font-black text-[12px] px-2 py-0.5 rounded shadow-sm z-10">
+                                                                            {member.dateStr}
+                                                                        </div>
+                                                                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-12 pb-4 px-3 flex flex-col justify-end text-center z-10 transition-all">
+                                                                            <h3 className="font-bold text-white leading-tight text-lg truncate w-full drop-shadow-md">{member.name}</h3>
+                                                                            <p className="text-xs text-gray-200 leading-none truncate w-full mt-1 drop-shadow-md font-medium">{member.role.replace(/[()]/g, '')}</p>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             ))}
                                                         </div>
-                                                    </div>
-                                                ))}
-                                                {birthdays.length === 0 && (
-                                                    <div className={`text-center text-4xl text-gray-400 mt-20 italic col-span-full`}>
-                                                        Aucun anniversaire ce mois-ci
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })()}
-                                </div>
-                            ) : (
-                                // PHOTO GRID MODE
-                                <div>
-                                    {(() => {
-                                        // Flatten members
-                                        const allMembers = birthdays.flatMap(dayGroup =>
-                                            dayGroup.members.map(member => ({ ...member, dateStr: dayGroup.dateStr }))
-                                        );
+                                                    )}
 
-                                        const total = allMembers.length;
-                                        // Dynamic columns: 6 if > 10 items, else 5
-                                        const cols = total > 10 ? 6 : 5;
-                                        const remainder = total % cols;
-                                        const mainCount = remainder === 0 ? total : total - remainder;
-
-                                        const mainItems = allMembers.slice(0, mainCount);
-                                        const lastItems = allMembers.slice(mainCount);
-
-                                        // Dynamic width for flex items
-                                        // gap-3 (0.75rem). For N cols, width = (100% - (N-1)*gap) / N
-                                        // For 5 cols: (100% - 3rem) / 5
-                                        // For 6 cols: (100% - 3.75rem) / 6
-                                        const flexBasis = total > 10 ? 'calc((100% - 3.75rem) / 6)' : 'calc((100% - 3rem) / 5)';
-
-                                        return (
-                                            <div className="flex flex-col gap-3 content-start h-full">
-                                                {/* Main Grid for full rows */}
-                                                {mainItems.length > 0 && (
-                                                    <div className={`grid gap-3 ${total > 10 ? 'grid-cols-6' : 'grid-cols-5'}`}>
-                                                        {mainItems.map((member, idx) => (
-                                                            <div key={`main-${idx}`} className="bg-white rounded-lg shadow-sm border border-gray-100 flex flex-col overflow-hidden relative group">
-                                                                <div className="relative aspect-[2/3] bg-gray-100 w-full">
-                                                                    <img
-                                                                        src={member.img || "/logo.png"}
-                                                                        alt={member.name}
-                                                                        className={`w-full h-full object-cover ${!member.img ? 'p-6 opacity-20' : ''}`}
-                                                                    />
-                                                                    <div className="absolute top-2 right-2 bg-sbc text-white font-black text-[12px] px-2 py-0.5 rounded shadow-sm z-10">
-                                                                        {member.dateStr}
-                                                                    </div>
-                                                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-12 pb-4 px-3 flex flex-col justify-end text-center z-10 transition-all">
-                                                                        <h3 className="font-bold text-white leading-tight text-lg truncate w-full drop-shadow-md">{member.name}</h3>
-                                                                        <p className="text-xs text-gray-200 leading-none truncate w-full mt-1 drop-shadow-md font-medium">{member.role.replace(/[()]/g, '')}</p>
+                                                    {/* Flex Row for centered remainder */}
+                                                    {lastItems.length > 0 && (
+                                                        <div className="flex flex-wrap justify-center gap-3">
+                                                            {lastItems.map((member, idx) => (
+                                                                <div
+                                                                    key={`last-${idx}`}
+                                                                    className="bg-white rounded-lg shadow-sm border border-gray-100 flex flex-col overflow-hidden relative group shrink-0"
+                                                                    style={{ width: flexBasis }}
+                                                                >
+                                                                    <div className="relative aspect-[2/3] bg-gray-100 w-full">
+                                                                        <img
+                                                                            src={member.img || "/logo.png"}
+                                                                            alt={member.name}
+                                                                            className={`w-full h-full object-cover ${!member.img ? 'p-6 opacity-20' : ''}`}
+                                                                        />
+                                                                        <div className="absolute top-2 right-2 bg-sbc text-white font-black text-[12px] px-2 py-0.5 rounded shadow-sm z-10">
+                                                                            {member.dateStr}
+                                                                        </div>
+                                                                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-12 pb-4 px-3 flex flex-col justify-end text-center z-10 transition-all">
+                                                                            <h3 className="font-bold text-white leading-tight text-lg truncate w-full drop-shadow-md">{member.name}</h3>
+                                                                            <p className="text-xs text-gray-200 leading-none truncate w-full mt-1 drop-shadow-md font-medium">{member.role.replace(/[()]/g, '')}</p>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
+                                                            ))}
+                                                        </div>
+                                                    )}
 
-                                                {/* Flex Row for centered remainder */}
-                                                {lastItems.length > 0 && (
-                                                    <div className="flex flex-wrap justify-center gap-3">
-                                                        {lastItems.map((member, idx) => (
-                                                            <div
-                                                                key={`last-${idx}`}
-                                                                className="bg-white rounded-lg shadow-sm border border-gray-100 flex flex-col overflow-hidden relative group shrink-0"
-                                                                style={{ width: flexBasis }}
-                                                            >
-                                                                <div className="relative aspect-[2/3] bg-gray-100 w-full">
-                                                                    <img
-                                                                        src={member.img || "/logo.png"}
-                                                                        alt={member.name}
-                                                                        className={`w-full h-full object-cover ${!member.img ? 'p-6 opacity-20' : ''}`}
-                                                                    />
-                                                                    <div className="absolute top-2 right-2 bg-sbc text-white font-black text-[12px] px-2 py-0.5 rounded shadow-sm z-10">
-                                                                        {member.dateStr}
-                                                                    </div>
-                                                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-12 pb-4 px-3 flex flex-col justify-end text-center z-10 transition-all">
-                                                                        <h3 className="font-bold text-white leading-tight text-lg truncate w-full drop-shadow-md">{member.name}</h3>
-                                                                        <p className="text-xs text-gray-200 leading-none truncate w-full mt-1 drop-shadow-md font-medium">{member.role.replace(/[()]/g, '')}</p>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-
-                                                {allMembers.length === 0 && (
-                                                    <div className="text-center text-4xl text-gray-400 mt-20 italic w-full">
-                                                        Aucun anniversaire ce mois-ci
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })()}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Sponsors Footer */}
-                        <div className="bg-white pt-8 pb-12 px-16 z-20 mt-auto border-t border-gray-100">
-                            <div className="flex items-center justify-center gap-12 flex-wrap opacity-90">
-                                {partners.slice(0, 6).map(p => (
-                                    p.img ? (
-                                        <img key={p.id} src={p.img} alt={p.name} className="h-16 object-contain max-w-[150px]" />
-                                    ) : null
-                                ))}
+                                                    {allMembers.length === 0 && (
+                                                        <div className="text-center text-4xl text-gray-400 mt-20 italic w-full">
+                                                            Aucun anniversaire ce mois-ci
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })()}
+                                    </div>
+                                )}
                             </div>
+
+                            {/* Sponsors Footer */}
+                            <div className="bg-white pt-8 pb-12 px-16 z-20 mt-auto border-t border-gray-100">
+                                <div className="flex items-center justify-center gap-12 flex-wrap opacity-90">
+                                    {partners.slice(0, 6).map(p => (
+                                        p.img ? (
+                                            <img key={p.id} src={p.img} alt={p.name} className="h-16 object-contain max-w-[150px]" />
+                                        ) : null
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className={`w-full h-4 mt-auto ${backgroundType === 'custom' ? 'bg-sbc' : 'bg-gradient-to-r from-sbc-dark to-sbc'}`}></div>
+
                         </div>
-
-                        <div className={`w-full h-4 mt-auto ${backgroundType === 'custom' ? 'bg-sbc' : 'bg-gradient-to-r from-sbc-dark to-sbc'}`}></div>
-
                     </div>
                 </div>
             </div>

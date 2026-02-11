@@ -9,6 +9,7 @@ interface Person {
     roles: string[]; // List of roles/teams
     birth: string | null; // "dd/mm/yyyy"
     img?: string | null;
+    gender?: string;
 }
 
 interface Partner {
@@ -28,6 +29,21 @@ export default function AdminBirthdayGenerator({ teams }: { teams: any[] }) {
     const [partners, setPartners] = useState<Partner[]>([]);
     const postRef = useRef<HTMLDivElement>(null);
     const [birthdays, setBirthdays] = useState<{ day: number, dateStr: string, members: { name: string, role: string, img: string | null }[] }[]>([]);
+
+    // Background State
+    const [backgroundType, setBackgroundType] = useState<'default' | 'custom'>('default');
+    const [customBackground, setCustomBackground] = useState<string | null>(null);
+
+    const handleBackgroundUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                setCustomBackground(evt.target?.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     useEffect(() => {
         // Fetch partners for the footer
@@ -49,7 +65,8 @@ export default function AdminBirthdayGenerator({ teams }: { teams: any[] }) {
                     name: c.name,
                     roles: [],
                     birth: c.birth,
-                    img: c.img
+                    img: c.img,
+                    gender: c.gender
                 };
 
                 // Add role if not duplicate
@@ -67,13 +84,14 @@ export default function AdminBirthdayGenerator({ teams }: { teams: any[] }) {
                     name: p.name,
                     roles: [],
                     birth: p.birth,
-                    img: p.img
+                    img: p.img,
+                    gender: p.gender
                 };
 
                 // Add role if not duplicate. For players, we just list the Team Name.
-                // Or "Joueur U11" ? User asked: "coach tel équipe et joue dans tel équipe"
-                // So "Joueur {team.name}" is clearest.
-                const roleStr = `Joueur ${team.name}`;
+                const rolePrefix = person.gender === 'F' ? "Joueuse" : "Joueur";
+
+                const roleStr = `${rolePrefix} ${team.name}`;
                 if (!person.roles.includes(roleStr)) {
                     person.roles.push(roleStr);
                 }
@@ -140,7 +158,8 @@ export default function AdminBirthdayGenerator({ teams }: { teams: any[] }) {
                     transformOrigin: 'top left',
                     width: '1080px',
                     height: '1350px',
-                    margin: '0'
+                    margin: '0',
+                    backgroundColor: backgroundType === 'default' ? 'white' : undefined
                 }
             });
             if (blob) {
@@ -168,7 +187,8 @@ export default function AdminBirthdayGenerator({ teams }: { teams: any[] }) {
                     transformOrigin: 'top left',
                     width: '1080px',
                     height: '1350px',
-                    margin: '0'
+                    margin: '0',
+                    backgroundColor: backgroundType === 'default' ? 'white' : undefined
                 }
             });
             if (blob && navigator.share) {
@@ -186,16 +206,10 @@ export default function AdminBirthdayGenerator({ teams }: { teams: any[] }) {
         }
     };
 
-    const [bgImage, setBgImage] = useState<string | null>(null);
-    const bgInputRef = useRef<HTMLInputElement>(null);
 
-    const handleBgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const url = URL.createObjectURL(file);
-            setBgImage(url);
-        }
-    };
+
+
+
 
     return (
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -229,31 +243,6 @@ export default function AdminBirthdayGenerator({ teams }: { teams: any[] }) {
                 </div>
 
                 <div className="flex gap-4 items-center">
-                    <div className="relative">
-                        <button
-                            onClick={() => bgInputRef.current?.click()}
-                            className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg transition"
-                            title="Changer l'arrière-plan"
-                        >
-                            <i className="fas fa-image mr-2"></i> Fond
-                        </button>
-                        <input
-                            type="file"
-                            ref={bgInputRef}
-                            onChange={handleBgUpload}
-                            className="hidden"
-                            accept="image/*"
-                        />
-                        {bgImage && (
-                            <button
-                                onClick={() => setBgImage(null)}
-                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow-md hover:bg-red-600"
-                            >
-                                <i className="fas fa-times"></i>
-                            </button>
-                        )}
-                    </div>
-
                     <button onClick={handleShare} className="bg-gray-100 hover:bg-gray-200 text-sbc font-bold py-2 px-4 rounded-lg transition">
                         <i className="fas fa-share-alt mr-2"></i> Partager
                     </button>
@@ -263,24 +252,89 @@ export default function AdminBirthdayGenerator({ teams }: { teams: any[] }) {
                 </div>
             </div>
 
+            {/* Background Selection UI */}
+            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 mb-8">
+                <h3 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-2">
+                    <i className="fas fa-paint-brush text-sbc"></i> Fond de l'image
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Option 1: Default (White) */}
+                    <div
+                        onClick={() => setBackgroundType('default')}
+                        className={`relative rounded-2xl border-2 overflow-hidden cursor-pointer transition-all group ${backgroundType === 'default' ? 'border-sbc ring-4 ring-sbc/10 scale-[1.02]' : 'border-gray-100 hover:border-gray-200'}`}
+                    >
+                        <div className="aspect-video h-48 mx-auto relative bg-white flex items-center justify-center border-b border-gray-100">
+                            <div className="text-gray-400 text-center p-4">
+                                <div className="w-16 h-16 bg-gray-50 rounded-full mx-auto mb-2 border border-gray-100 flex items-center justify-center">
+                                    <i className="fas fa-file bg-clip-text text-transparent bg-gradient-to-tr from-gray-300 to-gray-400 text-2xl"></i>
+                                </div>
+                                <div className="font-bold text-gray-800">Classique (Blanc)</div>
+                            </div>
+                            {backgroundType === 'default' && (
+                                <div className="absolute inset-0 bg-sbc/10 flex items-center justify-center">
+                                    <i className="fas fa-check-circle text-4xl text-sbc drop-shadow-lg"></i>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Option 2: Custom */}
+                    <div
+                        onClick={() => setBackgroundType('custom')}
+                        className={`relative rounded-2xl border-2 overflow-hidden cursor-pointer transition-all group ${backgroundType === 'custom' ? 'border-sbc ring-4 ring-sbc/10 scale-[1.02]' : 'border-gray-100 hover:border-gray-200'}`}
+                    >
+                        <div className="aspect-video h-48 mx-auto relative bg-gray-100 flex items-center justify-center overflow-hidden">
+                            {customBackground ? (
+                                <img src={customBackground} className="w-full h-full object-cover" alt="Custom" />
+                            ) : (
+                                <div className="text-gray-400 text-center p-4">
+                                    <i className="fas fa-image text-3xl mb-2"></i>
+                                    <div className="font-bold">Image personnalisée</div>
+                                </div>
+                            )}
+                            {backgroundType === 'custom' && (
+                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity hover:opacity-0">
+                                    <i className="fas fa-check-circle text-4xl text-white drop-shadow-lg"></i>
+                                </div>
+                            )}
+                        </div>
+                        {backgroundType === 'custom' && (
+                            <div className="p-4 bg-gray-50 border-t border-gray-100">
+                                <label className="block w-full cursor-pointer bg-white border border-gray-300 hover:border-sbc text-gray-700 hover:text-sbc px-4 py-2 rounded-lg text-center font-bold text-sm transition-colors shadow-sm">
+                                    <i className="fas fa-upload mr-2"></i>
+                                    {customBackground ? "Changer l'image" : "Importer une image"}
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleBackgroundUpload}
+                                        className="hidden"
+                                    />
+                                </label>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
             <div className="flex justify-center bg-gray-50 p-8 rounded-xl overflow-auto">
                 <div className="relative shadow-2xl overflow-hidden bg-white group select-none">
                     {/* Canvas Container - 1080x1350 (4:5 Ratio) Scaled down for preview */}
                     <div
                         ref={postRef}
-                        className={`w-[1080px] h-[1350px] relative text-sbc-dark flex flex-col ${bgImage ? '' : 'bg-gradient-to-br from-white to-gray-100'}`}
+                        className={`w-[1080px] h-[1350px] relative text-sbc-dark flex flex-col ${backgroundType === 'custom' && customBackground ? '' : 'bg-gradient-to-br from-white to-gray-100'}`}
                         style={{
                             transform: 'scale(0.35)',
                             transformOrigin: 'top left',
                             marginBottom: '-877px', // 1350 * (1 - 0.35) roughly
                             marginRight: '-702px', // 1080 * (1 - 0.35) roughly
-                            backgroundImage: bgImage ? `url(${bgImage})` : 'none',
+                            backgroundImage: backgroundType === 'custom' && customBackground ? `url(${customBackground})` : 'none',
                             backgroundSize: 'cover',
-                            backgroundPosition: 'center'
+                            backgroundPosition: 'center',
+                            backgroundColor: backgroundType === 'default' ? 'white' : 'transparent'
                         }}
                     >
                         {/* Background Elements - Only show if no custom image */}
-                        {!bgImage && (
+                        {backgroundType === 'default' && (
                             <>
                                 <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-sbc rounded-full blur-[150px] opacity-10 translate-x-1/2 -translate-y-1/2"></div>
                                 <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-sbc-dark rounded-full blur-[150px] opacity-10 -translate-x-1/2 translate-y-1/2"></div>
@@ -289,7 +343,7 @@ export default function AdminBirthdayGenerator({ teams }: { teams: any[] }) {
                         )}
 
                         {/* Overlay for custom bg to ensure readability */}
-                        {bgImage && (
+                        {backgroundType === 'custom' && customBackground && (
                             <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px]"></div>
                         )}
 
@@ -299,8 +353,11 @@ export default function AdminBirthdayGenerator({ teams }: { teams: any[] }) {
                         {/* Header */}
                         <div className="pt-16 pb-8 px-16 text-center z-10">
                             <img src="/logo.png" alt="SBC" className="w-32 h-32 mx-auto mb-6 drop-shadow-xl" />
-                            <h2 className="text-4xl font-black uppercase tracking-widest text-gray-400 mb-2">Joyeux Anniversaire</h2>
-                            <h1 className="text-8xl font-black uppercase text-sbc tracking-tighter drop-shadow-sm">{MONTHS[selectedMonth]}</h1>
+                            <h2 className={`text-4xl font-black uppercase tracking-widest mb-2 ${backgroundType === 'custom' && customBackground ? 'text-white drop-shadow-md' : 'text-gray-400'}`}>Joyeux Anniversaire</h2>
+                            <h1 className="text-8xl font-black uppercase text-sbc tracking-tighter drop-shadow-sm" style={{
+                                WebkitTextStroke: backgroundType === 'custom' && customBackground ? '3px white' : undefined,
+                                paintOrder: 'stroke fill'
+                            }}>{MONTHS[selectedMonth]}</h1>
                         </div>
 
 
@@ -375,16 +432,16 @@ export default function AdminBirthdayGenerator({ teams }: { teams: any[] }) {
                                         return (
                                             <div className={containerClass}>
                                                 {birthdays.map((b, i) => (
-                                                    <div key={i} className={`flex items-start ${gapGroup} w-full`}>
+                                                    <div key={i} className={`flex items-start ${gapGroup} w-full min-w-0`}>
                                                         {/* Date Badge */}
                                                         <div className={`${dateSize} bg-gradient-to-br from-sbc to-sbc-dark text-white flex flex-col items-center justify-center shrink-0 z-10 border border-white/20 shadow-lg`}>
                                                             <span className="font-black leading-none tracking-tighter">{b.dateStr}</span>
                                                         </div>
 
                                                         {/* Members Group */}
-                                                        <div className={`flex flex-col w-full ${containerGap}`}>
+                                                        <div className={`flex flex-col flex-1 min-w-0 ${containerGap}`}>
                                                             {b.members.map((member, idx) => (
-                                                                <div key={idx} className={`flex items-center gap-3 bg-white/60 backdrop-blur-sm ${cardPadding} border border-gray-100 shadow-sm relative overflow-hidden group hover:bg-white/80 transition-colors`}>
+                                                                <div key={idx} className={`flex items-center gap-3 bg-white/60 backdrop-blur-sm ${cardPadding} border border-gray-100 shadow-sm relative overflow-hidden group hover:bg-white/80 transition-colors w-full max-w-full`}>
                                                                     {/* Avatar */}
                                                                     <div className={`${avatarSize} rounded-full overflow-hidden shrink-0 border-white shadow-sm bg-gray-100 flex items-center justify-center`}>
                                                                         {member.img ? (
@@ -461,9 +518,9 @@ export default function AdminBirthdayGenerator({ teams }: { teams: any[] }) {
                                                                     <div className="absolute top-2 right-2 bg-sbc text-white font-black text-[12px] px-2 py-0.5 rounded shadow-sm z-10">
                                                                         {member.dateStr}
                                                                     </div>
-                                                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-8 pb-3 px-2 flex flex-col justify-end text-center z-10">
-                                                                        <h3 className="font-bold text-white leading-tight text-[11px] truncate w-full drop-shadow-md">{member.name}</h3>
-                                                                        <p className="text-[9px] text-gray-200 leading-none truncate w-full mt-0.5 drop-shadow-md">{member.role.replace(/[()]/g, '')}</p>
+                                                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-12 pb-4 px-3 flex flex-col justify-end text-center z-10 transition-all">
+                                                                        <h3 className="font-bold text-white leading-tight text-lg truncate w-full drop-shadow-md">{member.name}</h3>
+                                                                        <p className="text-xs text-gray-200 leading-none truncate w-full mt-1 drop-shadow-md font-medium">{member.role.replace(/[()]/g, '')}</p>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -489,9 +546,9 @@ export default function AdminBirthdayGenerator({ teams }: { teams: any[] }) {
                                                                     <div className="absolute top-2 right-2 bg-sbc text-white font-black text-[12px] px-2 py-0.5 rounded shadow-sm z-10">
                                                                         {member.dateStr}
                                                                     </div>
-                                                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-8 pb-3 px-2 flex flex-col justify-end text-center z-10">
-                                                                        <h3 className="font-bold text-white leading-tight text-[11px] truncate w-full drop-shadow-md">{member.name}</h3>
-                                                                        <p className="text-[9px] text-gray-200 leading-none truncate w-full mt-0.5 drop-shadow-md">{member.role.replace(/[()]/g, '')}</p>
+                                                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-12 pb-4 px-3 flex flex-col justify-end text-center z-10 transition-all">
+                                                                        <h3 className="font-bold text-white leading-tight text-lg truncate w-full drop-shadow-md">{member.name}</h3>
+                                                                        <p className="text-xs text-gray-200 leading-none truncate w-full mt-1 drop-shadow-md font-medium">{member.role.replace(/[()]/g, '')}</p>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -522,7 +579,7 @@ export default function AdminBirthdayGenerator({ teams }: { teams: any[] }) {
                             </div>
                         </div>
 
-                        <div className="w-full h-4 bg-gradient-to-r from-sbc-dark to-sbc mt-auto"></div>
+                        <div className={`w-full h-4 mt-auto ${backgroundType === 'custom' ? 'bg-sbc' : 'bg-gradient-to-r from-sbc-dark to-sbc'}`}></div>
 
                     </div>
                 </div>

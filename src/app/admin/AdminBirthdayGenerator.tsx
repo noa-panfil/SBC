@@ -566,11 +566,13 @@ export default function AdminBirthdayGenerator({ teams }: { teams: any[] }) {
                             </div>
 
                             {/* Sponsors Footer */}
-                            <div className="bg-white pt-8 pb-12 px-16 z-20 mt-auto border-t border-gray-100">
-                                <div className="flex items-center justify-center gap-12 flex-wrap opacity-90">
+                            <div className="bg-white py-4 px-2 z-20 mt-auto border-t border-gray-100">
+                                <div className="grid grid-cols-6 gap-2 items-center justify-items-center opacity-90 w-full">
                                     {partners.slice(0, 6).map(p => (
                                         p.img ? (
-                                            <img key={p.id} src={p.img} alt={p.name} className="h-16 object-contain max-w-[150px]" />
+                                            <div key={p.id} className="w-full flex justify-center">
+                                                <img src={p.img} alt={p.name} className="h-28 w-full object-contain" />
+                                            </div>
                                         ) : null
                                     ))}
                                 </div>

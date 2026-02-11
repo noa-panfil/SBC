@@ -316,17 +316,13 @@ export default function AdminBirthdayGenerator({ teams }: { teams: any[] }) {
                 </div>
             </div>
 
-            <div className="flex justify-center bg-gray-50 p-8 rounded-xl overflow-auto">
-                <div className="relative shadow-2xl overflow-hidden bg-white group select-none">
-                    {/* Canvas Container - 1080x1350 (4:5 Ratio) Scaled down for preview */}
+            <div className="flex justify-center bg-gray-50 p-4 md:p-8 rounded-xl overflow-hidden">
+                <div className="relative shadow-2xl overflow-hidden bg-white group select-none transition-all duration-300 w-[270px] h-[338px] md:w-[378px] md:h-[473px]">
+                    {/* Canvas Container - 1080x1350 (4:5 Ratio) - Scaled via CSS classes */}
                     <div
                         ref={postRef}
-                        className={`w-[1080px] h-[1350px] relative text-sbc-dark flex flex-col ${backgroundType === 'custom' && customBackground ? '' : 'bg-gradient-to-br from-white to-gray-100'}`}
+                        className={`w-[1080px] h-[1350px] relative text-sbc-dark flex flex-col origin-top-left transition-transform duration-300 scale-[0.25] md:scale-[0.35] ${backgroundType === 'custom' && customBackground ? '' : 'bg-gradient-to-br from-white to-gray-100'}`}
                         style={{
-                            transform: 'scale(0.35)',
-                            transformOrigin: 'top left',
-                            marginBottom: '-877px', // 1350 * (1 - 0.35) roughly
-                            marginRight: '-702px', // 1080 * (1 - 0.35) roughly
                             backgroundImage: backgroundType === 'custom' && customBackground ? `url(${customBackground})` : 'none',
                             backgroundSize: 'cover',
                             backgroundPosition: 'center',

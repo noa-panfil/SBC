@@ -16,7 +16,7 @@ export async function POST(request: Request) {
         }
 
         const [rows] = await pool.query<RowDataPacket[]>(
-            `SELECT id, lastname, firstname, email, team_name, role_name, created_at 
+            `SELECT id, lastname, firstname, email, team_name, role_name, file_name, file_mime_type, created_at 
              FROM event_registrations 
              WHERE event_id = ? 
              ORDER BY created_at DESC`,

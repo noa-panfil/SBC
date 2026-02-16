@@ -8,7 +8,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
 
     try {
         const [eventRows] = await pool.query<RowDataPacket[]>(
-            'SELECT id, title, event_date, date_display, description, location, time_info, mode, image_id FROM events WHERE id = ?',
+            'SELECT id, title, event_date, date_display, description, location, time_info, mode, image_id, requires_file FROM events WHERE id = ?',
             [id]
         );
 
@@ -50,6 +50,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
             location: event.location,
             time: event.time_info,
             mode: event.mode as any,
+            requires_file: event.requires_file === 1,
             allowed_teams: allowedTeamRows.map(r => r.team_id.toString()),
             roles: roleRows.map(r => ({ name: r.role_name, max: r.max_count })),
             available_teams: teams

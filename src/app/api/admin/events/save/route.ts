@@ -12,7 +12,7 @@ export async function POST(request: Request) {
 
     try {
         const body = await request.json();
-        const { id, title, date, dateDisplay, description, location, time, mode, imageId, allowedTeams, roles } = body;
+        const { id, title, date, dateDisplay, description, location, time, mode, imageId, allowedTeams, roles, requiresFile } = body;
 
         let eventId = id;
 
@@ -20,16 +20,16 @@ export async function POST(request: Request) {
             // UPDATE
             await pool.query(
                 `UPDATE events 
-                 SET title = ?, event_date = ?, date_display = ?, description = ?, location = ?, time_info = ?, mode = ?, image_id = IFNULL(?, image_id)
+                 SET title = ?, event_date = ?, date_display = ?, description = ?, location = ?, time_info = ?, mode = ?, image_id = IFNULL(?, image_id), requires_file = ?
                  WHERE id = ?`,
-                [title, date, dateDisplay, description, location, time, mode, imageId || null, id]
+                [title, date, dateDisplay, description, location, time, mode, imageId || null, requiresFile ? 1 : 0, id]
             );
         } else {
             // INSERT
             const [res] = await pool.query<ResultSetHeader>(
-                `INSERT INTO events (title, event_date, date_display, description, location, time_info, mode, image_id)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                [title, date, dateDisplay, description, location, time, mode, imageId || null]
+                `INSERT INTO events (title, event_date, date_display, description, location, time_info, mode, image_id, requires_file)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [title, date, dateDisplay, description, location, time, mode, imageId || null, requiresFile ? 1 : 0]
             );
             eventId = res.insertId;
         }

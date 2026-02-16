@@ -20,6 +20,7 @@ interface EventData {
     mode: 'joueur' | 'benevole' | 'public';
     allowed_teams?: string[];
     roles?: EventRole[];
+    requires_file?: boolean;
     available_teams?: { id: string, name: string }[];
 }
 
@@ -29,8 +30,10 @@ export default function EventRegistrationClient({ event }: { event: EventData })
         firstname: "",
         email: "",
         teamName: "",
-        roleName: ""
+        roleName: "",
+        file: null as File | null
     });
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
@@ -40,20 +43,25 @@ export default function EventRegistrationClient({ event }: { event: EventData })
         setStatus(null);
 
         try {
+            const submissionData = new FormData();
+            submissionData.append('eventId', event.id.toString());
+            submissionData.append('lastname', formData.lastname);
+            submissionData.append('firstname', formData.firstname);
+            submissionData.append('email', formData.email);
+            if (formData.teamName) submissionData.append('teamName', formData.teamName);
+            if (formData.roleName) submissionData.append('roleName', formData.roleName);
+            if (formData.file) submissionData.append('file', formData.file);
+
             const res = await fetch('/api/events/register', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    eventId: event.id,
-                    ...formData
-                })
+                body: submissionData
             });
 
             const data = await res.json();
 
             if (res.ok) {
                 setStatus({ type: 'success', message: "Votre inscription a bien été enregistrée ! Merci." });
-                setFormData({ lastname: "", firstname: "", email: "", teamName: "", roleName: "" });
+                setFormData({ lastname: "", firstname: "", email: "", teamName: "", roleName: "", file: null });
             } else {
                 throw new Error(data.error || "Une erreur est survenue");
             }
@@ -220,6 +228,42 @@ export default function EventRegistrationClient({ event }: { event: EventData })
                                                     </span>
                                                 </label>
                                             ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {event.requires_file && (
+                                    <div className="mb-6">
+                                        <label className="block text-sm font-bold text-gray-700 uppercase mb-2">Dépôt de fichier (Requis)</label>
+                                        <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-sbc transition bg-gray-50 group cursor-pointer relative overflow-hidden">
+                                            <input
+                                                type="file"
+                                                required
+                                                accept="image/png"
+                                                onChange={e => {
+                                                    const file = e.target.files?.[0] || null;
+                                                    setFormData({ ...formData, file });
+                                                    if (file && file.type === 'image/png') {
+                                                        const reader = new FileReader();
+                                                        reader.onload = (e) => setPreviewUrl(e.target?.result as string);
+                                                        reader.readAsDataURL(file);
+                                                    } else {
+                                                        setPreviewUrl(null);
+                                                    }
+                                                }}
+                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                            />
+                                            {previewUrl ? (
+                                                <div className="relative w-full h-32 mb-2">
+                                                    <img src={previewUrl} alt="Aperçu" className="w-full h-full object-contain rounded-lg" />
+                                                </div>
+                                            ) : (
+                                                <i className="fas fa-image text-3xl text-gray-400 group-hover:text-sbc mb-2 transition"></i>
+                                            )}
+                                            <span className="font-bold text-gray-600 group-hover:text-sbc transition z-0 relative">
+                                                {formData.file ? formData.file.name : "Cliquez pour déposer votre logo"}
+                                            </span>
+                                            <span className="text-xs text-gray-400 mt-1 uppercase italic z-0 relative">Format requis: PNG uniquement</span>
                                         </div>
                                     </div>
                                 )}

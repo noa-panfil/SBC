@@ -22,6 +22,7 @@ interface Event {
     image?: string | null;
     allowed_teams?: string[];
     roles?: EventRole[];
+    requires_file?: boolean;
 }
 
 interface Registration {
@@ -35,6 +36,8 @@ interface Registration {
     team_name?: string;
     role_id?: number;
     role_name?: string;
+    file_name?: string;
+    file_mime_type?: string;
     created_at: string;
 }
 
@@ -47,7 +50,7 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     // State for Viewing Registrations
-    const [registrationsModal, setRegistrationsModal] = useState<{ isOpen: boolean, eventTitle: string, data: Registration[] }>({ isOpen: false, eventTitle: '', data: [] });
+    const [registrationsModal, setRegistrationsModal] = useState<{ isOpen: boolean, eventTitle: string, data: Registration[], viewMode: 'liste' | 'galerie' }>({ isOpen: false, eventTitle: '', data: [], viewMode: 'liste' });
     const [sortConfig, setSortConfig] = useState<{ key: keyof Registration, direction: 'asc' | 'desc' }>({ key: 'created_at', direction: 'desc' });
 
     // Empty Event Template
@@ -60,7 +63,8 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
         time_info: "20h00",
         mode: "public",
         allowed_teams: [],
-        roles: []
+        roles: [],
+        requires_file: false
     };
 
     const [editingEvent, setEditingEvent] = useState<Partial<Event>>(emptyEvent);
@@ -90,7 +94,8 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
                 formatted_date: e["format-date"],
                 date_display: e.date_display || "",
                 allowed_teams: e.allowed_teams || [],
-                roles: e.roles || []
+                roles: e.roles || [],
+                requires_file: e.requires_file === 1
             }));
 
             setEvents(eventsArray);
@@ -115,7 +120,8 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
             event_date: event.formatted_date ? convertFrDateToIso(event.formatted_date) : event.event_date,
             date_display: event.date_display || "",
             allowed_teams: event.allowed_teams || [],
-            roles: event.roles || []
+            roles: event.roles || [],
+            requires_file: event.requires_file || false
         });
         setIsModalOpen(true);
     };
@@ -165,7 +171,8 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
                 mode: editingEvent.mode,
                 imageId: editingEvent.image_id,
                 allowedTeams: editingEvent.mode === 'joueur' ? editingEvent.allowed_teams : [],
-                roles: editingEvent.mode === 'benevole' ? editingEvent.roles : []
+                roles: editingEvent.mode === 'benevole' ? editingEvent.roles : [],
+                requiresFile: editingEvent.requires_file
             };
 
             const res = await fetch('/api/admin/events/save', {
@@ -217,7 +224,7 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
                 body: JSON.stringify({ eventId: event.id })
             });
             const data: Registration[] = await res.json();
-            setRegistrationsModal({ isOpen: true, eventTitle: event.title, data: Array.isArray(data) ? data : [] });
+            setRegistrationsModal({ isOpen: true, eventTitle: event.title, data: Array.isArray(data) ? data : [], viewMode: event.requires_file ? 'galerie' : 'liste' });
         } catch (e) {
             showNotification("Erreur chargement inscrits", 'error');
         }
@@ -352,74 +359,186 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
                                 <h3 className="font-bold text-xl">Inscriptions Reçues</h3>
                                 <p className="text-sm text-white/80">{registrationsModal.eventTitle} - {registrationsModal.data.length} inscrit(s)</p>
                             </div>
-                            <button onClick={() => setRegistrationsModal({ ...registrationsModal, isOpen: false })} className="text-white/80 hover:text-white text-2xl">&times;</button>
+                            <div className="flex items-center gap-4">
+                                <div className="bg-white/20 p-1 rounded-lg flex items-center">
+                                    <button
+                                        onClick={() => setRegistrationsModal(prev => ({ ...prev, viewMode: 'liste' }))}
+                                        className={`px-3 py-1 rounded-md text-sm font-bold transition ${registrationsModal.viewMode === 'liste' ? 'bg-white text-sbc shadow' : 'text-white hover:bg-white/10'}`}
+                                    >
+                                        <i className="fas fa-list mr-2"></i> Liste
+                                    </button>
+                                    <button
+                                        onClick={() => setRegistrationsModal(prev => ({ ...prev, viewMode: 'galerie' }))}
+                                        className={`px-3 py-1 rounded-md text-sm font-bold transition ${registrationsModal.viewMode === 'galerie' ? 'bg-white text-sbc shadow' : 'text-white hover:bg-white/10'}`}
+                                    >
+                                        <i className="fas fa-th-large mr-2"></i> Galerie
+                                    </button>
+                                </div>
+                                <button onClick={() => setRegistrationsModal({ ...registrationsModal, isOpen: false })} className="text-white/80 hover:text-white text-2xl">&times;</button>
+                            </div>
                         </div>
 
-                        <div className="p-0 overflow-auto flex-grow custom-scrollbar">
-                            {/* Desktop Table */}
-                            <table className="w-full text-left border-collapse hidden md:table">
-                                <thead className="bg-gray-50 sticky top-0 shadow-sm z-10">
-                                    <tr>
-                                        <th onClick={() => handleSort('lastname')} className="p-4 font-bold text-gray-600 cursor-pointer hover:bg-gray-100 transition select-none">
-                                            Nom {sortConfig.key === 'lastname' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
-                                        </th>
-                                        <th onClick={() => handleSort('firstname')} className="p-4 font-bold text-gray-600 cursor-pointer hover:bg-gray-100 transition select-none">
-                                            Prénom {sortConfig.key === 'firstname' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
-                                        </th>
-                                        <th onClick={() => handleSort('email')} className="p-4 font-bold text-gray-600 cursor-pointer hover:bg-gray-100 transition select-none">
-                                            Email {sortConfig.key === 'email' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
-                                        </th>
-                                        <th onClick={() => handleSort('team_name')} className="p-4 font-bold text-gray-600 cursor-pointer hover:bg-gray-100 transition select-none">
-                                            Info (Équipe/Rôle) {sortConfig.key === 'team_name' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
-                                        </th>
-                                        <th onClick={() => handleSort('created_at')} className="p-4 font-bold text-gray-600 cursor-pointer hover:bg-gray-100 transition select-none text-right">
-                                            Date {sortConfig.key === 'created_at' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
+                        <div className="p-0 overflow-auto flex-grow custom-scrollbar bg-gray-50">
+                            {registrationsModal.viewMode === 'galerie' ? (
+                                <div className="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                                     {sortedRegistrations.map((reg: Registration) => (
-                                        <tr key={reg.id} className="hover:bg-gray-50 transition">
-                                            <td className="p-4 font-bold text-gray-800">{reg.lastname}</td>
-                                            <td className="p-4 text-gray-700">{reg.firstname}</td>
-                                            <td className="p-4 text-gray-500 text-sm">{reg.email}</td>
-                                            <td className="p-4">
-                                                {reg.team_name && <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold mr-2">{reg.team_name}</span>}
-                                                {reg.role_name && <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">{reg.role_name}</span>}
-                                            </td>
-                                            <td className="p-4 text-gray-400 text-sm text-right">
-                                                {new Date(reg.created_at).toLocaleDateString('fr-FR')}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                        <div key={reg.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col hover:shadow-md transition group">
+                                            <div className="h-48 bg-gray-100 relative custom-pattern flex items-center justify-center border-b border-gray-100">
+                                                {reg.file_mime_type?.startsWith('image/') ? (
+                                                    <img
+                                                        src={`/api/admin/events/registration/download/${reg.id}`}
+                                                        className="w-full h-full object-contain p-2"
+                                                        alt="Preview"
+                                                    />
+                                                ) : reg.file_name ? (
+                                                    <div className="text-center text-gray-400 p-4">
+                                                        <i className="fas fa-file-alt text-4xl mb-2"></i>
+                                                        <p className="text-xs truncate max-w-[150px]">{reg.file_name}</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-center text-gray-300">
+                                                        <i className="fas fa-image text-4xl mb-1 opacity-50"></i>
+                                                        <p className="text-xs">Pas de fichier</p>
+                                                    </div>
+                                                )}
 
-                            {/* Mobile List View */}
-                            <div className="md:hidden divide-y divide-gray-100">
-                                {sortedRegistrations.map((reg: Registration) => (
-                                    <div key={reg.id} className="p-4 space-y-2">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <p className="font-extrabold text-gray-900 uppercase">{reg.lastname} {reg.firstname}</p>
-                                                <p className="text-xs text-gray-400 font-bold tracking-tight">{reg.email}</p>
+                                                {reg.file_name && (
+                                                    <a
+                                                        href={`/api/admin/events/registration/download/${reg.id}`}
+                                                        target="_blank"
+                                                        className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition backdrop-blur-sm text-white font-bold"
+                                                    >
+                                                        <i className="fas fa-download mr-2"></i> Télécharger
+                                                    </a>
+                                                )}
                                             </div>
-                                            <span className="text-[10px] text-gray-400 font-black uppercase">
-                                                {new Date(reg.created_at).toLocaleDateString('fr-FR')}
-                                            </span>
+                                            <div className="p-4 flex-grow">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <h4 className="font-bold text-gray-800 leading-tight">{reg.firstname} <span className="uppercase">{reg.lastname}</span></h4>
+                                                    <span className="text-[10px] text-gray-400 font-bold uppercase">{new Date(reg.created_at).toLocaleDateString()}</span>
+                                                </div>
+                                                <p className="text-xs text-gray-500 mb-3 truncate">{reg.email}</p>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {reg.team_name && <span className="bg-blue-50 text-blue-600 px-2 py-1 rounded text-[10px] font-bold border border-blue-100">{reg.team_name}</span>}
+                                                    {reg.role_name && <span className="bg-green-50 text-green-600 px-2 py-1 rounded text-[10px] font-bold border border-green-100">{reg.role_name}</span>}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="flex flex-wrap gap-2">
-                                            {reg.team_name && <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-[10px] font-black uppercase border border-blue-100">{reg.team_name}</span>}
-                                            {reg.role_name && <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-[10px] font-black uppercase border border-emerald-100">{reg.role_name}</span>}
+                                    ))}
+                                    {sortedRegistrations.length === 0 && (
+                                        <div className="col-span-full p-12 text-center text-gray-400 italic">
+                                            Aucune inscription pour le moment.
                                         </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Desktop Table */}
+                                    <table className="w-full text-left border-collapse hidden md:table">
+                                        <thead className="bg-white sticky top-0 shadow-sm z-10">
+                                            <tr>
+                                                <th onClick={() => handleSort('lastname')} className="p-4 font-bold text-gray-600 cursor-pointer hover:bg-gray-50 transition select-none">
+                                                    Nom {sortConfig.key === 'lastname' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
+                                                </th>
+                                                <th onClick={() => handleSort('firstname')} className="p-4 font-bold text-gray-600 cursor-pointer hover:bg-gray-50 transition select-none">
+                                                    Prénom {sortConfig.key === 'firstname' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
+                                                </th>
+                                                <th onClick={() => handleSort('email')} className="p-4 font-bold text-gray-600 cursor-pointer hover:bg-gray-50 transition select-none">
+                                                    Email {sortConfig.key === 'email' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
+                                                </th>
+                                                <th onClick={() => handleSort('team_name')} className="p-4 font-bold text-gray-600 cursor-pointer hover:bg-gray-50 transition select-none">
+                                                    Info (Équipe/Rôle) {sortConfig.key === 'team_name' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
+                                                </th>
+                                                <th onClick={() => handleSort('created_at')} className="p-4 font-bold text-gray-600 cursor-pointer hover:bg-gray-50 transition select-none text-right">
+                                                    Date {sortConfig.key === 'created_at' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
+                                                </th>
+                                                <th className="p-4 font-bold text-gray-600 text-right">Fichier</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100 bg-white">
+                                            {sortedRegistrations.map((reg: Registration) => (
+                                                <tr key={reg.id} className="hover:bg-gray-50 transition">
+                                                    <td className="p-4 font-bold text-gray-800">{reg.lastname}</td>
+                                                    <td className="p-4 text-gray-700">{reg.firstname}</td>
+                                                    <td className="p-4 text-gray-500 text-sm">{reg.email}</td>
+                                                    <td className="p-4">
+                                                        {reg.team_name && <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold mr-2">{reg.team_name}</span>}
+                                                        {reg.role_name && <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">{reg.role_name}</span>}
+                                                    </td>
+                                                    <td className="p-4 text-gray-400 text-sm text-right">
+                                                        {new Date(reg.created_at).toLocaleDateString('fr-FR')}
+                                                    </td>
+                                                    <td className="p-4 text-right">
+                                                        {reg.file_name ? (
+                                                            <div className="flex justify-end items-center gap-2">
+                                                                {reg.file_mime_type?.startsWith('image/') && (
+                                                                    <div className="w-10 h-10 rounded overflow-hidden border border-gray-200 bg-gray-50">
+                                                                        <img
+                                                                            src={`/api/admin/events/registration/download/${reg.id}`}
+                                                                            className="w-full h-full object-cover"
+                                                                            alt="Preview"
+                                                                        />
+                                                                    </div>
+                                                                )}
+                                                                <a href={`/api/admin/events/registration/download/${reg.id}`} target="_blank" className="text-sbc hover:underline font-bold text-sm">
+                                                                    <i className="fas fa-file-download mr-1"></i> {reg.file_name}
+                                                                </a>
+                                                            </div>
+                                                        ) : <span className="text-gray-300">-</span>}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        {sortedRegistrations.length === 0 && (
+                                            <div className="p-12 text-center text-gray-400 italic">
+                                                Aucune inscription.
+                                            </div>
+                                        )}
+                                    </table>
+
+                                    {/* Mobile List View */}
+                                    <div className="md:hidden divide-y divide-gray-100 bg-white">
+                                        {sortedRegistrations.map((reg: Registration) => (
+                                            <div key={reg.id} className="p-4 space-y-2">
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <p className="font-extrabold text-gray-900 uppercase">{reg.lastname} {reg.firstname}</p>
+                                                        <p className="text-xs text-gray-400 font-bold tracking-tight">{reg.email}</p>
+                                                    </div>
+                                                    <span className="text-[10px] text-gray-400 font-black uppercase">
+                                                        {new Date(reg.created_at).toLocaleDateString('fr-FR')}
+                                                    </span>
+                                                </div>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {reg.team_name && <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-[10px] font-black uppercase border border-blue-100">{reg.team_name}</span>}
+                                                    {reg.role_name && <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-[10px] font-black uppercase border border-emerald-100">{reg.role_name}</span>}
+                                                </div>
+                                                {reg.file_name && (
+                                                    <div className="mt-2 text-right flex justify-end items-center gap-3">
+                                                        {reg.file_mime_type?.startsWith('image/') && (
+                                                            <div className="w-12 h-12 rounded overflow-hidden border border-gray-200 shadow-sm bg-gray-50">
+                                                                <img
+                                                                    src={`/api/admin/events/registration/download/${reg.id}`}
+                                                                    className="w-full h-full object-cover"
+                                                                    alt="Preview"
+                                                                />
+                                                            </div>
+                                                        )}
+                                                        <a href={`/api/admin/events/registration/download/${reg.id}`} target="_blank" className="text-sbc hover:underline font-bold text-xs inline-flex items-center">
+                                                            <i className="fas fa-file-download mr-1"></i> {reg.file_name}
+                                                        </a>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                        {sortedRegistrations.length === 0 && (
+                                            <div className="p-12 text-center text-gray-400 italic">
+                                                Aucune inscription.
+                                            </div>
+                                        )}
                                     </div>
-                                ))}
-                                {sortedRegistrations.length === 0 && (
-                                    <div className="p-12 text-center text-gray-400 italic">
-                                        Aucune inscription.
-                                    </div>
-                                )}
-                            </div>
+                                </>
+                            )}
                         </div>
                         <div className="p-4 border-t border-gray-100 bg-gray-50 text-right">
                             <button className="text-sbc font-bold text-sm hover:underline">
@@ -520,6 +639,19 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
                                     value={editingEvent.description || ''}
                                     onChange={e => setEditingEvent({ ...editingEvent, description: e.target.value })}
                                 />
+                            </div>
+
+                            <div className="flex items-center gap-2 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                                <input
+                                    type="checkbox"
+                                    id="requiresFile"
+                                    className="w-5 h-5 accent-sbc"
+                                    checked={editingEvent.requires_file || false}
+                                    onChange={e => setEditingEvent({ ...editingEvent, requires_file: e.target.checked })}
+                                />
+                                <label htmlFor="requiresFile" className="font-bold text-gray-700 cursor-pointer select-none">
+                                    Nécessite un dépôt de fichier (ex: Logo, Document...)
+                                </label>
                             </div>
 
                             <div className="border-t border-gray-200 pt-4">

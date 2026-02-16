@@ -3,17 +3,37 @@ import pool from '@/lib/db';
 
 export async function POST(request: Request) {
     try {
-        const body = await request.json();
-        const { eventId, lastname, firstname, email, teamName, roleName } = body;
+        const formData = await request.formData();
+        const eventId = formData.get('eventId') as string;
+        const lastname = formData.get('lastname') as string;
+        const firstname = formData.get('firstname') as string;
+        const email = formData.get('email') as string;
+        const teamName = formData.get('teamName') as string | null;
+        const roleName = formData.get('roleName') as string | null;
+        const file = formData.get('file') as File | null;
 
         if (!eventId || !lastname || !firstname || !email) {
             return NextResponse.json({ error: "Champs obligatoires manquants" }, { status: 400 });
         }
 
+        let fileData: Buffer | null = null;
+        let fileName: string | null = null;
+        let fileMime: string | null = null;
+
+        if (file) {
+            if (file.type !== 'image/png') {
+                return NextResponse.json({ error: "Format de fichier invalide. Seul le PNG est accepté." }, { status: 400 });
+            }
+            const arrayBuffer = await file.arrayBuffer();
+            fileData = Buffer.from(arrayBuffer);
+            fileName = file.name;
+            fileMime = file.type;
+        }
+
         await pool.query(
-            `INSERT INTO event_registrations (event_id, lastname, firstname, email, team_name, role_name)
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [eventId, lastname, firstname, email, teamName || null, roleName || null]
+            `INSERT INTO event_registrations (event_id, lastname, firstname, email, team_name, role_name, file_name, file_mime_type, file_data)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [eventId, lastname, firstname, email, teamName || null, roleName || null, fileName, fileMime, fileData]
         );
 
         return NextResponse.json({ success: true, message: "Inscription réussie !" });

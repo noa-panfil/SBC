@@ -21,8 +21,8 @@ export async function POST(request: Request) {
         let fileMime: string | null = null;
 
         if (file) {
-            if (file.type !== 'image/png') {
-                return NextResponse.json({ error: "Format de fichier invalide. Seul le PNG est accepté." }, { status: 400 });
+            if (file.type !== 'image/png' && file.type !== 'image/jpeg') {
+                return NextResponse.json({ error: "Format de fichier invalide. Seuls PNG et JPG sont acceptés." }, { status: 400 });
             }
             const arrayBuffer = await file.arrayBuffer();
             fileData = Buffer.from(arrayBuffer);

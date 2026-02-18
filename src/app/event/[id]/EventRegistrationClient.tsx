@@ -239,11 +239,11 @@ export default function EventRegistrationClient({ event }: { event: EventData })
                                             <input
                                                 type="file"
                                                 required
-                                                accept="image/png"
+                                                accept="image/png, image/jpeg, image/jpg"
                                                 onChange={e => {
                                                     const file = e.target.files?.[0] || null;
                                                     setFormData({ ...formData, file });
-                                                    if (file && file.type === 'image/png') {
+                                                    if (file && (file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/jpg')) {
                                                         const reader = new FileReader();
                                                         reader.onload = (e) => setPreviewUrl(e.target?.result as string);
                                                         reader.readAsDataURL(file);
@@ -263,7 +263,7 @@ export default function EventRegistrationClient({ event }: { event: EventData })
                                             <span className="font-bold text-gray-600 group-hover:text-sbc transition z-0 relative">
                                                 {formData.file ? formData.file.name : "Cliquez pour déposer votre logo"}
                                             </span>
-                                            <span className="text-xs text-gray-400 mt-1 uppercase italic z-0 relative">Format requis: PNG uniquement</span>
+                                            <span className="text-xs text-gray-400 mt-1 uppercase italic z-0 relative">Formats acceptés : PNG, JPG</span>
                                         </div>
                                     </div>
                                 )}

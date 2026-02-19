@@ -42,6 +42,12 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
                 ],
                 type: 'website',
             },
+            twitter: {
+                card: 'summary_large_image',
+                title: event.title,
+                description: event.description?.substring(0, 200) || "Rejoignez-nous pour cet événement !",
+                images: [imageUrl],
+            },
         };
     } catch (error) {
         console.error("Error fetching metadata:", error);

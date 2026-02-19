@@ -20,7 +20,8 @@ export const metadata: Metadata = {
   },
   other: {
     "google-site-verification": "verification_token",
-  }
+  },
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://seclinbasketclub.fr'),
 };
 
 export const viewport = {

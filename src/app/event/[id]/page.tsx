@@ -105,7 +105,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
             helloasso_iframe: event.helloasso_iframe || undefined
         };
 
-        return <EventRegistrationClient event={eventData} />;
+        return <EventRegistrationClient key={eventData.id} event={eventData} />;
     } catch (error) {
         console.error("Error loading event page:", error);
         notFound();

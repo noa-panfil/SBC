@@ -280,7 +280,7 @@ function BirthdaySection() {
                             name: v.name,
                             birth: v.birth_date, // API returns birth_date as DD/MM/YYYY
                             img: v.image,
-                            sexe: 'M' // Default
+                            sexe: v.sexe || 'M'
                         };
                         processPerson(volunteerPerson, "SBC", "", v.role || "Bénévole");
                     });

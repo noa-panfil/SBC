@@ -11,17 +11,29 @@ export async function PATCH(
     try {
         const { id } = await params;
         const body = await request.json();
-        const { image_id } = body;
+        const { image_id, sexe } = body;
 
         if (!id) {
             return NextResponse.json({ error: 'ID is required' }, { status: 400 });
         }
 
-        // We only support updating image_id for now based on request, but can expand
+        const updates: string[] = [];
+        const values: any[] = [];
+
         if (image_id !== undefined) {
+            updates.push('image_id = ?');
+            values.push(image_id);
+        }
+        if (sexe !== undefined) {
+            updates.push('sexe = ?');
+            values.push(sexe);
+        }
+
+        if (updates.length > 0) {
+            values.push(id);
             await pool.query(
-                'UPDATE volunteers SET image_id = ? WHERE id = ?',
-                [image_id, id]
+                `UPDATE volunteers SET ${updates.join(', ')} WHERE id = ?`,
+                values
             );
         }
 

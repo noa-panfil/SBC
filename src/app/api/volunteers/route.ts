@@ -6,7 +6,7 @@ import { RowDataPacket } from 'mysql2';
 export async function GET() {
     try {
         const [rows] = await pool.query<RowDataPacket[]>(
-            "SELECT id, name, DATE_FORMAT(birth_date, '%d/%m/%Y') as birth_date, image, image_id, role FROM volunteers ORDER BY name ASC"
+            "SELECT id, name, DATE_FORMAT(birth_date, '%d/%m/%Y') as birth_date, image, image_id, role, sexe FROM volunteers ORDER BY name ASC"
         );
         const volunteers = rows.map((v: any) => ({
             id: v.id,
@@ -14,7 +14,8 @@ export async function GET() {
             birth_date: v.birth_date, // Already formatted
             image: v.image_id ? `/api/image/${v.image_id}` : v.image,
             image_id: v.image_id,
-            role: v.role
+            role: v.role,
+            sexe: v.sexe
         }));
         return NextResponse.json(volunteers);
     } catch (error) {
@@ -26,7 +27,7 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { name, birth_date, image, image_id, role } = body;
+        const { name, birth_date, image, image_id, role, sexe } = body;
 
         // Convert DD/MM/YYYY to YYYY-MM-DD
         let dbDate = null;
@@ -36,8 +37,8 @@ export async function POST(request: Request) {
         }
 
         const [result] = await pool.query(
-            'INSERT INTO volunteers (name, birth_date, image, image_id, role) VALUES (?, ?, ?, ?, ?)',
-            [name, dbDate, image, image_id || null, role || 'Bénévole']
+            'INSERT INTO volunteers (name, birth_date, image, image_id, role, sexe) VALUES (?, ?, ?, ?, ?, ?)',
+            [name, dbDate, image, image_id || null, role || 'Bénévole', sexe || 'M']
         );
 
         return NextResponse.json({ success: true, id: (result as any).insertId });

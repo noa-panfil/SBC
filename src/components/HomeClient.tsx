@@ -223,9 +223,11 @@ function BirthdaySection() {
         const monthNames = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
         setMonthName(monthNames[currentMonth]);
 
-        fetch('/api/teams')
-            .then(res => res.json())
-            .then(data => {
+        Promise.all([
+            fetch('/api/teams').then(res => res.json()),
+            fetch('/api/volunteers').then(res => res.json())
+        ])
+            .then(([teamsData, volunteersData]) => {
                 const uniquePeople: Record<string, Person> = {};
 
                 function processPerson(person: any, teamName: string, teamId: string, roleLabel: string) {
@@ -236,33 +238,52 @@ function BirthdaySection() {
                         const birthMonth = parseInt(parts[1], 10) - 1;
 
                         if (birthMonth === currentMonth) {
+                            // Use simpler key or keep existing logic. Volunteers might map to existing users? 
+                            // If name matches, we might merge.
                             const uniqueKey = person.name + "-" + person.birth;
                             if (!uniquePeople[uniqueKey]) {
                                 uniquePeople[uniqueKey] = {
                                     name: person.name,
-                                    img: person.img,
+                                    img: person.img || person.image, // Handle both
                                     day: birthDay,
-                                    birth: person.birth,
+                                    birth: person.birth || person.birth_date, // Handle both
                                     sexe: person.sexe || "M",
                                     roles: [roleLabel],
-                                    teamsData: [{ name: teamName, id: teamId }],
+                                    teamsData: teamId ? [{ name: teamName, id: teamId }] : [],
                                 };
                             } else {
                                 const existing = uniquePeople[uniqueKey];
                                 if (!existing.roles.includes(roleLabel)) existing.roles.push(roleLabel);
-                                const teamExists = existing.teamsData.some((t) => t.id === teamId);
-                                if (!teamExists) existing.teamsData.push({ name: teamName, id: teamId });
+                                if (teamId) {
+                                    const teamExists = existing.teamsData.some((t) => t.id === teamId);
+                                    if (!teamExists) existing.teamsData.push({ name: teamName, id: teamId });
+                                }
                                 if (person.sexe) existing.sexe = person.sexe;
                             }
                         }
                     }
                 }
 
-                for (const [teamId, teamData] of Object.entries(data)) {
+                // Process Teams
+                for (const [teamId, teamData] of Object.entries(teamsData)) {
                     // @ts-ignore
                     if (teamData.players) teamData.players.forEach((p) => processPerson(p, teamData.name, teamId, "Joueur"));
                     // @ts-ignore
                     if (teamData.coaches) teamData.coaches.forEach((c) => processPerson(c, teamData.name, teamId, c.role || "Coach"));
+                }
+
+                // Process Volunteers
+                if (Array.isArray(volunteersData)) {
+                    volunteersData.forEach((v: any) => {
+                        // Map volunteer fields to person fields expected by processPerson
+                        const volunteerPerson = {
+                            name: v.name,
+                            birth: v.birth_date, // API returns birth_date as DD/MM/YYYY
+                            img: v.image,
+                            sexe: 'M' // Default
+                        };
+                        processPerson(volunteerPerson, "SBC", "", v.role || "Bénévole");
+                    });
                 }
 
                 const list = Object.values(uniquePeople);
@@ -317,7 +338,7 @@ function BirthdaySection() {
                                         <div className="relative mb-4">
                                             <div className="absolute inset-0 bg-yellow-400 rounded-full blur-xl opacity-40 animate-pulse"></div>
                                             <Image
-                                                src={p.img}
+                                                src={p.img || "/logo.png"}
                                                 alt={p.name}
                                                 width={96}
                                                 height={96}
@@ -365,7 +386,7 @@ function BirthdaySection() {
                             <div key={i} className={`bg-white rounded-xl shadow-md p-4 flex items-center gap-4 w-full md:w-[calc(50%-12px)] lg:w-[calc(33.33%-16px)] xl:w-[calc(25%-18px)] border-l-4 ${p.day < todayDay ? 'border-gray-200 grayscale opacity-60' : 'border-sbc hover:shadow-lg transition transform hover:-translate-y-1'}`}>
                                 <div className="relative flex-shrink-0">
                                     <Image
-                                        src={p.img}
+                                        src={p.img || "/logo.png"}
                                         alt={p.name}
                                         width={64}
                                         height={64}

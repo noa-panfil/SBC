@@ -12,6 +12,7 @@ import AdminOTMManager from "./AdminOTMManager";
 import AdminAppearanceManager from "./AdminAppearanceManager";
 import AdminStoryGenerator from "./AdminStoryGenerator";
 import AdminBirthdayGenerator from "./AdminBirthdayGenerator";
+import VolunteersManager from "@/components/admin/VolunteersManager";
 import { authOptions } from "@/lib/auth";
 import InstallPWA from "@/components/InstallPWA";
 
@@ -31,6 +32,24 @@ async function getStats() {
     } catch (e) {
         console.error(e);
         return { players: 0, coaches: 0 };
+    }
+}
+
+async function getVolunteers() {
+    try {
+        const [rows] = await pool.query<RowDataPacket[]>(
+            "SELECT id, name, DATE_FORMAT(birth_date, '%d/%m/%Y') as birth_date, image, image_id, role FROM volunteers ORDER BY name ASC"
+        );
+        return rows.map((v: any) => ({
+            id: v.id,
+            name: v.name,
+            birth: v.birth_date,
+            img: v.image_id ? `/api/image/${v.image_id}` : v.image,
+            role: v.role
+        }));
+    } catch (e) {
+        console.error("Error fetching volunteers", e);
+        return [];
     }
 }
 
@@ -223,6 +242,7 @@ export default async function AdminDashboard() {
 
     const stats = await getStats();
     const teams = await getTeams();
+    const volunteers = await getVolunteers();
     const coachLogins = await getCoachLogins();
     const otmMatches = await getOtmMatches();
     const rawOfficials = await getAllPersons();
@@ -281,6 +301,7 @@ export default async function AdminDashboard() {
                 {[
                     { label: "Joueurs", value: stats.players, icon: "fas fa-users", color: "from-blue-500 to-indigo-600", link: "/admin/players" },
                     { label: "Coachs", value: stats.coaches, icon: "fas fa-user-tie", color: "from-emerald-500 to-teal-600", link: "/admin/coaches" },
+                    { label: "Bénévoles", value: volunteers.length, icon: "fas fa-hands-helping", color: "from-orange-500 to-red-500", link: "#volunteers" },
                     { label: "Équipes", value: teams.length, icon: "fas fa-shield-alt", color: "from-sbc to-sbc-dark", link: "#teams", fullMobile: true },
                 ].map((stat, i) => (
                     <div key={i} className={`group relative ${stat.fullMobile ? 'col-span-2 lg:col-span-1' : 'col-span-1'}`}>
@@ -319,6 +340,14 @@ export default async function AdminDashboard() {
                 </div>
             </section>
 
+            <section id="volunteers" className="scroll-mt-24">
+                <div className="flex items-center gap-3 mb-6">
+                    <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Gestion Bénévoles</h2>
+                    <div className="h-px flex-grow bg-gray-200"></div>
+                </div>
+                <VolunteersManager />
+            </section>
+
             <section id="events" className="scroll-mt-24">
                 <div className="flex items-center gap-3 mb-6">
                     <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Événements</h2>
@@ -351,12 +380,14 @@ export default async function AdminDashboard() {
                 <AdminAppearanceManager />
             </section>
 
+
+
             <section id="birthdays" className="scroll-mt-24">
                 <div className="flex items-center gap-3 mb-6">
                     <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Générateur Anniversaires</h2>
                     <div className="h-px flex-grow bg-gray-200"></div>
                 </div>
-                <AdminBirthdayGenerator teams={teams} />
+                <AdminBirthdayGenerator teams={teams} volunteers={volunteers} />
             </section>
 
             <div className="bg-sbc-dark rounded-3xl md:rounded-[2.5rem] p-6 md:p-10 text-white overflow-hidden relative shadow-2xl">

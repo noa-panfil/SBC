@@ -23,7 +23,7 @@ const MONTHS = [
     "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
 ];
 
-export default function AdminBirthdayGenerator({ teams }: { teams: any[] }) {
+export default function AdminBirthdayGenerator({ teams, volunteers = [] }: { teams: any[], volunteers?: any[] }) {
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth()); // 0-11
     const [displayMode, setDisplayMode] = useState<'list' | 'photos'>('list');
     const [partners, setPartners] = useState<Partner[]>([]);
@@ -54,8 +54,8 @@ export default function AdminBirthdayGenerator({ teams }: { teams: any[] }) {
     }, []);
 
     useEffect(() => {
-        // Aggregate all people from teams
-        const allPeople = new Map<number, Person>();
+        // Aggregate all people from teams and volunteers
+        const allPeople = new Map<number | string, Person>();
 
         teams.forEach(team => {
             // Process Coaches
@@ -98,6 +98,26 @@ export default function AdminBirthdayGenerator({ teams }: { teams: any[] }) {
                 allPeople.set(p.person_id, person);
             });
         });
+
+        // Mix in Volunteers
+        if (volunteers) {
+            volunteers.forEach((v: any) => {
+                // Use a string ID prefix for volunteers to avoid collision with numeric person_ids if possible, though person_id is number.
+                // Assuming v.id is unique enough or we use negative numbers?
+                // Let's use a string key map to support mixed ID types.
+                const vId = `vol-${v.id}`;
+                // Volunteers are simpler, just add them directly
+                const person: Person = {
+                    person_id: -v.id, // Hack to fit number type if needed, or just let it be. Interface says number.
+                    name: v.name,
+                    roles: [v.role || 'Bénévole'],
+                    birth: v.birth, // Expecting dd/mm/yyyy
+                    img: v.img || v.image,
+                    gender: 'M' // Default or unknown
+                };
+                allPeople.set(vId, person);
+            });
+        }
 
         // Filter by month
         const filtered = Array.from(allPeople.values()).filter(p => {
@@ -142,7 +162,7 @@ export default function AdminBirthdayGenerator({ teams }: { teams: any[] }) {
 
         setBirthdays(result);
 
-    }, [teams, selectedMonth]);
+    }, [teams, selectedMonth, volunteers]);
 
 
     const handleDownload = async () => {

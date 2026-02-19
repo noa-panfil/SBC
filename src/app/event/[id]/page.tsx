@@ -2,6 +2,54 @@ import { notFound } from "next/navigation";
 import pool from "@/lib/db";
 import { RowDataPacket } from "mysql2";
 import EventRegistrationClient from "./EventRegistrationClient";
+import { Metadata } from "next";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+    const id = (await params).id;
+
+    try {
+        const [rows] = await pool.query<RowDataPacket[]>(
+            'SELECT title, description, image_id FROM events WHERE id = ?',
+            [id]
+        );
+
+        if (rows.length === 0) {
+            return {
+                title: 'Événement non trouvé',
+            };
+        }
+
+        const event = rows[0];
+
+        // Construct absolute URL for the image
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://seclinbasketclub.fr';
+        const imagePath = event.image_id ? `/api/image/${event.image_id}` : '/img/event-placeholder.jpg';
+        const imageUrl = `${baseUrl}${imagePath}`;
+
+        return {
+            title: `${event.title} - Seclin Basket Club`,
+            description: event.description?.substring(0, 200) || "Événement du Seclin Basket Club",
+            openGraph: {
+                title: event.title,
+                description: event.description?.substring(0, 200) || "Rejoignez-nous pour cet événement !",
+                images: [
+                    {
+                        url: imageUrl,
+                        width: 1200,
+                        height: 630,
+                        alt: event.title,
+                    },
+                ],
+                type: 'website',
+            },
+        };
+    } catch (error) {
+        console.error("Error fetching metadata:", error);
+        return {
+            title: 'Seclin Basket Club',
+        };
+    }
+}
 
 export default async function EventPage({ params }: { params: Promise<{ id: string }> }) {
     const id = (await params).id;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 interface EventRole {
@@ -22,6 +22,7 @@ interface EventData {
     roles?: EventRole[];
     requires_file?: boolean;
     available_teams?: { id: string, name: string }[];
+    helloasso_iframe?: string;
 }
 
 export default function EventRegistrationClient({ event }: { event: EventData }) {
@@ -36,6 +37,22 @@ export default function EventRegistrationClient({ event }: { event: EventData })
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+
+    useEffect(() => {
+        if (!event.helloasso_iframe) return;
+
+        const handleMessage = (e: MessageEvent) => {
+            if (e.data && e.data.height) {
+                const haWidgetElement = document.getElementById('haWidget');
+                if (haWidgetElement) {
+                    haWidgetElement.style.height = e.data.height + 'px';
+                }
+            }
+        };
+
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, [event.helloasso_iframe]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -145,141 +162,145 @@ export default function EventRegistrationClient({ event }: { event: EventData })
                                 <h3 className="text-xl font-bold uppercase italic italic">S'inscrire à l'événement</h3>
                             </div>
 
-                            <form onSubmit={handleSubmit} className="p-8 space-y-6">
-                                {status && (
-                                    <div className={`p-4 rounded-lg font-bold flex items-center gap-3 ${status.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                        <i className={`fas ${status.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'}`}></i>
-                                        {status.message}
-                                    </div>
-                                )}
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label className="block text-sm font-bold text-gray-700 uppercase mb-2">Nom</label>
-                                        <input
-                                            required
-                                            className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-sbc focus:bg-white rounded-xl outline-none transition font-bold"
-                                            value={formData.lastname}
-                                            onChange={e => setFormData({ ...formData, lastname: e.target.value })}
-                                            placeholder="DUBOIS"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-bold text-gray-700 uppercase mb-2">Prénom</label>
-                                        <input
-                                            required
-                                            className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-sbc focus:bg-white rounded-xl outline-none transition font-bold"
-                                            value={formData.firstname}
-                                            onChange={e => setFormData({ ...formData, firstname: e.target.value })}
-                                            placeholder="Jean"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 uppercase mb-2">Adresse Email</label>
-                                    <input
-                                        required
-                                        type="email"
-                                        className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-sbc focus:bg-white rounded-xl outline-none transition font-bold"
-                                        value={formData.email}
-                                        onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                        placeholder="jean.dubois@email.com"
-                                    />
-                                </div>
-
-                                {event.mode === 'joueur' && (
-                                    <div>
-                                        <label className="block text-sm font-bold text-gray-700 uppercase mb-2">Votre Équipe</label>
-                                        <select
-                                            required
-                                            className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-sbc focus:bg-white rounded-xl outline-none transition font-bold appearance-none"
-                                            value={formData.teamName}
-                                            onChange={e => setFormData({ ...formData, teamName: e.target.value })}
-                                        >
-                                            <option value="">Sélectionnez votre équipe</option>
-                                            {filteredTeams?.map(team => (
-                                                <option key={team.id} value={team.name}>{team.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                )}
-
-                                {event.mode === 'benevole' && (
-                                    <div>
-                                        <label className="block text-sm font-bold text-gray-700 uppercase mb-2">Rôle souhaité</label>
-                                        <div className="grid grid-cols-1 gap-3">
-                                            {event.roles?.map((role, idx) => (
-                                                <label key={idx} className={`p-4 border-2 rounded-xl cursor-pointer transition flex justify-between items-center ${formData.roleName === role.name ? 'border-sbc bg-sbc/5' : 'border-gray-100 bg-gray-50 hover:border-gray-200'}`}>
-                                                    <div className="flex items-center">
-                                                        <input
-                                                            type="radio"
-                                                            name="role"
-                                                            required
-                                                            value={role.name}
-                                                            checked={formData.roleName === role.name}
-                                                            onChange={e => setFormData({ ...formData, roleName: e.target.value })}
-                                                            className="mr-3 accent-sbc"
-                                                        />
-                                                        <span className="font-bold text-gray-700">{role.name}</span>
-                                                    </div>
-                                                    <span className="text-xs bg-gray-200 px-2 py-1 rounded-full font-bold text-gray-500 uppercase">
-                                                        Max: {role.max} pers.
-                                                    </span>
-                                                </label>
-                                            ))}
+                            {event.helloasso_iframe ? (
+                                <div dangerouslySetInnerHTML={{ __html: event.helloasso_iframe }} suppressHydrationWarning={true} />
+                            ) : (
+                                <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                                    {status && (
+                                        <div className={`p-4 rounded-lg font-bold flex items-center gap-3 ${status.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                            <i className={`fas ${status.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'}`}></i>
+                                            {status.message}
                                         </div>
-                                    </div>
-                                )}
+                                    )}
 
-                                {event.requires_file && (
-                                    <div className="mb-6">
-                                        <label className="block text-sm font-bold text-gray-700 uppercase mb-2">Dépôt de fichier (Requis)</label>
-                                        <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-sbc transition bg-gray-50 group cursor-pointer relative overflow-hidden">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 uppercase mb-2">Nom</label>
                                             <input
-                                                type="file"
                                                 required
-                                                accept="image/png, image/jpeg, image/jpg"
-                                                onChange={e => {
-                                                    const file = e.target.files?.[0] || null;
-                                                    setFormData({ ...formData, file });
-                                                    if (file && (file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/jpg')) {
-                                                        const reader = new FileReader();
-                                                        reader.onload = (e) => setPreviewUrl(e.target?.result as string);
-                                                        reader.readAsDataURL(file);
-                                                    } else {
-                                                        setPreviewUrl(null);
-                                                    }
-                                                }}
-                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-sbc focus:bg-white rounded-xl outline-none transition font-bold"
+                                                value={formData.lastname}
+                                                onChange={e => setFormData({ ...formData, lastname: e.target.value })}
+                                                placeholder="DUBOIS"
                                             />
-                                            {previewUrl ? (
-                                                <div className="relative w-full h-32 mb-2">
-                                                    <img src={previewUrl} alt="Aperçu" className="w-full h-full object-contain rounded-lg" />
-                                                </div>
-                                            ) : (
-                                                <i className="fas fa-image text-3xl text-gray-400 group-hover:text-sbc mb-2 transition"></i>
-                                            )}
-                                            <span className="font-bold text-gray-600 group-hover:text-sbc transition z-0 relative">
-                                                {formData.file ? formData.file.name : "Cliquez pour déposer votre logo"}
-                                            </span>
-                                            <span className="text-xs text-gray-400 mt-1 uppercase italic z-0 relative">Formats acceptés : PNG, JPG</span>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 uppercase mb-2">Prénom</label>
+                                            <input
+                                                required
+                                                className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-sbc focus:bg-white rounded-xl outline-none transition font-bold"
+                                                value={formData.firstname}
+                                                onChange={e => setFormData({ ...formData, firstname: e.target.value })}
+                                                placeholder="Jean"
+                                            />
                                         </div>
                                     </div>
-                                )}
 
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting}
-                                    className={`w-full py-5 rounded-xl font-black text-white uppercase italic text-xl shadow-lg transform transition active:scale-95 ${isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-sbc hover:bg-sbc-dark hover:-translate-y-1 shadow-sbc/30'}`}
-                                >
-                                    {isSubmitting ? 'Envoi en cours...' : 'Confirmer l\'inscription'}
-                                </button>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 uppercase mb-2">Adresse Email</label>
+                                        <input
+                                            required
+                                            type="email"
+                                            className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-sbc focus:bg-white rounded-xl outline-none transition font-bold"
+                                            value={formData.email}
+                                            onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                            placeholder="jean.dubois@email.com"
+                                        />
+                                    </div>
 
-                                <p className="text-center text-xs text-gray-400 font-bold uppercase italic">
-                                    En vous inscrivant, vous acceptez d'être contacté par le club pour cet événement.
-                                </p>
-                            </form>
+                                    {event.mode === 'joueur' && (
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 uppercase mb-2">Votre Équipe</label>
+                                            <select
+                                                required
+                                                className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-sbc focus:bg-white rounded-xl outline-none transition font-bold appearance-none"
+                                                value={formData.teamName}
+                                                onChange={e => setFormData({ ...formData, teamName: e.target.value })}
+                                            >
+                                                <option value="">Sélectionnez votre équipe</option>
+                                                {filteredTeams?.map(team => (
+                                                    <option key={team.id} value={team.name}>{team.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
+
+                                    {event.mode === 'benevole' && (
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 uppercase mb-2">Rôle souhaité</label>
+                                            <div className="grid grid-cols-1 gap-3">
+                                                {event.roles?.map((role, idx) => (
+                                                    <label key={idx} className={`p-4 border-2 rounded-xl cursor-pointer transition flex justify-between items-center ${formData.roleName === role.name ? 'border-sbc bg-sbc/5' : 'border-gray-100 bg-gray-50 hover:border-gray-200'}`}>
+                                                        <div className="flex items-center">
+                                                            <input
+                                                                type="radio"
+                                                                name="role"
+                                                                required
+                                                                value={role.name}
+                                                                checked={formData.roleName === role.name}
+                                                                onChange={e => setFormData({ ...formData, roleName: e.target.value })}
+                                                                className="mr-3 accent-sbc"
+                                                            />
+                                                            <span className="font-bold text-gray-700">{role.name}</span>
+                                                        </div>
+                                                        <span className="text-xs bg-gray-200 px-2 py-1 rounded-full font-bold text-gray-500 uppercase">
+                                                            Max: {role.max} pers.
+                                                        </span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {event.requires_file && (
+                                        <div className="mb-6">
+                                            <label className="block text-sm font-bold text-gray-700 uppercase mb-2">Dépôt de fichier (Requis)</label>
+                                            <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-sbc transition bg-gray-50 group cursor-pointer relative overflow-hidden">
+                                                <input
+                                                    type="file"
+                                                    required
+                                                    accept="image/png, image/jpeg, image/jpg"
+                                                    onChange={e => {
+                                                        const file = e.target.files?.[0] || null;
+                                                        setFormData({ ...formData, file });
+                                                        if (file && (file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/jpg')) {
+                                                            const reader = new FileReader();
+                                                            reader.onload = (e) => setPreviewUrl(e.target?.result as string);
+                                                            reader.readAsDataURL(file);
+                                                        } else {
+                                                            setPreviewUrl(null);
+                                                        }
+                                                    }}
+                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                />
+                                                {previewUrl ? (
+                                                    <div className="relative w-full h-32 mb-2">
+                                                        <img src={previewUrl} alt="Aperçu" className="w-full h-full object-contain rounded-lg" />
+                                                    </div>
+                                                ) : (
+                                                    <i className="fas fa-image text-3xl text-gray-400 group-hover:text-sbc mb-2 transition"></i>
+                                                )}
+                                                <span className="font-bold text-gray-600 group-hover:text-sbc transition z-0 relative">
+                                                    {formData.file ? formData.file.name : "Cliquez pour déposer votre logo"}
+                                                </span>
+                                                <span className="text-xs text-gray-400 mt-1 uppercase italic z-0 relative">Formats acceptés : PNG, JPG</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <button
+                                        type="submit"
+                                        disabled={isSubmitting}
+                                        className={`w-full py-5 rounded-xl font-black text-white uppercase italic text-xl shadow-lg transform transition active:scale-95 ${isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-sbc hover:bg-sbc-dark hover:-translate-y-1 shadow-sbc/30'}`}
+                                    >
+                                        {isSubmitting ? 'Envoi en cours...' : 'Confirmer l\'inscription'}
+                                    </button>
+
+                                    <p className="text-center text-xs text-gray-400 font-bold uppercase italic">
+                                        En vous inscrivant, vous acceptez d'être contacté par le club pour cet événement.
+                                    </p>
+                                </form>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
         // Construct absolute URL for the image
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://seclinbasketclub.fr';
-        const imagePath = event.image_id ? `/api/image/${event.image_id}` : '/img/event-placeholder.jpg';
+        const imagePath = event.image_id ? `/api/image/${event.image_id}` : '/logo.png';
         const imageUrl = `${baseUrl}${imagePath}`;
 
         return {

@@ -26,6 +26,7 @@ export async function GET(
         return new NextResponse(data, {
             headers: {
                 'Content-Type': mime_type,
+                'Content-Length': Buffer.byteLength(data).toString(),
                 'Cache-Control': 'public, max-age=31536000, immutable',
             },
         });

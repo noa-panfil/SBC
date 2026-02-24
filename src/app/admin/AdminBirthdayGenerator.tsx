@@ -34,6 +34,11 @@ export default function AdminBirthdayGenerator({ teams, volunteers = [] }: { tea
     const [backgroundType, setBackgroundType] = useState<'default' | 'custom'>('default');
     const [customBackground, setCustomBackground] = useState<string | null>(null);
 
+    // Preview Modal State
+    const [previewModalOpen, setPreviewModalOpen] = useState(false);
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
+    const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
+
     const handleBackgroundUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -66,7 +71,7 @@ export default function AdminBirthdayGenerator({ teams, volunteers = [] }: { tea
                     roles: [],
                     birth: c.birth,
                     img: c.img,
-                    gender: c.gender
+                    gender: c.sexe || c.gender || 'M'
                 };
 
                 // Add role if not duplicate
@@ -85,7 +90,7 @@ export default function AdminBirthdayGenerator({ teams, volunteers = [] }: { tea
                     roles: [],
                     birth: p.birth,
                     img: p.img,
-                    gender: p.gender
+                    gender: p.sexe || p.gender || 'M'
                 };
 
                 // Add role if not duplicate. For players, we just list the Team Name.
@@ -113,7 +118,7 @@ export default function AdminBirthdayGenerator({ teams, volunteers = [] }: { tea
                     roles: [v.role || 'Bénévole'],
                     birth: v.birth, // Expecting dd/mm/yyyy
                     img: v.img || v.image,
-                    gender: 'M' // Default or unknown
+                    gender: v.sexe || v.gender || 'M'
                 };
                 allPeople.set(vId, person);
             });
@@ -224,12 +229,35 @@ export default function AdminBirthdayGenerator({ teams, volunteers = [] }: { tea
         } catch (err) {
             console.error(err);
         }
+    }; const handlePreviewClick = async () => {
+        if (!postRef.current) return;
+        setIsGeneratingPreview(true);
+        try {
+            const blob = await toBlob(postRef.current, {
+                quality: 1.0,
+                pixelRatio: 1.5,
+                width: 1080,
+                height: 1350,
+                style: {
+                    transform: 'none',
+                    transformOrigin: 'top left',
+                    width: '1080px',
+                    height: '1350px',
+                    margin: '0',
+                    backgroundColor: backgroundType === 'default' ? 'white' : undefined
+                }
+            });
+            if (blob) {
+                const url = URL.createObjectURL(blob);
+                setPreviewImage(url);
+                setPreviewModalOpen(true);
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setIsGeneratingPreview(false);
+        }
     };
-
-
-
-
-
 
     return (
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -336,8 +364,20 @@ export default function AdminBirthdayGenerator({ teams, volunteers = [] }: { tea
                 </div>
             </div>
 
-            <div className="flex justify-center bg-gray-50 p-4 md:p-8 rounded-xl overflow-hidden">
-                <div className="relative shadow-2xl overflow-hidden bg-white group select-none transition-all duration-300 w-[270px] h-[338px] md:w-[378px] md:h-[473px]">
+            <div className="flex justify-center bg-gray-50 p-4 md:p-8 rounded-xl overflow-hidden relative">
+                {isGeneratingPreview && (
+                    <div className="absolute inset-0 bg-white/80 z-50 flex flex-col items-center justify-center backdrop-blur-sm">
+                        <i className="fas fa-spinner fa-spin text-4xl text-sbc mb-4"></i>
+                        <span className="font-bold text-gray-700">Génération de l'aperçu...</span>
+                    </div>
+                )}
+                <div
+                    className="relative shadow-2xl overflow-hidden bg-white group select-none transition-all duration-300 w-[270px] h-[338px] md:w-[378px] md:h-[473px] cursor-zoom-in hover:ring-4 hover:ring-sbc/50"
+                    onClick={handlePreviewClick}
+                >
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 z-40 transition duration-300 flex items-center justify-center rounded-xl overflow-hidden">
+                        <i className="fas fa-search-plus text-white text-5xl opacity-0 group-hover:opacity-100 drop-shadow-xl transform scale-50 group-hover:scale-100 transition-all duration-300"></i>
+                    </div>
                     {/* Canvas Container - 1080x1350 (4:5 Ratio) - Scaled via CSS classes */}
                     <div className="origin-top-left transition-transform duration-300 scale-[0.25] md:scale-[0.35]">
                         <div
@@ -471,12 +511,9 @@ export default function AdminBirthdayGenerator({ teams, volunteers = [] }: { tea
                                                                         {/* Text Info */}
                                                                         <div className="flex flex-col min-w-0 justify-center flex-grow">
                                                                             <span className={`font-bold text-gray-800 truncate block leading-tight ${nameSize}`}>{member.name}</span>
-                                                                            <span className={`text-sbc font-bold uppercase tracking-wider truncate block opacity-80 group-hover:opacity-100 transition-opacity ${roleSize}`}>
+                                                                            <span className={`text-sbc font-bold uppercase tracking-wider block opacity-80 group-hover:opacity-100 transition-opacity ${roleSize}`} style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                                                                                 {(() => {
                                                                                     const roles = member.role.replace(/[()]/g, '').split(',').map(r => r.trim());
-                                                                                    if (roles.length > 2) {
-                                                                                        return roles.slice(0, 2).join(', ') + '...';
-                                                                                    }
                                                                                     return roles.join(', ');
                                                                                 })()}
                                                                             </span>
@@ -537,7 +574,7 @@ export default function AdminBirthdayGenerator({ teams, volunteers = [] }: { tea
                                                                         </div>
                                                                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-12 pb-4 px-3 flex flex-col justify-end text-center z-10 transition-all">
                                                                             <h3 className="font-bold text-white leading-tight text-lg truncate w-full drop-shadow-md">{member.name}</h3>
-                                                                            <p className="text-xs text-gray-200 leading-none truncate w-full mt-1 drop-shadow-md font-medium">{member.role.replace(/[()]/g, '')}</p>
+                                                                            <p className="text-xs text-gray-200 leading-snug w-full mt-1 drop-shadow-md font-medium" style={{ wordBreak: 'break-word', overflowWrap: 'break-word', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{member.role.replace(/[()]/g, '')}</p>
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -565,7 +602,7 @@ export default function AdminBirthdayGenerator({ teams, volunteers = [] }: { tea
                                                                         </div>
                                                                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-12 pb-4 px-3 flex flex-col justify-end text-center z-10 transition-all">
                                                                             <h3 className="font-bold text-white leading-tight text-lg truncate w-full drop-shadow-md">{member.name}</h3>
-                                                                            <p className="text-xs text-gray-200 leading-none truncate w-full mt-1 drop-shadow-md font-medium">{member.role.replace(/[()]/g, '')}</p>
+                                                                            <p className="text-xs text-gray-200 leading-snug w-full mt-1 drop-shadow-md font-medium" style={{ wordBreak: 'break-word', overflowWrap: 'break-word', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{member.role.replace(/[()]/g, '')}</p>
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -604,6 +641,27 @@ export default function AdminBirthdayGenerator({ teams, volunteers = [] }: { tea
                     </div>
                 </div>
             </div>
+
+            {previewModalOpen && (
+                <div className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-4 backdrop-blur-sm cursor-zoom-out" style={{ animation: 'fadeIn 0.2s ease-out' }} onClick={() => setPreviewModalOpen(false)}>
+                    <button onClick={() => setPreviewModalOpen(false)} className="absolute top-6 right-6 text-white hover:text-sbc transition text-5xl focus:outline-none drop-shadow-md">&times;</button>
+                    <div className="relative max-h-[90vh] max-w-full aspect-[4/5] bg-white rounded-xl shadow-2xl overflow-hidden cursor-default" onClick={e => e.stopPropagation()}>
+                        {previewImage ? (
+                            <img src={previewImage} className="w-full h-full object-contain" alt="Aperçu HD" />
+                        ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center text-gray-500">
+                                <i className="fas fa-spinner fa-spin text-4xl mb-4 text-sbc"></i>
+                                Chargement...
+                            </div>
+                        )}
+                        <div className="absolute bottom-4 right-4 flex gap-2">
+                            <button onClick={handleDownload} className="bg-sbc text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:bg-sbc-dark hover:scale-105 transition" title="Télécharger">
+                                <i className="fas fa-download text-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 }

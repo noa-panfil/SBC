@@ -44,7 +44,7 @@ export default async function Informations() {
     const president = getBureauMember("Président");
     const vicePresident = getBureauMember("Vice");
     const secretaire = getBureauMember("Secrétaire");
-    const tresorier = getBureauMember("Trésorier");
+    const tresorier = getBureauMember("Trésorière");
 
     return (
         <>

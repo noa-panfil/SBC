@@ -21,6 +21,31 @@ export default async function Informations() {
         console.error("Error fetching gym image:", e);
     }
 
+    let bureauMembers: any[] = [];
+    try {
+        const [rows] = await pool.query<RowDataPacket[]>(
+            `SELECT 
+                b.role,
+                COALESCE(p.image_id, v.image_id, NULL) as image_id,
+                COALESCE(NULLIF(TRIM(CONCAT(p.lastname, ' ', p.firstname)), ''), v.name) as fullname
+             FROM bureau_members b
+             LEFT JOIN persons p ON b.person_id = p.id
+             LEFT JOIN volunteers v ON b.volunteer_id = v.id`
+        );
+        bureauMembers = rows;
+    } catch (e) {
+        console.error("Error fetching bureau members:", e);
+    }
+
+    const getBureauMember = (roleNameStart: string) => {
+        return bureauMembers.find(m => m.role && m.role.toLowerCase().startsWith(roleNameStart.toLowerCase()));
+    };
+
+    const president = getBureauMember("Président");
+    const vicePresident = getBureauMember("Vice");
+    const secretaire = getBureauMember("Secrétaire");
+    const tresorier = getBureauMember("Trésorier");
+
     return (
         <>
             <header className="bg-white py-12 shadow-sm text-center relative overflow-hidden">
@@ -126,25 +151,35 @@ export default async function Informations() {
 
                     <div className="flex flex-col items-center w-full">
 
+                        {/* Président */}
                         <div className="relative z-10 bg-white border-2 border-gray-900 p-4 w-72 shadow-lg flex items-center gap-4 hover:scale-105 transition duration-300">
-                            <div className="w-16 h-16 rounded-full bg-sbc text-white flex items-center justify-center text-2xl flex-shrink-0">
-                                <i className="fas fa-user-tie"></i>
+                            <div className="w-16 h-16 rounded-full bg-sbc overflow-hidden border-2 border-white shadow-sm flex items-center justify-center text-2xl text-white flex-shrink-0">
+                                {president?.image_id ? (
+                                    <img src={`/api/image/${president.image_id}`} alt="Président" className="w-full h-full object-cover" />
+                                ) : (
+                                    <i className="fas fa-user-tie"></i>
+                                )}
                             </div>
-                            <div>
-                                <h3 className="font-bold text-lg leading-tight">Grégory<br />Duponchel</h3>
+                            <div className="min-w-0">
+                                <h3 className="font-bold text-lg leading-tight truncate">{president ? president.fullname : "Nom à venir"}</h3>
                                 <p className="text-gray-500 font-medium text-sm">Président</p>
                             </div>
                         </div>
 
                         <div className="h-8 w-0.5 bg-gray-900"></div>
 
+                        {/* Vice-Président */}
                         <div className="relative z-10 bg-white border-2 border-gray-900 p-4 w-72 shadow-lg flex items-center gap-4 hover:scale-105 transition duration-300">
-                            <div className="w-16 h-16 rounded-full bg-sbc text-white flex items-center justify-center text-2xl flex-shrink-0">
-                                <i className="fas fa-user"></i>
+                            <div className="w-16 h-16 rounded-full bg-sbc overflow-hidden border-2 border-white shadow-sm flex items-center justify-center text-2xl text-white flex-shrink-0">
+                                {vicePresident?.image_id ? (
+                                    <img src={`/api/image/${vicePresident.image_id}`} alt="Vice-Président" className="w-full h-full object-cover" />
+                                ) : (
+                                    <i className="fas fa-user-tie"></i>
+                                )}
                             </div>
-                            <div>
-                                <h3 className="font-bold text-lg leading-tight">Jean-Philippe<br />Pennequin</h3>
-                                <p className="text-gray-500 font-medium text-sm">Vice-président</p>
+                            <div className="min-w-0">
+                                <h3 className="font-bold text-lg leading-tight truncate">{vicePresident ? vicePresident.fullname : "Nom à venir"}</h3>
+                                <p className="text-gray-500 font-medium text-sm">Vice-Président</p>
                             </div>
                         </div>
 
@@ -155,25 +190,35 @@ export default async function Informations() {
 
                         <div className="flex flex-col md:flex-row gap-8 md:gap-12">
 
+                            {/* Secrétaire */}
                             <div className="bg-white border-2 border-gray-900 p-4 w-72 shadow-lg flex items-center gap-4 hover:scale-105 transition duration-300">
-                                <div className="w-16 h-16 rounded-full bg-sbc text-white flex items-center justify-center text-2xl flex-shrink-0">
-                                    <i className="fas fa-pen-fancy"></i>
+                                <div className="w-16 h-16 rounded-full bg-sbc overflow-hidden border-2 border-white shadow-sm flex items-center justify-center text-2xl text-white flex-shrink-0">
+                                    {secretaire?.image_id ? (
+                                        <img src={`/api/image/${secretaire.image_id}`} alt="Secrétaire" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <i className="fas fa-pen-fancy"></i>
+                                    )}
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className="font-bold text-lg leading-tight">Marie<br />Duponchel</h3>
+                                    <h3 className="font-bold text-lg leading-tight truncate">{secretaire ? secretaire.fullname : "Nom à venir"}</h3>
                                     <p className="text-gray-500 font-medium text-sm">Secrétaire</p>
                                 </div>
                             </div>
 
                             <div className="h-8 w-0.5 bg-gray-900 mx-auto md:hidden"></div>
 
+                            {/* Trésorier */}
                             <div className="bg-white border-2 border-gray-900 p-4 w-72 shadow-lg flex items-center gap-4 hover:scale-105 transition duration-300">
-                                <div className="w-16 h-16 rounded-full bg-sbc text-white flex items-center justify-center text-2xl flex-shrink-0">
-                                    <i className="fas fa-coins"></i>
+                                <div className="w-16 h-16 rounded-full bg-sbc overflow-hidden border-2 border-white shadow-sm flex items-center justify-center text-2xl text-white flex-shrink-0">
+                                    {tresorier?.image_id ? (
+                                        <img src={`/api/image/${tresorier.image_id}`} alt="Trésorier" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <i className="fas fa-coins"></i>
+                                    )}
                                 </div>
-                                <div>
-                                    <h3 className="font-bold text-lg leading-tight">Laëtitia<br />Dumont</h3>
-                                    <p className="text-gray-500 font-medium text-sm">Trésorière</p>
+                                <div className="min-w-0">
+                                    <h3 className="font-bold text-lg leading-tight truncate">{tresorier ? tresorier.fullname : "Nom à venir"}</h3>
+                                    <p className="text-gray-500 font-medium text-sm">Trésorier</p>
                                 </div>
                             </div>
 

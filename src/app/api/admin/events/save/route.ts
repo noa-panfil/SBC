@@ -12,7 +12,7 @@ export async function POST(request: Request) {
 
     try {
         const body = await request.json();
-        const { id, title, date, dateDisplay, description, location, time, mode, imageId, allowedTeams, roles, requiresFile } = body;
+        const { id, title, date, dateDisplay, description, location, time, mode, imageId, allowedTeams, roles, requiresFile, helloassoIframe, pollOptions } = body;
 
         let eventId = id;
 
@@ -20,16 +20,16 @@ export async function POST(request: Request) {
             // UPDATE
             await pool.query(
                 `UPDATE events 
-                 SET title = ?, event_date = ?, date_display = ?, description = ?, location = ?, time_info = ?, mode = ?, image_id = IFNULL(?, image_id), requires_file = ?
+                 SET title = ?, event_date = ?, date_display = ?, description = ?, location = ?, time_info = ?, mode = ?, image_id = IFNULL(?, image_id), requires_file = ?, helloasso_iframe = ?
                  WHERE id = ?`,
-                [title, date, dateDisplay, description, location, time, mode, imageId || null, requiresFile ? 1 : 0, id]
+                [title, date, dateDisplay, description, location, time, mode, imageId || null, requiresFile ? 1 : 0, helloassoIframe || null, id]
             );
         } else {
             // INSERT
             const [res] = await pool.query<ResultSetHeader>(
-                `INSERT INTO events (title, event_date, date_display, description, location, time_info, mode, image_id, requires_file)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [title, date, dateDisplay, description, location, time, mode, imageId || null, requiresFile ? 1 : 0]
+                `INSERT INTO events (title, event_date, date_display, description, location, time_info, mode, image_id, requires_file, helloasso_iframe)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [title, date, dateDisplay, description, location, time, mode, imageId || null, requiresFile ? 1 : 0, helloassoIframe || null]
             );
             eventId = res.insertId;
         }
@@ -50,6 +50,16 @@ export async function POST(request: Request) {
             const values = roles.map((r: any) => [eventId, r.name, r.max]);
             await pool.query(
                 'INSERT INTO event_roles (event_id, role_name, max_count) VALUES ?',
+                [values]
+            );
+        }
+
+        // Handle Poll Options
+        await pool.query('DELETE FROM event_poll_options WHERE event_id = ?', [eventId]);
+        if (mode === 'sondage' && pollOptions && pollOptions.length > 0) {
+            const values = pollOptions.map((opt: any) => [eventId, opt.option_text]);
+            await pool.query(
+                'INSERT INTO event_poll_options (event_id, option_text) VALUES ?',
                 [values]
             );
         }

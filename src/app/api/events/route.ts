@@ -5,7 +5,7 @@ import { RowDataPacket } from 'mysql2';
 export async function GET() {
     try {
         const [eventRows] = await pool.query<RowDataPacket[]>(
-            'SELECT id, title, event_date, date_display, description, location, time_info, mode, image_id FROM events'
+            'SELECT id, title, event_date, date_display, description, location, time_info, mode, image_id, requires_file, helloasso_iframe FROM events'
         );
 
         const [allowedTeamRows] = await pool.query<RowDataPacket[]>(
@@ -14,6 +14,10 @@ export async function GET() {
 
         const [roleRows] = await pool.query<RowDataPacket[]>(
             'SELECT event_id, role_name, max_count FROM event_roles'
+        );
+
+        const [pollOptionRows] = await pool.query<RowDataPacket[]>(
+            'SELECT id, event_id, option_text FROM event_poll_options'
         );
 
         const eventsData: Record<string, any> = {};
@@ -32,6 +36,11 @@ export async function GET() {
                 .filter((r: any) => r.event_id === event.id)
                 .map((r: any) => ({ name: r.role_name, max: r.max_count }));
 
+            // Poll Options
+            const pollOptions = pollOptionRows
+                .filter((r: any) => r.event_id === event.id)
+                .map((r: any) => ({ id: r.id, option_text: r.option_text }));
+
             eventsData[event.id] = {
                 id: event.id, // Add ID to object as well
                 title: event.title,
@@ -43,8 +52,11 @@ export async function GET() {
                 time: event.time_info,
                 mode: event.mode,
                 date_display: event.date_display,
+                requires_file: event.requires_file,
+                helloasso_iframe: event.helloasso_iframe,
                 allowed_teams: allowed.length > 0 ? allowed : undefined,
-                roles: roles.length > 0 ? roles : undefined
+                roles: roles.length > 0 ? roles : undefined,
+                poll_options: pollOptions.length > 0 ? pollOptions : undefined
             };
         }
 

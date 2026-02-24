@@ -8,6 +8,11 @@ interface EventRole {
     max: number;
 }
 
+interface EventPollOption {
+    id?: number;
+    option_text: string;
+}
+
 interface Event {
     id: number;
     title: string;
@@ -17,12 +22,14 @@ interface Event {
     description: string;
     location: string;
     time_info: string;
-    mode: 'joueur' | 'benevole' | 'public';
+    mode: 'joueur' | 'benevole' | 'public' | 'boutique' | 'sondage' | 'depot';
     image_id?: number | null;
     image?: string | null;
     allowed_teams?: string[];
     roles?: EventRole[];
     requires_file?: boolean;
+    helloasso_iframe?: string | null;
+    poll_options?: EventPollOption[];
 }
 
 interface Registration {
@@ -39,6 +46,7 @@ interface Registration {
     file_name?: string;
     file_mime_type?: string;
     created_at: string;
+    poll_option_text?: string;
 }
 
 export default function AdminEventsManager({ teams }: { teams: any[] }) {
@@ -50,7 +58,7 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     // State for Viewing Registrations
-    const [registrationsModal, setRegistrationsModal] = useState<{ isOpen: boolean, eventTitle: string, data: Registration[], viewMode: 'liste' | 'galerie' }>({ isOpen: false, eventTitle: '', data: [], viewMode: 'liste' });
+    const [registrationsModal, setRegistrationsModal] = useState<{ isOpen: boolean, eventTitle: string, data: Registration[], viewMode: 'liste' | 'galerie', currentEvent: Event | null }>({ isOpen: false, eventTitle: '', data: [], viewMode: 'liste', currentEvent: null });
     const [sortConfig, setSortConfig] = useState<{ key: keyof Registration, direction: 'asc' | 'desc' }>({ key: 'created_at', direction: 'desc' });
 
     // Empty Event Template
@@ -64,7 +72,9 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
         mode: "public",
         allowed_teams: [],
         roles: [],
-        requires_file: false
+        requires_file: false,
+        helloasso_iframe: "",
+        poll_options: []
     };
 
     const [editingEvent, setEditingEvent] = useState<Partial<Event>>(emptyEvent);
@@ -95,7 +105,9 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
                 date_display: e.date_display || "",
                 allowed_teams: e.allowed_teams || [],
                 roles: e.roles || [],
-                requires_file: e.requires_file === 1
+                requires_file: e.requires_file === 1,
+                helloasso_iframe: e.helloasso_iframe || "",
+                poll_options: e.poll_options || []
             }));
 
             setEvents(eventsArray);
@@ -121,7 +133,9 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
             date_display: event.date_display || "",
             allowed_teams: event.allowed_teams || [],
             roles: event.roles || [],
-            requires_file: event.requires_file || false
+            requires_file: event.mode === 'depot' || event.requires_file || false,
+            helloasso_iframe: event.helloasso_iframe || "",
+            poll_options: event.poll_options || []
         });
         setIsModalOpen(true);
     };
@@ -172,7 +186,9 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
                 imageId: editingEvent.image_id,
                 allowedTeams: editingEvent.mode === 'joueur' ? editingEvent.allowed_teams : [],
                 roles: editingEvent.mode === 'benevole' ? editingEvent.roles : [],
-                requiresFile: editingEvent.requires_file
+                requiresFile: editingEvent.mode === 'depot',
+                helloassoIframe: editingEvent.mode === 'boutique' ? editingEvent.helloasso_iframe : null,
+                pollOptions: editingEvent.mode === 'sondage' ? editingEvent.poll_options : []
             };
 
             const res = await fetch('/api/admin/events/save', {
@@ -224,7 +240,7 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
                 body: JSON.stringify({ eventId: event.id })
             });
             const data: Registration[] = await res.json();
-            setRegistrationsModal({ isOpen: true, eventTitle: event.title, data: Array.isArray(data) ? data : [], viewMode: event.requires_file ? 'galerie' : 'liste' });
+            setRegistrationsModal({ isOpen: true, eventTitle: event.title, data: Array.isArray(data) ? data : [], viewMode: event.requires_file ? 'galerie' : 'liste', currentEvent: event });
         } catch (e) {
             showNotification("Erreur chargement inscrits", 'error');
         }
@@ -293,6 +309,8 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
         });
     };
 
+    const { currentEvent, data: registrations } = registrationsModal;
+
     return (
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8 relative">
             {notification && (
@@ -331,7 +349,7 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
                                     </button>
                                 </div>
                                 <div className="absolute bottom-2 left-2 bg-sbc text-white text-xs font-bold px-2 py-1 rounded shadow">
-                                    {event.mode === 'benevole' ? 'Bénévoles' : event.mode === 'joueur' ? 'Joueurs' : 'Public'}
+                                    {event.mode === 'benevole' ? 'Bénévoles' : event.mode === 'joueur' ? 'Joueurs' : event.mode === 'boutique' ? 'Boutique' : event.mode === 'sondage' ? 'Sondage' : event.mode === 'depot' ? 'Dépôt Fichier' : 'Public'}
                                 </div>
                             </div>
                             <div className="p-4 flex-grow flex flex-col">
@@ -379,7 +397,92 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
                         </div>
 
                         <div className="p-0 overflow-auto flex-grow custom-scrollbar bg-gray-50">
-                            {registrationsModal.viewMode === 'galerie' ? (
+                            {currentEvent?.mode === 'sondage' ? (
+                                <div className="flex-grow overflow-y-auto p-6 space-y-4">
+                                    <div className="space-y-6">
+                                        <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                                            <h4 className="font-bold text-gray-800 uppercase italic mb-4">
+                                                <i className="fas fa-chart-bar mr-2 text-sbc"></i> Résultats du sondage ({registrations.length} votes)
+                                            </h4>
+
+                                            {(() => {
+                                                const counts: Record<string, number> = {};
+                                                registrations.forEach(r => {
+                                                    const opt = r.poll_option_text || 'Inconnu';
+                                                    counts[opt] = (counts[opt] || 0) + 1;
+                                                });
+                                                const totalVotes = registrations.length;
+                                                const sortedOpts = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+
+                                                return (
+                                                    <div className="space-y-4">
+                                                        {totalVotes === 0 && <p className="text-gray-500 italic">Aucun vote pour le moment.</p>}
+                                                        {sortedOpts.map(opt => {
+                                                            const count = counts[opt];
+                                                            const percentage = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
+                                                            return (
+                                                                <div key={opt} className="space-y-1">
+                                                                    <div className="flex justify-between text-sm font-bold text-gray-700">
+                                                                        <span>{opt}</span>
+                                                                        <span>{count} vote{count > 1 ? 's' : ''} ({percentage}%)</span>
+                                                                    </div>
+                                                                    <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                                                                        <div
+                                                                            className="bg-sbc h-3 rounded-full transition-all duration-500 ease-out"
+                                                                            style={{ width: `${percentage}%` }}
+                                                                        ></div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
+
+                                        <div className="mt-8">
+                                            <h4 className="font-bold text-gray-800 uppercase italic mb-4">Détail des votes</h4>
+                                            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                                                <table className="w-full text-left border-collapse">
+                                                    <thead>
+                                                        <tr className="bg-gray-800 text-white uppercase text-xs">
+                                                            <th className="p-4 rounded-tl-xl font-bold">Nom / Prénom</th>
+                                                            <th className="p-4 font-bold">Vote</th>
+                                                            <th className="p-4 rounded-tr-xl font-bold">Date</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {registrations.length === 0 ? (
+                                                            <tr>
+                                                                <td colSpan={3} className="p-8 text-center text-gray-500 italic font-bold">
+                                                                    <i className="fas fa-ghost block text-3xl mb-2 opacity-50"></i> Aucun vote.
+                                                                </td>
+                                                            </tr>
+                                                        ) : (
+                                                            registrations.map(reg => (
+                                                                <tr key={reg.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition">
+                                                                    <td className="p-4 font-bold text-gray-800">{reg.lastname} {reg.firstname}</td>
+                                                                    <td className="p-4 text-gray-600 font-bold">
+                                                                        <span className="bg-sbc/10 text-sbc px-2 py-1 rounded inline-block text-sm">
+                                                                            {reg.poll_option_text}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="p-4 text-sm text-gray-500">
+                                                                        {new Date(reg.created_at).toLocaleString('fr-FR', {
+                                                                            day: '2-digit', month: '2-digit', year: 'numeric',
+                                                                            hour: '2-digit', minute: '2-digit'
+                                                                        })}
+                                                                    </td>
+                                                                </tr>
+                                                            ))
+                                                        )}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : registrationsModal.viewMode === 'galerie' ? (
                                 <div className="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                                     {sortedRegistrations.map((reg: Registration) => (
                                         <div key={reg.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col hover:shadow-md transition group">
@@ -641,35 +744,93 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
                                 />
                             </div>
 
-                            <div className="flex items-center gap-2 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                                <input
-                                    type="checkbox"
-                                    id="requiresFile"
-                                    className="w-5 h-5 accent-sbc"
-                                    checked={editingEvent.requires_file || false}
-                                    onChange={e => setEditingEvent({ ...editingEvent, requires_file: e.target.checked })}
-                                />
-                                <label htmlFor="requiresFile" className="font-bold text-gray-700 cursor-pointer select-none">
-                                    Nécessite un dépôt de fichier (ex: Logo, Document...)
-                                </label>
-                            </div>
-
                             <div className="border-t border-gray-200 pt-4">
                                 <label className="block text-sm font-bold text-gray-700 mb-2">Type d'Événements</label>
-                                <div className="flex gap-4 mb-4">
+                                <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-4">
                                     <label className={`flex-1 p-3 rounded border text-center cursor-pointer transition ${editingEvent.mode === 'public' ? 'bg-sbc text-white border-sbc' : 'bg-white border-gray-200 hover:border-sbc'}`}>
-                                        <input type="radio" name="mode" value="public" checked={editingEvent.mode === 'public'} onChange={() => setEditingEvent({ ...editingEvent, mode: 'public', allowed_teams: [], roles: [] })} className="hidden" />
+                                        <input type="radio" name="mode" value="public" checked={editingEvent.mode === 'public'} onChange={() => setEditingEvent({ ...editingEvent, mode: 'public', allowed_teams: [], roles: [], poll_options: [], requires_file: false })} className="hidden" />
                                         <i className="fas fa-globe mr-2"></i> Public
                                     </label>
                                     <label className={`flex-1 p-3 rounded border text-center cursor-pointer transition ${editingEvent.mode === 'joueur' ? 'bg-sbc text-white border-sbc' : 'bg-white border-gray-200 hover:border-sbc'}`}>
-                                        <input type="radio" name="mode" value="joueur" checked={editingEvent.mode === 'joueur'} onChange={() => setEditingEvent({ ...editingEvent, mode: 'joueur', roles: [] })} className="hidden" />
+                                        <input type="radio" name="mode" value="joueur" checked={editingEvent.mode === 'joueur'} onChange={() => setEditingEvent({ ...editingEvent, mode: 'joueur', roles: [], poll_options: [], requires_file: false })} className="hidden" />
                                         <i className="fas fa-user mr-2"></i> Joueurs
                                     </label>
                                     <label className={`flex-1 p-3 rounded border text-center cursor-pointer transition ${editingEvent.mode === 'benevole' ? 'bg-sbc text-white border-sbc' : 'bg-white border-gray-200 hover:border-sbc'}`}>
-                                        <input type="radio" name="mode" value="benevole" checked={editingEvent.mode === 'benevole'} onChange={() => setEditingEvent({ ...editingEvent, mode: 'benevole', allowed_teams: [] })} className="hidden" />
+                                        <input type="radio" name="mode" value="benevole" checked={editingEvent.mode === 'benevole'} onChange={() => setEditingEvent({ ...editingEvent, mode: 'benevole', allowed_teams: [], poll_options: [], requires_file: false })} className="hidden" />
                                         <i className="fas fa-hands-helping mr-2"></i> Bénévoles
                                     </label>
+                                    <label className={`flex-1 p-3 rounded border text-center cursor-pointer transition ${editingEvent.mode === 'boutique' ? 'bg-sbc text-white border-sbc' : 'bg-white border-gray-200 hover:border-sbc'}`}>
+                                        <input type="radio" name="mode" value="boutique" checked={editingEvent.mode === 'boutique'} onChange={() => setEditingEvent({ ...editingEvent, mode: 'boutique', allowed_teams: [], roles: [], poll_options: [], requires_file: false })} className="hidden" />
+                                        <i className="fas fa-shopping-cart mr-2"></i> Boutique
+                                    </label>
+                                    <label className={`flex-1 p-3 rounded border text-center cursor-pointer transition ${editingEvent.mode === 'sondage' ? 'bg-sbc text-white border-sbc' : 'bg-white border-gray-200 hover:border-sbc'}`}>
+                                        <input type="radio" name="mode" value="sondage" checked={editingEvent.mode === 'sondage'} onChange={() => setEditingEvent({ ...editingEvent, mode: 'sondage', allowed_teams: [], roles: [], requires_file: false })} className="hidden" />
+                                        <i className="fas fa-poll mr-2"></i> Sondage
+                                    </label>
+                                    <label className={`flex-1 p-3 rounded border text-center cursor-pointer transition ${editingEvent.mode === 'depot' ? 'bg-sbc text-white border-sbc' : 'bg-white border-gray-200 hover:border-sbc'}`}>
+                                        <input type="radio" name="mode" value="depot" checked={editingEvent.mode === 'depot'} onChange={() => setEditingEvent({ ...editingEvent, mode: 'depot', allowed_teams: [], roles: [], poll_options: [], requires_file: true })} className="hidden" />
+                                        <i className="fas fa-file-upload mr-2"></i> Dépôt
+                                    </label>
                                 </div>
+
+                                {editingEvent.mode === 'sondage' && (
+                                    <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                                        <div className="flex justify-between items-center mb-3">
+                                            <h4 className="text-sm font-bold text-gray-700">Options du sondage</h4>
+                                            <button
+                                                onClick={() => setEditingEvent(prev => ({ ...prev, poll_options: [...(prev.poll_options || []), { option_text: "" }] }))}
+                                                type="button"
+                                                className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 px-2 py-1 rounded font-bold"
+                                            >
+                                                <i className="fas fa-plus mr-1"></i> Ajouter une option
+                                            </button>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {editingEvent.poll_options?.map((opt, idx) => (
+                                                <div key={idx} className="flex gap-2 items-center">
+                                                    <input
+                                                        className="flex-grow p-2 text-sm border border-gray-300 rounded focus:border-sbc outline-none"
+                                                        placeholder={`Ex: Option ${idx + 1}`}
+                                                        value={opt.option_text}
+                                                        onChange={(e) => {
+                                                            const newOpts = [...(editingEvent.poll_options || [])];
+                                                            newOpts[idx].option_text = e.target.value;
+                                                            setEditingEvent(prev => ({ ...prev, poll_options: newOpts }));
+                                                        }}
+                                                    />
+                                                    <button
+                                                        onClick={() => {
+                                                            const newOpts = [...(editingEvent.poll_options || [])];
+                                                            newOpts.splice(idx, 1);
+                                                            setEditingEvent(prev => ({ ...prev, poll_options: newOpts }));
+                                                        }}
+                                                        type="button"
+                                                        className="text-red-400 hover:text-red-600 px-2"
+                                                    >
+                                                        <i className="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            {(editingEvent.poll_options?.length === 0 || !editingEvent.poll_options) && (
+                                                <p className="text-xs text-gray-400 italic text-center">Aucune option définie. Ajoutez-en au moins deux pour un sondage.</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {editingEvent.mode === 'boutique' && (
+                                    <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">Code Iframe (HelloAsso)</label>
+                                        <textarea
+                                            rows={4}
+                                            className="w-full p-2 border border-gray-300 rounded focus:border-sbc outline-none font-mono text-sm"
+                                            value={editingEvent.helloasso_iframe || ''}
+                                            onChange={e => setEditingEvent({ ...editingEvent, helloasso_iframe: e.target.value })}
+                                            placeholder={'<iframe id="haWidget" allowtransparency="true" src="..." ...></iframe>'}
+                                        />
+                                        <p className="text-xs text-gray-500 mt-2">Copiez-collez ici le code HTML du widget ou de la page HelloAsso pour l'intégrer.</p>
+                                    </div>
+                                )}
 
                                 {editingEvent.mode === 'joueur' && teams && (
                                     <div className="bg-gray-50 p-4 rounded-lg">

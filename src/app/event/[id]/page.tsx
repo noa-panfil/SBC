@@ -82,6 +82,11 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
             [id]
         );
 
+        const [pollOptionRows] = await pool.query<RowDataPacket[]>(
+            'SELECT id, option_text FROM event_poll_options WHERE event_id = ?',
+            [id]
+        );
+
         // Fetch teams if mode is joueur
         let teams: { id: string, name: string }[] = [];
         if (event.mode === 'joueur') {
@@ -108,7 +113,8 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
             allowed_teams: allowedTeamRows.map(r => r.team_id.toString()),
             roles: roleRows.map(r => ({ name: r.role_name, max: r.max_count })),
             available_teams: teams,
-            helloasso_iframe: event.helloasso_iframe || undefined
+            helloasso_iframe: event.helloasso_iframe || undefined,
+            poll_options: pollOptionRows.map(r => ({ id: r.id, option_text: r.option_text }))
         };
 
         return <EventRegistrationClient key={eventData.id} event={eventData} />;

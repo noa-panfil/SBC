@@ -8,6 +8,11 @@ interface EventRole {
     max: number;
 }
 
+interface EventPollOption {
+    id: number;
+    option_text: string;
+}
+
 interface EventData {
     id: number;
     title: string;
@@ -17,12 +22,13 @@ interface EventData {
     description: string;
     location: string;
     time: string;
-    mode: 'joueur' | 'benevole' | 'public';
+    mode: 'joueur' | 'benevole' | 'public' | 'boutique' | 'sondage' | 'depot';
     allowed_teams?: string[];
     roles?: EventRole[];
     requires_file?: boolean;
     available_teams?: { id: string, name: string }[];
     helloasso_iframe?: string;
+    poll_options?: EventPollOption[];
 }
 
 export default function EventRegistrationClient({ event }: { event: EventData }) {
@@ -32,6 +38,7 @@ export default function EventRegistrationClient({ event }: { event: EventData })
         email: "",
         teamName: "",
         roleName: "",
+        pollOptionId: "",
         file: null as File | null
     });
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -65,8 +72,10 @@ export default function EventRegistrationClient({ event }: { event: EventData })
             submissionData.append('lastname', formData.lastname);
             submissionData.append('firstname', formData.firstname);
             submissionData.append('email', formData.email);
+            submissionData.append('mode', event.mode);
             if (formData.teamName) submissionData.append('teamName', formData.teamName);
             if (formData.roleName) submissionData.append('roleName', formData.roleName);
+            if (formData.pollOptionId) submissionData.append('pollOptionId', formData.pollOptionId);
             if (formData.file) submissionData.append('file', formData.file);
 
             const res = await fetch('/api/events/register', {
@@ -77,8 +86,8 @@ export default function EventRegistrationClient({ event }: { event: EventData })
             const data = await res.json();
 
             if (res.ok) {
-                setStatus({ type: 'success', message: "Votre inscription a bien été enregistrée ! Merci." });
-                setFormData({ lastname: "", firstname: "", email: "", teamName: "", roleName: "", file: null });
+                setStatus({ type: 'success', message: event.mode === 'sondage' ? "Votre vote a bien été enregistré ! Merci." : event.mode === 'depot' ? "Votre fichier a bien été reçu ! Merci." : "Votre inscription a bien été enregistrée ! Merci." });
+                setFormData({ lastname: "", firstname: "", email: "", teamName: "", roleName: "", pollOptionId: "", file: null });
             } else {
                 throw new Error(data.error || "Une erreur est survenue");
             }
@@ -144,12 +153,18 @@ export default function EventRegistrationClient({ event }: { event: EventData })
                                 <div className="w-10 h-10 rounded-full bg-sbc/10 flex items-center justify-center text-sbc text-xl">
                                     {event.mode === 'joueur' ? <i className="fas fa-basketball-ball"></i> :
                                         event.mode === 'benevole' ? <i className="fas fa-hands-helping"></i> :
-                                            <i className="fas fa-users"></i>}
+                                            event.mode === 'boutique' ? <i className="fas fa-shopping-cart"></i> :
+                                                event.mode === 'sondage' ? <i className="fas fa-poll"></i> :
+                                                    event.mode === 'depot' ? <i className="fas fa-file-upload"></i> :
+                                                        <i className="fas fa-users"></i>}
                                 </div>
                                 <span className="font-bold text-gray-700 uppercase italic">
                                     {event.mode === 'joueur' ? 'Réservé aux joueurs' :
                                         event.mode === 'benevole' ? 'Appel aux bénévoles' :
-                                            'Ouvert au public'}
+                                            event.mode === 'boutique' ? 'Boutique' :
+                                                event.mode === 'sondage' ? 'Sondage' :
+                                                    event.mode === 'depot' ? 'Dépôt de fichier' :
+                                                        'Ouvert au public'}
                                 </span>
                             </div>
                         </div>
@@ -159,7 +174,7 @@ export default function EventRegistrationClient({ event }: { event: EventData })
                     <div className="md:col-span-2">
                         <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
                             <div className="bg-gray-800 p-6 text-white">
-                                <h3 className="text-xl font-bold uppercase italic italic">S'inscrire à l'événement</h3>
+                                <h3 className="text-xl font-bold uppercase italic italic">{event.mode === 'sondage' ? 'Participer au sondage' : event.mode === 'depot' ? 'Déposer un fichier' : 'S\'inscrire à l\'événement'}</h3>
                             </div>
 
                             {event.helloasso_iframe ? (
@@ -252,6 +267,28 @@ export default function EventRegistrationClient({ event }: { event: EventData })
                                         </div>
                                     )}
 
+                                    {event.mode === 'sondage' && (
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 uppercase mb-2">Votre Choix</label>
+                                            <div className="grid grid-cols-1 gap-3">
+                                                {event.poll_options?.map((opt) => (
+                                                    <label key={opt.id} className={`p-4 border-2 rounded-xl cursor-pointer transition flex items-center ${formData.pollOptionId === opt.id.toString() ? 'border-sbc bg-sbc/5' : 'border-gray-100 bg-gray-50 hover:border-gray-200'}`}>
+                                                        <input
+                                                            type="radio"
+                                                            name="pollOption"
+                                                            required
+                                                            value={opt.id.toString()}
+                                                            checked={formData.pollOptionId === opt.id.toString()}
+                                                            onChange={e => setFormData({ ...formData, pollOptionId: e.target.value })}
+                                                            className="mr-3 accent-sbc"
+                                                        />
+                                                        <span className="font-bold text-gray-700">{opt.option_text}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {event.requires_file && (
                                         <div className="mb-6">
                                             <label className="block text-sm font-bold text-gray-700 uppercase mb-2">Dépôt de fichier (Requis)</label>
@@ -293,11 +330,11 @@ export default function EventRegistrationClient({ event }: { event: EventData })
                                         disabled={isSubmitting}
                                         className={`w-full py-5 rounded-xl font-black text-white uppercase italic text-xl shadow-lg transform transition active:scale-95 ${isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-sbc hover:bg-sbc-dark hover:-translate-y-1 shadow-sbc/30'}`}
                                     >
-                                        {isSubmitting ? 'Envoi en cours...' : 'Confirmer l\'inscription'}
+                                        {isSubmitting ? 'Envoi en cours...' : (event.mode === 'sondage' ? 'Voter' : event.mode === 'depot' ? 'Envoyer le fichier' : 'Confirmer l\'inscription')}
                                     </button>
 
                                     <p className="text-center text-xs text-gray-400 font-bold uppercase italic">
-                                        En vous inscrivant, vous acceptez d'être contacté par le club pour cet événement.
+                                        {event.mode === 'sondage' ? 'Votre vote sera enregistré et pris en compte.' : event.mode === 'depot' ? 'Votre fichier sera transmis de façon sécurisée.' : 'En vous inscrivant, vous acceptez d\'être contacté par le club pour cet événement.'}
                                     </p>
                                 </form>
                             )}

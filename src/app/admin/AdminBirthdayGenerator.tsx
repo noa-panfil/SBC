@@ -29,6 +29,7 @@ export default function AdminBirthdayGenerator({ teams, volunteers = [] }: { tea
     const [partners, setPartners] = useState<Partner[]>([]);
     const postRef = useRef<HTMLDivElement>(null);
     const [birthdays, setBirthdays] = useState<{ day: number, dateStr: string, members: { name: string, role: string, img: string | null }[] }[]>([]);
+    const [bureauMembers, setBureauMembers] = useState<{ fullname: string, role: string }[]>([]);
 
     // Background State
     const [backgroundType, setBackgroundType] = useState<'default' | 'custom'>('default');
@@ -55,6 +56,12 @@ export default function AdminBirthdayGenerator({ teams, volunteers = [] }: { tea
         fetch('/api/partners')
             .then(res => res.json())
             .then(data => setPartners(data))
+            .catch(console.error);
+
+        // Fetch bureau members for roles
+        fetch('/api/bureau')
+            .then(res => res.json())
+            .then(data => setBureauMembers(data))
             .catch(console.error);
     }, []);
 
@@ -124,6 +131,16 @@ export default function AdminBirthdayGenerator({ teams, volunteers = [] }: { tea
             });
         }
 
+        // Add Bureau roles
+        bureauMembers.forEach(b => {
+            const person = Array.from(allPeople.values()).find(p => p.name.trim().toUpperCase() === b.fullname.trim().toUpperCase());
+            if (person) {
+                if (!person.roles.includes(b.role)) {
+                    person.roles.unshift(b.role);
+                }
+            }
+        });
+
         // Filter by month
         const filtered = Array.from(allPeople.values()).filter(p => {
             if (!p.birth) return false;
@@ -167,7 +184,7 @@ export default function AdminBirthdayGenerator({ teams, volunteers = [] }: { tea
 
         setBirthdays(result);
 
-    }, [teams, selectedMonth, volunteers]);
+    }, [teams, selectedMonth, volunteers, bureauMembers]);
 
 
     const handleDownload = async () => {

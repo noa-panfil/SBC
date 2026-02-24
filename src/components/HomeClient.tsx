@@ -225,9 +225,10 @@ function BirthdaySection() {
 
         Promise.all([
             fetch('/api/teams').then(res => res.json()),
-            fetch('/api/volunteers').then(res => res.json())
+            fetch('/api/volunteers').then(res => res.json()),
+            fetch('/api/bureau').then(res => res.json())
         ])
-            .then(([teamsData, volunteersData]) => {
+            .then(([teamsData, volunteersData, bureauData]) => {
                 const uniquePeople: Record<string, Person> = {};
 
                 function processPerson(person: any, teamName: string, teamId: string, roleLabel: string) {
@@ -287,6 +288,19 @@ function BirthdaySection() {
                 }
 
                 const list = Object.values(uniquePeople);
+
+                // Add Bureau roles
+                if (Array.isArray(bureauData)) {
+                    bureauData.forEach((b: any) => {
+                        const match = list.find(p => p.name.trim().toUpperCase() === b.fullname.trim().toUpperCase());
+                        if (match) {
+                            if (!match.roles.includes(b.role)) {
+                                match.roles.unshift(b.role); // Put bureau role at the start
+                            }
+                        }
+                    });
+                }
+
                 list.sort((a, b) => a.day - b.day);
                 setBirthdays(list);
             })

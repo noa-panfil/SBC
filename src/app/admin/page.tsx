@@ -13,6 +13,7 @@ import AdminAppearanceManager from "./AdminAppearanceManager";
 import AdminStoryGenerator from "./AdminStoryGenerator";
 import AdminBirthdayGenerator from "./AdminBirthdayGenerator";
 import VolunteersManager from "@/components/admin/VolunteersManager";
+import BureauManager from "@/components/admin/BureauManager";
 import { authOptions } from "@/lib/auth";
 import InstallPWA from "@/components/InstallPWA";
 
@@ -50,6 +51,16 @@ async function getVolunteers() {
     } catch (e) {
         console.error("Error fetching volunteers", e);
         return [];
+    }
+}
+
+async function getBureauMembersCount() {
+    try {
+        const [rows] = await pool.query<RowDataPacket[]>("SELECT COUNT(*) as count FROM bureau_members");
+        return rows[0].count;
+    } catch (e) {
+        console.error("Error fetching bureau count", e);
+        return 0;
     }
 }
 
@@ -221,6 +232,34 @@ async function getAllPersons() {
                 }
             }
         });
+
+        // Mix in volunteers
+        const [volData] = await pool.query<RowDataPacket[]>(`
+            SELECT id, name, image_id FROM volunteers ORDER BY name
+        `);
+
+        volData.forEach((v: any) => {
+            const fullname = v.name.trim().toUpperCase();
+            // Try to find if already in persons
+            const existing = Array.from(personMap.values()).find(p => p.fullname === fullname);
+            if (!existing) {
+                // We use a negative ID for volunteers to differentiate them
+                const vId = -v.id;
+                personMap.set(vId, {
+                    id: vId,
+                    fullname: fullname,
+                    image_id: v.image_id,
+                    team: null,
+                    teams: [],
+                    role: 'Bénévole',
+                    is_volunteer: true,
+                    original_vol_id: v.id
+                });
+            } else if (!existing.role) {
+                existing.role = 'Bénévole';
+            }
+        });
+
         return Array.from(personMap.values());
 
     } catch (e) {
@@ -243,6 +282,7 @@ export default async function AdminDashboard() {
     const stats = await getStats();
     const teams = await getTeams();
     const volunteers = await getVolunteers();
+    const bureauCount = await getBureauMembersCount();
     const coachLogins = await getCoachLogins();
     const otmMatches = await getOtmMatches();
     const rawOfficials = await getAllPersons();
@@ -301,6 +341,7 @@ export default async function AdminDashboard() {
                 {[
                     { label: "Joueurs", value: stats.players, icon: "fas fa-users", color: "from-blue-500 to-indigo-600", link: "/admin/players" },
                     { label: "Coachs", value: stats.coaches, icon: "fas fa-user-tie", color: "from-emerald-500 to-teal-600", link: "/admin/coaches" },
+                    { label: "Bureau", value: bureauCount, icon: "fas fa-users-cog", color: "from-purple-500 to-pink-600", link: "#bureau" },
                     { label: "Bénévoles", value: volunteers.length, icon: "fas fa-hands-helping", color: "from-orange-500 to-red-500", link: "#volunteers" },
                     { label: "Équipes", value: teams.length, icon: "fas fa-shield-alt", color: "from-sbc to-sbc-dark", link: "#teams", fullMobile: true },
                 ].map((stat, i) => (
@@ -338,6 +379,14 @@ export default async function AdminDashboard() {
                 <div className="mt-8">
                     <AdminCoachLoginsManager initialLogins={coachLogins} />
                 </div>
+            </section>
+
+            <section id="bureau" className="scroll-mt-24">
+                <div className="flex items-center gap-3 mb-6">
+                    <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Membres du Bureau</h2>
+                    <div className="h-px flex-grow bg-gray-200"></div>
+                </div>
+                <BureauManager officials={officials} />
             </section>
 
             <section id="volunteers" className="scroll-mt-24">

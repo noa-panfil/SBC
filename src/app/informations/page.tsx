@@ -211,14 +211,14 @@ export default async function Informations() {
                             <div className="bg-white border-2 border-gray-900 p-4 w-72 shadow-lg flex items-center gap-4 hover:scale-105 transition duration-300">
                                 <div className="w-16 h-16 rounded-full bg-sbc overflow-hidden border-2 border-white shadow-sm flex items-center justify-center text-2xl text-white flex-shrink-0">
                                     {tresorier?.image_id ? (
-                                        <img src={`/api/image/${tresorier.image_id}`} alt="Trésorier" className="w-full h-full object-cover" />
+                                        <img src={`/api/image/${tresorier.image_id}`} alt="Trésorière" className="w-full h-full object-cover" />
                                     ) : (
                                         <i className="fas fa-coins"></i>
                                     )}
                                 </div>
                                 <div className="min-w-0">
                                     <h3 className="font-bold text-lg leading-tight truncate">{tresorier ? tresorier.fullname : "Nom à venir"}</h3>
-                                    <p className="text-gray-500 font-medium text-sm">Trésorier</p>
+                                    <p className="text-gray-500 font-medium text-sm">Trésorière</p>
                                 </div>
                             </div>
 

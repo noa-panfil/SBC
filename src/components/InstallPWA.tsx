@@ -41,7 +41,7 @@ export default function InstallPWA({ className = "" }: { className?: string }) {
                 setDeferredPrompt(null);
             }
         } else if (isIOS) {
-            alert("Pour installer l'application sur iOS :\n\n1. Appuyez sur le bouton de partage (carré avec flèche vers le haut)\n2. Faites défiler vers le bas\n3. Sélectionnez 'Sur l'écran d'accueil'");
+            window.location.href = '/download';
         }
     };
 

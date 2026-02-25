@@ -71,6 +71,9 @@ export default function Header() {
                             <Link href="/planning" className="block px-4 py-3 hover:bg-gray-50 hover:text-sbc transition text-sm font-bold flex items-center">
                                 <i className="fas fa-calendar-alt w-6 text-sbc/80"></i> Planning
                             </Link>
+                            <Link href="/download" className="block px-4 py-3 hover:bg-gray-50 hover:text-sbc transition text-sm font-bold flex items-center">
+                                <i className="fas fa-download w-6 text-sbc/80"></i> Installer l'App
+                            </Link>
                         </div>
                     </div>
 
@@ -121,7 +124,7 @@ export default function Header() {
                         >
                             Utiles <i className={`fas fa-chevron-down text-sm transition-transform duration-300 ${isUtilsOpen ? 'rotate-180' : ''}`}></i>
                         </button>
-                        <div className={`overflow-hidden transition-all duration-300 bg-sbc-dark/50 ${isUtilsOpen ? 'max-h-52 opacity-100 py-2' : 'max-h-0 opacity-0 py-0'}`}>
+                        <div className={`overflow-hidden transition-all duration-300 bg-sbc-dark/50 ${isUtilsOpen ? 'max-h-64 opacity-100 py-2' : 'max-h-0 opacity-0 py-0'}`}>
                             <Link href="/buvette" className="block py-2 text-gray-300 hover:text-white" onClick={() => setIsMobileMenuOpen(false)}>
                                 <i className="fas fa-utensils w-6 text-center"></i> Buvette
                             </Link>
@@ -130,6 +133,9 @@ export default function Header() {
                             </Link>
                             <Link href="/planning" className="block py-2 text-gray-300 hover:text-white" onClick={() => setIsMobileMenuOpen(false)}>
                                 <i className="fas fa-calendar-alt w-6 text-center"></i> Planning
+                            </Link>
+                            <Link href="/download" className="block py-2 text-gray-300 hover:text-white" onClick={() => setIsMobileMenuOpen(false)}>
+                                <i className="fas fa-download w-6 text-center"></i> Installer l'App
                             </Link>
                         </div>
                     </div>

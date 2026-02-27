@@ -466,11 +466,11 @@ export default function AdminBirthdayGenerator({ teams, volunteers = [] }: { tea
 
                                             // Element sizing - 5 tiers of scaling
                                             const dateSize = isSpacious
-                                                ? "w-28 h-28 text-6xl rounded-3xl"
-                                                : isSuperDense ? "w-8 h-8 text-xs rounded-lg"
-                                                    : isXDense ? "w-11 h-11 text-lg rounded-xl"
-                                                        : isDense ? "w-14 h-14 text-2xl rounded-xl"
-                                                            : "w-20 h-20 text-4xl rounded-2xl";
+                                                ? "w-32 h-32 text-7xl rounded-3xl"
+                                                : isSuperDense ? "w-10 h-10 text-sm rounded-lg"
+                                                    : isXDense ? "w-14 h-14 text-xl rounded-xl"
+                                                        : isDense ? "w-18 h-18 text-3xl rounded-xl"
+                                                            : "w-24 h-24 text-5xl rounded-2xl";
 
                                             const gapGroup = isSpacious ? "gap-6" : isSuperDense ? "gap-1.5" : isXDense ? "gap-3" : "gap-4";
                                             const containerGap = isSpacious ? "gap-4 pt-4" : isSuperDense ? "gap-0.5 pt-0" : isXDense ? "gap-1 pt-0.5" : "gap-2 pt-1.5";
@@ -490,18 +490,18 @@ export default function AdminBirthdayGenerator({ teams, volunteers = [] }: { tea
                                                             : "w-18 h-18 border-4";
 
                                             const nameSize = isSpacious
-                                                ? "text-5xl"
-                                                : isSuperDense ? "text-[10px]"
-                                                    : isXDense ? "text-base"
-                                                        : isDense ? "text-xl"
-                                                            : "text-3xl";
+                                                ? "text-6xl"
+                                                : isSuperDense ? "text-xs"
+                                                    : isXDense ? "text-lg"
+                                                        : isDense ? "text-2xl"
+                                                            : "text-4xl";
 
                                             const roleSize = isSpacious
-                                                ? "text-2xl mt-2"
-                                                : isSuperDense ? "text-[7px] mt-0"
-                                                    : isXDense ? "text-[9px] mt-0.5"
-                                                        : isDense ? "text-xs mt-1"
-                                                            : "text-base mt-2";
+                                                ? "text-3xl mt-3"
+                                                : isSuperDense ? "text-[9px] mt-0"
+                                                    : isXDense ? "text-xs mt-0.5"
+                                                        : isDense ? "text-sm mt-1"
+                                                            : "text-lg mt-2";
 
                                             return (
                                                 <div className={containerClass}>
@@ -586,12 +586,12 @@ export default function AdminBirthdayGenerator({ teams, volunteers = [] }: { tea
                                                                             alt={member.name}
                                                                             className={`w-full h-full object-cover ${!member.img ? 'p-6 opacity-20' : ''}`}
                                                                         />
-                                                                        <div className="absolute top-2 right-2 bg-sbc text-white font-black text-[12px] px-2 py-0.5 rounded shadow-sm z-10">
+                                                                        <div className="absolute top-2 right-2 bg-sbc text-white font-black text-sm md:text-base px-2 py-0.5 md:py-1 rounded shadow-sm z-10">
                                                                             {member.dateStr}
                                                                         </div>
                                                                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-12 pb-4 px-3 flex flex-col justify-end text-center z-10 transition-all">
-                                                                            <h3 className="font-bold text-white leading-tight text-lg truncate w-full drop-shadow-md">{member.name}</h3>
-                                                                            <p className="text-xs text-gray-200 leading-snug w-full mt-1 drop-shadow-md font-medium" style={{ wordBreak: 'break-word', overflowWrap: 'break-word', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{member.role.replace(/[()]/g, '')}</p>
+                                                                            <h3 className="font-bold text-white leading-tight text-xl truncate w-full drop-shadow-md">{member.name}</h3>
+                                                                            <p className="text-sm text-gray-200 leading-snug w-full mt-1 drop-shadow-md font-medium" style={{ wordBreak: 'break-word', overflowWrap: 'break-word', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{member.role.replace(/[()]/g, '')}</p>
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -614,12 +614,12 @@ export default function AdminBirthdayGenerator({ teams, volunteers = [] }: { tea
                                                                             alt={member.name}
                                                                             className={`w-full h-full object-cover ${!member.img ? 'p-6 opacity-20' : ''}`}
                                                                         />
-                                                                        <div className="absolute top-2 right-2 bg-sbc text-white font-black text-[12px] px-2 py-0.5 rounded shadow-sm z-10">
+                                                                        <div className="absolute top-2 right-2 bg-sbc text-white font-black text-sm md:text-base px-2 py-0.5 md:py-1 rounded shadow-sm z-10">
                                                                             {member.dateStr}
                                                                         </div>
                                                                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-12 pb-4 px-3 flex flex-col justify-end text-center z-10 transition-all">
-                                                                            <h3 className="font-bold text-white leading-tight text-lg truncate w-full drop-shadow-md">{member.name}</h3>
-                                                                            <p className="text-xs text-gray-200 leading-snug w-full mt-1 drop-shadow-md font-medium" style={{ wordBreak: 'break-word', overflowWrap: 'break-word', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{member.role.replace(/[()]/g, '')}</p>
+                                                                            <h3 className="font-bold text-white leading-tight text-xl truncate w-full drop-shadow-md">{member.name}</h3>
+                                                                            <p className="text-sm text-gray-200 leading-snug w-full mt-1 drop-shadow-md font-medium" style={{ wordBreak: 'break-word', overflowWrap: 'break-word', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{member.role.replace(/[()]/g, '')}</p>
                                                                         </div>
                                                                     </div>
                                                                 </div>

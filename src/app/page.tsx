@@ -11,9 +11,11 @@ async function getUpcomingMatches() {
   try {
 
     const [rows] = await pool.query<RowDataPacket[]>(`
-            SELECT * FROM otm_matches 
-            WHERE match_date >= CURDATE() 
-            ORDER BY match_date ASC, match_time ASC 
+            SELECT o.*, t.id as team_id, t.image_id as team_image_id, t.story_image_id as team_story_image_id
+            FROM otm_matches o
+            LEFT JOIN teams t ON o.category = t.name
+            WHERE o.match_date >= CURDATE() 
+            ORDER BY o.match_date ASC, o.match_time ASC 
             LIMIT 15
         `);
 
@@ -46,7 +48,12 @@ async function getUpcomingMatches() {
     const result = [featuredMatch, ...upcomingList].map(m => {
       if (!m) return null;
       const { _rawDate, ...rest } = m;
-      return rest;
+      const matchData = rest as any;
+      return {
+        ...matchData,
+        team_image_url: matchData.team_image_id ? `/api/image/${matchData.team_image_id}` : null,
+        team_story_image_url: matchData.team_story_image_id ? `/api/image/${matchData.team_story_image_id}` : null,
+      };
     });
 
     return result;

@@ -9,6 +9,8 @@ interface Match {
     designation: string;
     match_type: string;
     opponent: string;
+    team_image_url?: string;
+    team_story_image_url?: string;
 }
 
 export default function HomeMatches({ matches }: { matches: Match[] }) {
@@ -42,13 +44,31 @@ export default function HomeMatches({ matches }: { matches: Match[] }) {
                         <div className="relative group perspective-1000 h-full">
                             <div className="absolute inset-0 bg-gradient-to-r from-sbc to-sbc-dark rounded-3xl transform rotate-1 group-hover:rotate-2 transition duration-500 opacity-70 blur-md"></div>
                             <div className="relative bg-black border border-white/10 rounded-3xl p-8 md:p-12 overflow-hidden transform transition duration-500 group-hover:-translate-y-2 group-hover:shadow-[0_20px_50px_rgba(34,197,94,0.3)] h-full flex flex-col justify-center">
+                                {/* Background Image Overlay */}
+                                {nextMatch && (nextMatch.team_image_url || nextMatch.team_story_image_url) && (
+                                    <div className="absolute inset-0 z-0">
+                                        <img
+                                            src={nextMatch.team_story_image_url || nextMatch.team_image_url}
+                                            alt="Team Cover Mobile"
+                                            className="md:hidden w-full h-full object-cover opacity-40 filter transition duration-500 group-hover:opacity-70"
+                                        />
+                                        <img
+                                            src={nextMatch.team_image_url || nextMatch.team_story_image_url}
+                                            alt="Team Cover Desktop"
+                                            className="hidden md:block w-full h-full object-cover opacity-40 filter transition duration-500 group-hover:opacity-70"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
+                                        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/40 to-transparent"></div>
+                                    </div>
+                                )}
+
                                 {nextMatch ? (
                                     <>
                                         <div className="absolute top-0 right-0 p-4 opacity-10">
                                             <i className="fas fa-basketball-ball text-9xl text-white transform rotate-45"></i>
                                         </div>
 
-                                        <div className="flex flex-wrap gap-3 mb-6">
+                                        <div className="relative z-10 flex flex-wrap gap-3 mb-6">
                                             <div className="inline-block bg-sbc text-black px-4 py-1.5 rounded-full font-black text-xs uppercase tracking-widest">
                                                 <i className="fas fa-fire mr-1"></i> Match à la une
                                             </div>
@@ -60,7 +80,7 @@ export default function HomeMatches({ matches }: { matches: Match[] }) {
                                             </div>
                                         </div>
 
-                                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+                                        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
                                             <div>
                                                 <h3 className="text-5xl md:text-7xl font-black text-white italic leading-none mb-2">
                                                     {nextMatch.category.replace('M', ' G').replace('F', ' F')}
@@ -85,7 +105,7 @@ export default function HomeMatches({ matches }: { matches: Match[] }) {
                                             </div>
                                         </div>
 
-                                        <div className="mt-8 pt-8 border-t border-white/10 flex items-center justify-between">
+                                        <div className="relative z-10 mt-8 pt-8 border-t border-white/10 flex items-center justify-between">
                                             <div className="flex items-center gap-2 text-gray-400 text-sm">
                                                 <i className="fas fa-map-marker-alt text-sbc"></i>
                                                 <span>Salle Jesse Owens, Seclin</span>

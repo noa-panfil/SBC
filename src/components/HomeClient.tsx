@@ -359,7 +359,7 @@ function BirthdaySection() {
                                                 className="relative w-24 h-24 rounded-full object-cover border-4 border-white shadow-md"
                                             />
                                             <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white w-10 h-10 flex items-center justify-center rounded-full font-black text-lg shadow-lg border-2 border-white transform rotate-6">
-                                                {age}
+                                                <i className="fas fa-birthday-cake text-sm"></i>
                                             </div>
                                         </div>
 
@@ -421,7 +421,7 @@ function BirthdaySection() {
                                             ))}
                                         </span>
                                     </div>
-                                    <p className="text-gray-400 text-xs"><i className="fas fa-calendar-day mr-1"></i> Le {p.day} {monthName} ({age} ans)</p>
+                                    <p className="text-gray-400 text-xs"><i className="fas fa-calendar-day mr-1"></i> Le {p.day} {monthName}</p>
                                 </div>
                             </div>
                         )

@@ -181,8 +181,8 @@ function MatchCard({ match }: { match: Match }) {
                 </div>
 
                 {/* Time Display */}
-                <div className="hidden md:block shrink-0 text-right">
-                    <span className="text-5xl font-black text-sbc/20 font-mono tracking-tighter group-hover:text-sbc transition-colors duration-300">
+                <div className="shrink-0 text-center md:text-right mt-4 md:mt-0">
+                    <span className="text-4xl md:text-5xl font-black text-sbc/40 md:text-sbc/20 font-mono tracking-tighter md:group-hover:text-sbc transition-colors duration-300">
                         {match.match_time.slice(0, 5)}
                     </span>
                 </div>

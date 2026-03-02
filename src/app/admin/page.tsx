@@ -180,17 +180,30 @@ async function getTeams() {
 
 async function getOtmMatches() {
     try {
-        const [rows] = await pool.query<RowDataPacket[]>(`
-            SELECT * FROM otm_matches 
-            ORDER BY match_date ASC, match_time ASC
+        const [homeRows] = await pool.query<RowDataPacket[]>(`
+            SELECT *, 'home' as loc FROM otm_matches 
         `);
+        const [awayRows] = await pool.query<RowDataPacket[]>(`
+            SELECT id, match_code, match_date, match_time, category, opponent, location, status, created_at, 'away' as loc FROM external_matches 
+        `);
+
+        const rows = [...homeRows, ...awayRows].sort((a: any, b: any) => {
+            const dateA = new Date(a.match_date).getTime();
+            const dateB = new Date(b.match_date).getTime();
+            if (dateA !== dateB) return dateA - dateB;
+            if (a.match_time && b.match_time) {
+                return a.match_time.localeCompare(b.match_time);
+            }
+            return 0;
+        });
+
         return rows.map((row: any) => ({
             ...row,
             match_date: row.match_date.toISOString(),
             created_at: row.created_at.toISOString(),
         }));
     } catch (e) {
-        console.error("Error fetching OTM matches", e);
+        console.error("Error fetching OTM and External matches", e);
         return [];
     }
 }

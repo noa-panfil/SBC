@@ -273,6 +273,7 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
         setRawMatches(initialMatches);
     }, [initialMatches]);
     const [isEditing, setIsEditing] = useState(false);
+    const [isEditingExternal, setIsEditingExternal] = useState(false);
     const [currentMatch, setCurrentMatch] = useState<any>({});
     const [sortBy, setSortBy] = useState<'total' | 'scorer' | 'timer' | 'hall_manager' | 'bar_manager' | 'referee'>('total');
 
@@ -450,22 +451,43 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
             meeting_time: calculateMeetingTime(defaultTime),
             category: teamNames[0] || "",
             match_type: "Championnat",
-            is_featured: false
+            is_featured: false,
+            loc: 'home'
         });
         setIsEditing(true);
+    };
+
+    const handleAddExternal = () => {
+        const defaultTime = "14:00";
+        let defaultDate = new Date().toISOString().split('T')[0];
+
+        setCurrentMatch({
+            match_date: defaultDate,
+            match_time: defaultTime,
+            meeting_time: calculateMeetingTime(defaultTime),
+            category: teamNames[0] || "",
+            match_type: "Championnat",
+            loc: 'away'
+        });
+        setIsEditingExternal(true);
     };
 
     const handleEdit = (match: any) => {
         const date = new Date(match.match_date).toISOString().split('T')[0];
         setCurrentMatch({ ...match, match_date: date, is_featured: !!match.is_featured });
-        setIsEditing(true);
+        if (match.loc === 'away') {
+            setIsEditingExternal(true);
+        } else {
+            setIsEditing(true);
+        }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm("Supprimer ce match OTM ?")) return;
+    const handleDelete = async (match: any) => {
+        if (!confirm("Supprimer ce match ?")) return;
         try {
-            await fetch(`/api/otm/${id}`, { method: "DELETE" });
-            setRawMatches(prev => prev.filter(m => m.id !== id));
+            const endpoint = match.loc === 'away' ? `/api/external-matches/${match.id}` : `/api/otm/${match.id}`;
+            await fetch(endpoint, { method: "DELETE" });
+            setRawMatches(prev => prev.filter(m => !(m.id === match.id && m.loc === match.loc)));
             router.refresh();
         } catch (e) {
             alert("Erreur");
@@ -491,13 +513,12 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
             }
 
             const savedMatch = await res.json();
+            savedMatch.loc = 'home';
 
             setRawMatches(prev => {
                 if (currentMatch.id) {
-                    // For edits, merge existing match with current form data
-                    return prev.map(m => m.id === currentMatch.id ? { ...m, ...currentMatch } : m);
+                    return prev.map(m => (m.id === currentMatch.id && m.loc !== 'away') ? { ...m, ...currentMatch } : m);
                 } else {
-                    // For creation, savedMatch contains the new resource with ID (returned by API)
                     return [...prev, savedMatch];
                 }
             });
@@ -507,6 +528,41 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
         } catch (e: any) {
             console.error(e);
             alert(e.message || "Erreur lors de la sauvegarde");
+        }
+    };
+
+    const handleSaveExternal = async () => {
+        try {
+            const method = currentMatch.id ? "PUT" : "POST";
+            const url = currentMatch.id ? `/api/external-matches/${currentMatch.id}` : "/api/external-matches";
+
+            const res = await fetch(url, {
+                method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(currentMatch)
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || "Failed");
+            }
+
+            const savedMatch = await res.json();
+            savedMatch.loc = 'away';
+
+            setRawMatches(prev => {
+                if (currentMatch.id) {
+                    return prev.map(m => (m.id === currentMatch.id && m.loc === 'away') ? { ...m, ...currentMatch, stringified_date: null } : m);
+                } else {
+                    return [...prev, savedMatch];
+                }
+            });
+
+            setIsEditingExternal(false);
+            router.refresh();
+        } catch (e: any) {
+            console.error(e);
+            alert(e.message || "Erreur lors de la sauvegarde un match extérieur");
         }
     };
 
@@ -603,6 +659,9 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                         <i className="fas fa-trash-alt"></i> Tout Vider
                     </button>
 
+                    <button onClick={handleAddExternal} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition shadow-lg shadow-blue-600/20">
+                        + Extérieur
+                    </button>
                     <button onClick={handleAdd} className="bg-sbc text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-sbc-dark transition shadow-lg shadow-sbc/20">
                         + Ajouter Match
                     </button>
@@ -625,7 +684,7 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                     </thead>
                     <tbody className="divide-y divide-gray-100 text-sm">
                         {filteredMatches.map(match => (
-                            <tr key={match.id} className={`${match.is_prefilled ? 'bg-orange-50/50 hover:bg-orange-50' : 'hover:bg-gray-50'}`}>
+                            <tr key={`${match.loc}-${match.id}`} className={`${match.is_prefilled ? 'bg-orange-50/50 hover:bg-orange-50' : 'hover:bg-gray-50'}`}>
                                 <td className="p-4">
                                     <div className="font-bold flex items-center gap-2">
                                         {match.category}
@@ -646,7 +705,13 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                                 </td>
                                 <td className="p-4 text-center pb-2">
                                     <div className="flex flex-col items-center gap-1">
-                                        {match.is_white_jersey ? (
+                                        {match.loc === 'away' ? (
+                                            <div className="tooltip" data-tip="Match à l'extérieur">
+                                                <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-50 border border-blue-100 shadow-sm">
+                                                    <i className="fas fa-bus text-blue-600 text-sm"></i>
+                                                </span>
+                                            </div>
+                                        ) : match.is_white_jersey ? (
                                             <div className="tooltip" data-tip="Maillots Blancs">
                                                 <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 border-2 border-gray-200 shadow-sm">
                                                     <i className="fas fa-tshirt text-white text-sm drop-shadow-[0_1px_1px_rgba(0,0,0,0.25)]"></i>
@@ -660,14 +725,16 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                                             </div>
                                         )}
 
-                                        {match.is_club_referee ? (
-                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border bg-purple-50 text-purple-700 border-purple-200 whitespace-nowrap" title="Arbitres Club">
-                                                <i className="fas fa-whistle"></i> Club
-                                            </span>
-                                        ) : (
-                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border bg-gray-100 text-gray-500 border-gray-200 whitespace-nowrap" title="Arbitres Fédération">
-                                                <i className="fas fa-user-tie"></i> Fédé
-                                            </span>
+                                        {match.loc !== 'away' && (
+                                            match.is_club_referee ? (
+                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border bg-purple-50 text-purple-700 border-purple-200 whitespace-nowrap" title="Arbitres Club">
+                                                    <i className="fas fa-whistle"></i> Club
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border bg-gray-100 text-gray-500 border-gray-200 whitespace-nowrap" title="Arbitres Fédération">
+                                                    <i className="fas fa-user-tie"></i> Fédé
+                                                </span>
+                                            )
                                         )}
                                     </div>
                                 </td>
@@ -677,8 +744,10 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                                 </td>
                                 <td className="p-4 font-bold text-gray-700">{match.opponent}</td>
                                 <td className="p-4 font-mono text-xs">{match.match_code}</td>
-                                <td className="p-4 text-xs max-w-[150px] truncate" title={match.designation}>
-                                    {match.designation === 'OPEN' ? (
+                                <td className="p-4 text-xs max-w-[150px] truncate" title={match.loc === 'away' ? match.location : match.designation}>
+                                    {match.loc === 'away' ? (
+                                        <span className="text-gray-500 font-semibold flex items-center gap-1"><i className="fas fa-map-marker-alt"></i> {match.location || 'Lieu non défini'}</span>
+                                    ) : match.designation === 'OPEN' ? (
                                         <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider bg-orange-100 text-orange-700 border border-orange-200">
                                             <i className="fas fa-lock-open"></i> Open
                                         </span>
@@ -704,7 +773,7 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                                     <button onClick={() => handleEdit(match)} className="text-sbc hover:bg-sbc/10 p-2 rounded transition">
                                         <i className="fas fa-edit"></i>
                                     </button>
-                                    <button onClick={() => handleDelete(match.id)} className="text-red-500 hover:bg-red-50 p-2 rounded transition">
+                                    <button onClick={() => handleDelete(match)} className="text-red-500 hover:bg-red-50 p-2 rounded transition">
                                         <i className="fas fa-trash"></i>
                                     </button>
                                 </td>
@@ -994,6 +1063,50 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                             <div className="flex justify-end gap-3 mt-8">
                                 <button onClick={() => setIsEditing(false)} className="px-4 py-2 font-bold text-gray-500 hover:text-gray-700">Annuler</button>
                                 <button onClick={handleSave} className="bg-sbc text-white px-6 py-2 rounded-xl font-black uppercase tracking-widest shadow-lg hover:bg-sbc-dark">Enregistrer</button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {
+                isEditingExternal && (
+                    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[95vh] overflow-y-auto p-8 animate-fade-in-up">
+                            <h3 className="text-xl font-black mb-6 uppercase text-blue-600">
+                                {currentMatch.id ? 'Modifier Match Extérieur' : 'Nouveau Match Extérieur'}
+                            </h3>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="col-span-2">
+                                    <TeamSelector
+                                        teams={teams}
+                                        value={currentMatch.category}
+                                        onChange={(val) => setCurrentMatch({ ...currentMatch, category: val })}
+                                        label="Catégorie (Notre équipe)"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Date</label>
+                                    <input type="date" className="w-full p-2 border rounded-lg" value={currentMatch.match_date || ''} onChange={e => setCurrentMatch({ ...currentMatch, match_date: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Heure du Match</label>
+                                    <input type="time" className="w-full p-2 border rounded-lg" value={currentMatch.match_time || ''} onChange={handleMatchTimeChange} />
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Adversaire</label>
+                                    <input className="w-full p-2 border rounded-lg font-bold" placeholder="Nom de l'équipe adverse" value={currentMatch.opponent || ''} onChange={e => setCurrentMatch({ ...currentMatch, opponent: e.target.value })} />
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Lieu du match</label>
+                                    <input className="w-full p-2 border rounded-lg" placeholder="Ville ou Salle de l'adversaire" value={currentMatch.location || ''} onChange={e => setCurrentMatch({ ...currentMatch, location: e.target.value })} />
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-3 mt-8">
+                                <button onClick={() => setIsEditingExternal(false)} className="px-4 py-2 font-bold text-gray-500 hover:text-gray-700">Annuler</button>
+                                <button onClick={handleSaveExternal} className="bg-blue-600 text-white px-6 py-2 rounded-xl font-black uppercase tracking-widest shadow-lg hover:bg-blue-700">Enregistrer</button>
                             </div>
                         </div>
                     </div>

@@ -358,6 +358,7 @@ function BirthdaySection() {
                                                 alt={p.name}
                                                 width={96}
                                                 height={96}
+                                                unoptimized
                                                 className="relative w-24 h-24 rounded-full object-cover border-4 border-white shadow-md"
                                             />
                                             <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white w-10 h-10 flex items-center justify-center rounded-full font-black text-lg shadow-lg border-2 border-white transform rotate-6">
@@ -406,6 +407,7 @@ function BirthdaySection() {
                                         alt={p.name}
                                         width={64}
                                         height={64}
+                                        unoptimized
                                         className="w-16 h-16 rounded-full object-cover border-2 border-gray-100"
                                     />
                                     <div className={`absolute -bottom-1 -right-1 text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full shadow ${p.day < todayDay ? 'bg-gray-200 text-gray-500' : 'bg-green-100 text-sbc'}`}>{p.day}</div>

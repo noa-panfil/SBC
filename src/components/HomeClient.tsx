@@ -42,7 +42,7 @@ function EventSection() {
     const [loading, setLoading] = useState(true);
     const [currentView, setCurrentView] = useState<'upcoming' | 'past'>('upcoming');
     const [currentPage, setCurrentPage] = useState(0);
-    const itemsPerPage = 3;
+    const itemsPerPage = 5;
 
     useEffect(() => {
         fetch('/api/events')
@@ -129,13 +129,15 @@ function EventSection() {
                         <i className="fas fa-chevron-left"></i>
                     </button>
 
-                    <div className="flex-grow overflow-hidden min-h-[400px]">
+                    <div className="flex-grow overflow-visible min-h-[400px] py-2">
                         {list.length === 0 ? (
                             <div className="text-center text-gray-400 py-10 italic">Aucun événement à afficher pour le moment.</div>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-fade-in-up">
+                            <div className="flex flex-wrap justify-center gap-8 animate-fade-in-up">
                                 {visibleItems.map(event => (
-                                    <EventCard key={event.id} event={event} isPast={currentView === 'past'} />
+                                    <div key={event.id} className="w-full md:w-[calc((100%-2rem)/2)] lg:w-[calc((100%-4rem)/3)] flex flex-col">
+                                        <EventCard event={event} isPast={currentView === 'past'} />
+                                    </div>
                                 ))}
                             </div>
                         )}
@@ -150,7 +152,7 @@ function EventSection() {
                 </div>
 
                 {totalPages > 1 && (
-                    <div className="flex justify-center gap-2 mt-6">
+                    <div className="flex justify-center gap-2 mt-8 md:mt-12">
                         {Array.from({ length: totalPages }).map((_, i) => (
                             <span key={i} className={`block w-2 h-2 rounded-full transition-all duration-300 ${i === currentPage ? 'bg-sbc w-4' : 'bg-gray-300'}`}></span>
                         ))}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import * as XLSX from "xlsx";
 import { toPng, toBlob } from "html-to-image";
 
@@ -28,6 +28,7 @@ interface Match {
     location: string;
     teamId?: string; // Mapped team ID
     teamName?: string;
+    teamCategory?: string;
     homeDisplay?: string;
     visitorDisplay?: string;
     scoreHome?: string;
@@ -44,6 +45,44 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
     const [matches, setMatches] = useState<Match[]>([]);
     // Generator Mode
     const [mode, setMode] = useState<Mode>('match-affiche');
+
+    const displayedMatches = useMemo(() => {
+        if (!matches || matches.length === 0) return [];
+        let arr = [...matches];
+        if (mode === 'planning-semaine' || mode === 'resultats-semaine') {
+            return arr;
+        } else {
+            const teamOrder = [
+                "U9",
+                "U11-A",
+                "U11-B",
+                "U13F",
+                "U13M-A",
+                "U13M-B",
+                "U15M",
+                "U18F-A",
+                "U18F-B",
+                "U18M",
+                "U21M",
+                "Seniors-F",
+                "Seniors-M1",
+                "Seniors-M2"
+            ];
+            const getTeamRank = (name?: string) => {
+                if (!name) return 999;
+                const index = teamOrder.findIndex(t => t.toLowerCase() === name.toLowerCase() || name.toLowerCase().includes(t.toLowerCase()));
+                return index === -1 ? 999 : index;
+            };
+            return arr.sort((a, b) => {
+                const rankA = getTeamRank(a.teamName);
+                const rankB = getTeamRank(b.teamName);
+                if (rankA !== rankB) return rankA - rankB;
+                // Fallback to chronological if same team
+                return new Date(a.date).getTime() - new Date(b.date).getTime();
+            });
+        }
+    }, [matches, mode]);
+
     const [file, setFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
     const [storyBackgroundType, setStoryBackgroundType] = useState<'default' | 'team' | 'custom'>('default');
@@ -227,11 +266,35 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
                     ...m,
                     teamId: foundTeam?.id,
                     teamName: foundTeam?.name,
+                    teamCategory: foundTeam?.category,
                     homeDisplay,
                     visitorDisplay,
                     teamImage: foundTeam?.storyImage || foundTeam?.image || "/logo.png",
                     seclinSide
                 };
+            });
+
+            // Sort chronologically
+            mapped.sort((a, b) => {
+                const parseDateTime = (dateStr: string, timeStr: string) => {
+                    if (!dateStr) return 0;
+                    const parts = dateStr.split('/');
+                    if (parts.length < 3) return 0;
+                    const [d, m, y] = parts;
+                    let hours = 0, mins = 0;
+                    if (timeStr) {
+                        const timeMatch = timeStr.match(/(\d+)[hH:]*(\d*)/);
+                        if (timeMatch) {
+                            hours = parseInt(timeMatch[1]) || 0;
+                            mins = parseInt(timeMatch[2]) || 0;
+                        }
+                    }
+                    let year = parseInt(y);
+                    if (year < 100) year += 2000;
+                    return new Date(year, parseInt(m) - 1, parseInt(d), hours, mins).getTime();
+                };
+
+                return parseDateTime(a.date, a.time) - parseDateTime(b.date, b.time);
             });
 
             setMatches(mapped);
@@ -273,7 +336,7 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
             const link = document.createElement('a');
             const filename = (mode === 'planning-semaine' || mode === 'resultats-semaine')
                 ? `${mode}-partie-${index + 1}.png`
-                : `story-${matches[index].home}-vs-${matches[index].visitor}.png`;
+                : `story-${displayedMatches[index].home}-vs-${displayedMatches[index].visitor}.png`;
             link.download = filename;
             link.href = dataUrl;
             link.click();
@@ -378,6 +441,7 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
                     ...m,
                     teamId: foundTeam?.id,
                     teamName: foundTeam?.name,
+                    teamCategory: foundTeam?.category,
                     homeDisplay,
                     visitorDisplay,
                     teamImage: foundTeam?.storyImage || foundTeam?.image || "/logo.png",
@@ -640,16 +704,16 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
                         </div>
                     </div>
 
-                    {matches.length > 0 && (
+                    {displayedMatches.length > 0 && (
                         <>
                             {/* GLOBAL VIEWS (Planning / Results) */}
                             {(mode === 'planning-semaine' || mode === 'resultats-semaine') && (
                                 (() => {
                                     const matchesPerSlide = mode === 'planning-semaine' ? 10 : 8;
-                                    return Array.from({ length: Math.ceil(matches.length / matchesPerSlide) }).map((_, slideIndex) => {
+                                    return Array.from({ length: Math.ceil(displayedMatches.length / matchesPerSlide) }).map((_, slideIndex) => {
                                         const sliceStart = slideIndex * matchesPerSlide;
                                         const sliceEnd = sliceStart + matchesPerSlide;
-                                        const currentMatches = matches.slice(sliceStart, sliceEnd);
+                                        const currentMatches = displayedMatches.slice(sliceStart, sliceEnd);
 
                                         return (
                                             <div key={slideIndex} className="flex flex-col gap-4 items-center">
@@ -697,7 +761,7 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
                                                             <h1 className="text-6xl font-black uppercase tracking-widest text-sbc-light mb-4">
                                                                 {mode === 'planning-semaine' ? 'AGENDA DU WEEK-END' : 'RÉSULTATS DU WEEK-END'}
                                                             </h1>
-                                                            {Math.ceil(matches.length / matchesPerSlide) > 1 && (
+                                                            {Math.ceil(displayedMatches.length / matchesPerSlide) > 1 && (
                                                                 <h2 className="text-4xl font-bold text-white/50 mb-4">PARTIE {slideIndex + 1}</h2>
                                                             )}
                                                             <div className="h-2 w-32 bg-white mx-auto rounded-full"></div>
@@ -798,7 +862,7 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
                             {
                                 (mode === 'match-affiche' || mode === 'match-resultat') && (
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                                        {matches.map((match, i) => {
+                                        {displayedMatches.map((match, i) => {
                                             const sHome = parseInt(match.scoreHome || '0');
                                             const sVisitor = parseInt(match.scoreVisitor || '0');
 

@@ -684,7 +684,7 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                     </thead>
                     <tbody className="divide-y divide-gray-100 text-sm">
                         {filteredMatches.map(match => (
-                            <tr key={`${match.loc}-${match.id}`} className={`${match.is_prefilled ? 'bg-orange-50/50 hover:bg-orange-50' : 'hover:bg-gray-50'}`}>
+                            <tr key={`${match.loc}-${match.id}`} className={`${match.is_prefilled ? 'bg-orange-50/50 hover:bg-orange-50' : 'hover:bg-gray-50'} align-top`}>
                                 <td className="p-4">
                                     <div className="font-bold flex items-center gap-2">
                                         {match.category}
@@ -744,21 +744,49 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                                 </td>
                                 <td className="p-4 font-bold text-gray-700">{match.opponent}</td>
                                 <td className="p-4 font-mono text-xs">{match.match_code}</td>
-                                <td className="p-4 text-xs max-w-[150px] truncate" title={match.loc === 'away' ? match.location : match.designation}>
+                                <td className="py-4 pl-4 pr-1 text-xs whitespace-normal min-w-[150px] max-w-[250px]" title={match.loc === 'away' ? match.location : match.designation}>
                                     {match.loc === 'away' ? (
                                         <span className="text-gray-500 font-semibold flex items-center gap-1"><i className="fas fa-map-marker-alt"></i> {match.location || 'Lieu non défini'}</span>
                                     ) : match.designation === 'OPEN' ? (
                                         <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider bg-orange-100 text-orange-700 border border-orange-200">
                                             <i className="fas fa-lock-open"></i> Open
                                         </span>
-                                    ) : match.designation}
+                                    ) : match.designation?.includes("{") ? (
+                                        <div className="flex flex-col gap-2">
+                                            {match.designation.split(" + ").map((part: string, idx: number) => {
+                                                const m = part.match(/^(.*) \{(.*)\}$/);
+                                                if (m) {
+                                                    return (
+                                                        <div key={idx} className="leading-tight">
+                                                            <div className="font-bold text-gray-800">- {m[1].trim()}</div>
+                                                            <div className="pl-4 text-gray-500 text-[10px] mt-0.5 space-y-0.5">
+                                                                {m[2].split(",").map((role: string, ridx: number) => (
+                                                                    <div key={ridx}>- {role.trim()}</div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                }
+                                                return <div key={idx} className="whitespace-normal">{part}</div>;
+                                            })}
+                                        </div>
+                                    ) : match.designation?.startsWith("Table = 2 Joueurs/Parents ") ? (
+                                        <div className="flex flex-col gap-1 leading-tight">
+                                            <div className="font-bold text-gray-800">- {match.designation.replace("Table = 2 Joueurs/Parents ", "").trim()}</div>
+                                            <div className="pl-4 text-gray-500 text-[10px] mt-0.5 space-y-0.5">
+                                                <div>- Marqueur</div>
+                                                <div>- Chronométreur</div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="whitespace-normal leading-tight">{match.designation}</div>
+                                    )}
                                 </td>
-                                <td className="p-4 text-xs text-gray-500">
-                                    <div className="grid grid-cols-[70px_1fr] gap-y-1 items-center">
+                                <td className="py-4 pl-1 pr-4 text-xs text-gray-500 min-w-[160px] max-w-[250px] whitespace-normal">
+                                    <div className="grid grid-cols-[70px_1fr] gap-y-1 items-start">
                                         {match.scorer && <><span className="font-bold text-gray-400 uppercase text-[10px]">Marqueur:</span> <span className="text-gray-900 font-semibold truncate">{match.scorer}</span></>}
                                         {match.timer && <><span className="font-bold text-gray-400 uppercase text-[10px]">Chrono:</span> <span className="text-gray-900 font-semibold truncate">{match.timer}</span></>}
                                         {match.hall_manager && <><span className="font-bold text-gray-400 uppercase text-[10px]">Resp.:</span> <span className="text-gray-900 font-semibold truncate">{match.hall_manager}</span></>}
-                                        {match.bar_manager && <><span className="font-bold text-gray-400 uppercase text-[10px]">Buvette:</span> <span className="text-gray-900 font-semibold truncate">{match.bar_manager}</span></>}
                                         {match.bar_manager && <><span className="font-bold text-gray-400 uppercase text-[10px]">Buvette:</span> <span className="text-gray-900 font-semibold truncate">{match.bar_manager}</span></>}
                                         {match.referee && <><span className="font-bold text-gray-400 uppercase text-[10px]">Arb 1:</span> <span className="text-gray-900 font-semibold truncate">{match.referee}</span></>}
                                         {match.referee_2 && <><span className="font-bold text-gray-400 uppercase text-[10px]">Arb 2:</span> <span className="text-gray-900 font-semibold truncate">{match.referee_2}</span></>}

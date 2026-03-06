@@ -164,6 +164,8 @@ function PlayerSelector({ players, value, onChange, label, disabled = false, hig
 
 export default function CoachOTMManager({ matches, myTeamNames, players, otherCoaches, allPlayers, currentUser, coachImageId }: { matches: any[], myTeamNames: string[], players?: any[], otherCoaches?: any[], allPlayers?: any[], currentUser?: string, coachImageId?: number | null }) {
     const router = useRouter();
+    const [selectedTeam, setSelectedTeam] = useState<string>('all');
+    const activeTeamNames = selectedTeam === 'all' ? myTeamNames : [selectedTeam];
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editForm, setEditForm] = useState<any>({});
     const [loading, setLoading] = useState(false);
@@ -229,15 +231,15 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
 
     const selectablePlayers = [
         ...(currentUser ? [{ fullname: currentUser, team: "Moi (Coach)", image_id: coachImageId }] : []),
-        ...(otherCoaches || []),
-        ...(players || [])
+        ...(otherCoaches ? otherCoaches.filter(c => activeTeamNames.some(t => c.team?.includes(t) || t === c.team)) : []),
+        ...(players ? players.filter(p => activeTeamNames.includes(p.team)) : [])
     ];
 
     const getAllowedRoles = (match: any) => {
         const allowed = new Set<string>();
         const isOpen = match.designation === 'OPEN';
 
-        if (myTeamNames.includes(match.category) || isOpen) {
+        if (activeTeamNames.includes(match.category) || isOpen) {
             allowed.add('scorer');
             allowed.add('timer');
             allowed.add('hall_manager');
@@ -248,7 +250,7 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
 
         if (match.designation.startsWith("Table = 2 Joueurs/Parents ")) {
             const team = match.designation.replace("Table = 2 Joueurs/Parents ", "").trim();
-            if (myTeamNames.includes(team)) {
+            if (activeTeamNames.includes(team)) {
                 allowed.add('scorer');
                 allowed.add('timer');
             }
@@ -258,7 +260,7 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
                 const m = part.trim().match(/^(.*) \{(.*)\}$/);
                 if (m) {
                     const teamName = m[1].trim();
-                    if (myTeamNames.includes(teamName)) {
+                    if (activeTeamNames.includes(teamName)) {
                         const rolesStr = m[2];
                         if (rolesStr.includes("Marqueur")) allowed.add('scorer');
                         if (rolesStr.includes("Chronométreur")) allowed.add('timer');
@@ -348,11 +350,11 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
 
         if (viewFilter === 'all') return true;
 
-        const isPlaying = myTeamNames.includes(match.category);
+        const isPlaying = activeTeamNames.includes(match.category);
         if (viewFilter === 'my_matches') return isPlaying;
 
         if (viewFilter === 'my_designations') {
-            const isAssignedOTM = !isPlaying && match.designation && myTeamNames.some(name => match.designation.includes(name));
+            const isAssignedOTM = !isPlaying && match.designation && activeTeamNames.some(name => match.designation.includes(name));
             return isAssignedOTM;
         }
         if (viewFilter === 'open_matches') return match.designation === 'OPEN';
@@ -434,7 +436,7 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
                         </button>
                         <h3 className="text-xl font-black text-gray-900 mb-2">Assigner un joueur</h3>
                         <p className="text-sm text-gray-500 mb-6">
-                            Choisissez un joueur de votre équipe ({myTeamNames.join(', ')}) pour aider sur le match <strong>{resolvingRequest.category}</strong> en tant que <strong>{resolvingRequest.role}</strong>.
+                            Choisissez un joueur de votre équipe ({activeTeamNames.join(', ')}) pour aider sur le match <strong>{resolvingRequest.category}</strong> en tant que <strong>{resolvingRequest.role}</strong>.
                         </p>
 
                         <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 mb-4">
@@ -473,6 +475,19 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
                             <i className="fas fa-chevron-right text-xs"></i>
                         </button>
                     </div>
+
+                    {myTeamNames.length > 1 && (
+                        <select
+                            value={selectedTeam}
+                            onChange={(e) => setSelectedTeam(e.target.value)}
+                            className="bg-white border text-xs font-bold uppercase rounded-lg px-3 py-2 outline-none focus:ring-1 transition-all cursor-pointer shadow-sm w-full sm:w-auto border-gray-200 text-gray-700 focus:border-sbc focus:ring-sbc"
+                        >
+                            <option value="all">Toutes mes équipes</option>
+                            {myTeamNames.map(name => (
+                                <option key={name} value={name}>{name}</option>
+                            ))}
+                        </select>
+                    )}
 
                     <select
                         value={viewFilter}
@@ -531,13 +546,13 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
                         </div>
                         <div className="grid gap-6">
                             {dateMatches.map((match: any) => {
-                                const isPlaying = myTeamNames.includes(match.category);
-                                const isAssignedOTM = !isPlaying && match.designation && myTeamNames.some(name => match.designation.includes(name));
+                                const isPlaying = activeTeamNames.includes(match.category);
+                                const isAssignedOTM = !isPlaying && match.designation && activeTeamNames.some(name => match.designation.includes(name));
                                 const isOpen = match.designation === 'OPEN';
                                 const allowedRoles = getAllowedRoles(match);
 
                                 return (
-                                    <div key={match.id} className={`rounded-2xl shadow-sm border overflow-hidden hover:shadow-md transition-shadow group
+                                    <div key={match.id} className={`rounded-2xl shadow-sm border hover:shadow-md transition-shadow group
                                         ${isPlaying
                                             ? 'bg-green-50/60 border-sbc ring-1 ring-sbc'
                                             : isAssignedOTM
@@ -547,7 +562,7 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
                                                     : 'bg-white border-gray-100'
                                         }`}>
                                         <div className="grid grid-cols-1 lg:grid-cols-12">
-                                            <div className={`lg:col-span-4 p-6 flex flex-col justify-between border-b lg:border-b-0 lg:border-r relative overflow-hidden
+                                            <div className={`lg:col-span-4 p-6 flex flex-col justify-between border-b lg:border-b-0 lg:border-r relative overflow-hidden rounded-t-2xl lg:rounded-bl-2xl lg:rounded-tr-none
                                                 ${isPlaying
                                                     ? 'bg-green-100/30 border-green-200'
                                                     : isAssignedOTM
@@ -684,7 +699,7 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
                                                         </button>
                                                     )}
                                                     {match.designation && (
-                                                        <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200 max-w-[200px] truncate flex items-center gap-1.5" title={match.designation}>
+                                                        <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200 whitespace-normal flex items-center gap-1.5" title={match.designation}>
                                                             <i className="fas fa-clipboard-check"></i>
                                                             <span className="uppercase">{match.designation.replace("Table = 2 Joueurs/Parents ", "")}</span>
                                                         </span>

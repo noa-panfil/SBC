@@ -370,8 +370,8 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
 
             {/* Registrations Modal */}
             {registrationsModal.isOpen && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col animate-fade-in-up">
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 pb-24 md:pb-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[75vh] md:max-h-[90vh] flex flex-col animate-fade-in-up">
                         <div className="bg-sbc p-4 flex justify-between items-center text-white rounded-t-xl">
                             <div>
                                 <h3 className="font-bold text-xl">Inscriptions Reçues</h3>
@@ -654,8 +654,8 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
 
             {/* Edit / Create Modal (Existing) */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-fade-in-up custom-scrollbar">
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 pb-24 md:pb-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[75vh] md:max-h-[90vh] overflow-y-auto animate-fade-in-up custom-scrollbar">
                         <div className="bg-sbc p-4 flex justify-between items-center text-white sticky top-0 z-10">
                             <h3 className="font-bold text-xl">{editingEvent.id ? "Modifier l'événement" : "Nouvel Événement"}</h3>
                             <button onClick={() => setIsModalOpen(false)} className="text-white/80 hover:text-white text-2xl">&times;</button>

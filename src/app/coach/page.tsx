@@ -63,29 +63,79 @@ async function getMyPlayers(teamIds: number[]) {
     }
 }
 
+
 async function getOtmMatches(days?: number) {
     try {
-        let query = `SELECT * FROM otm_matches WHERE (is_prefilled = 0 OR is_prefilled IS NULL)`;
+        let sql = `
+            SELECT 
+                m.*,
+                p_scorer.firstname AS scorer_firstname, p_scorer.lastname AS scorer_lastname,
+                v_scorer.name AS v_scorer_name,
+                p_timer.firstname AS timer_firstname, p_timer.lastname AS timer_lastname,
+                v_timer.name AS v_timer_name,
+                p_hall.firstname AS hall_firstname, p_hall.lastname AS hall_lastname,
+                v_hall.name AS v_hall_name,
+                p_bar.firstname AS bar_firstname, p_bar.lastname AS bar_lastname,
+                v_bar.name AS v_bar_name,
+                p_ref1.firstname AS ref1_firstname, p_ref1.lastname AS ref1_lastname,
+                v_ref1.name AS v_ref1_name,
+                p_ref2.firstname AS ref2_firstname, p_ref2.lastname AS ref2_lastname,
+                v_ref2.name AS v_ref2_name
+            FROM otm_matches m
+            LEFT JOIN persons p_scorer ON m.scorer_id = p_scorer.id
+            LEFT JOIN volunteers v_scorer ON m.scorer_id = (v_scorer.id * -1)
+            LEFT JOIN persons p_timer ON m.timer_id = p_timer.id
+            LEFT JOIN volunteers v_timer ON m.timer_id = (v_timer.id * -1)
+            LEFT JOIN persons p_hall ON m.hall_manager_id = p_hall.id
+            LEFT JOIN volunteers v_hall ON m.hall_manager_id = (v_hall.id * -1)
+            LEFT JOIN persons p_bar ON m.bar_manager_id = p_bar.id
+            LEFT JOIN volunteers v_bar ON m.bar_manager_id = (v_bar.id * -1)
+            LEFT JOIN persons p_ref1 ON m.referee_id = p_ref1.id
+            LEFT JOIN volunteers v_ref1 ON m.referee_id = (v_ref1.id * -1)
+            LEFT JOIN persons p_ref2 ON m.referee_2_id = p_ref2.id
+            LEFT JOIN volunteers v_ref2 ON m.referee_2_id = (v_ref2.id * -1)
+            WHERE (m.is_prefilled = 0 OR m.is_prefilled IS NULL)
+        `;
         const params: any[] = [];
 
         if (days) {
-            query += ` AND match_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 2 DAY) AND DATE_ADD(CURDATE(), INTERVAL ? DAY)`;
+            sql += ` AND m.match_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 2 DAY) AND DATE_ADD(CURDATE(), INTERVAL ? DAY)`;
             params.push(days);
         }
 
-        query += ` ORDER BY match_date ASC, match_time ASC`;
+        sql += ` ORDER BY m.match_date ASC, m.match_time ASC`;
 
-        const [rows] = await pool.query<RowDataPacket[]>(query, params);
-        return rows.map((row: any) => ({
-            ...row,
-            match_date: row.match_date.toISOString(),
-            created_at: row.created_at.toISOString(),
-        }));
+        const [rows] = await pool.query<RowDataPacket[]>(sql, params);
+        
+        return rows.map((row: any) => {
+            const getName = (prefix: string) => {
+                if (row[`${prefix}_firstname`]) {
+                    return `${row[`${prefix}_lastname`].toUpperCase()} ${row[`${prefix}_firstname`]}`;
+                }
+                if (row[`v_${prefix}_name`]) {
+                    return row[`v_${prefix}_name`];
+                }
+                return null;
+            };
+
+            return {
+                ...row,
+                match_date: row.match_date.toISOString(),
+                created_at: row.created_at.toISOString(),
+                scorer: getName('scorer'),
+                timer: getName('timer'),
+                hall_manager: getName('hall'),
+                bar_manager: getName('bar'),
+                referee: getName('ref1'),
+                referee_2: getName('ref2'),
+            };
+        });
     } catch (e) {
         console.error("Error fetching OTM matches", e);
         return [];
     }
 }
+
 
 async function getAllPlayers() {
     try {
@@ -208,37 +258,23 @@ export default async function CoachDashboard() {
         console.error("Error fetching coach details", e);
     }
 
+
     const playerStatsMap = new Map<number, number>();
     players.forEach((p: any) => playerStatsMap.set(p.id, 0));
 
     otmMatches.forEach((m: any) => {
-        [m.scorer, m.timer, m.hall_manager, m.bar_manager, m.referee].forEach(name => {
-            if (name) {
-                // 1. Try exact match (handles "Axel (U11)" vs "Axel (U13)")
-                let candidates = allPlayers.filter((ap: any) => ap.fullname === name);
+        const officialIds = [
+            m.scorer_id, m.timer_id, m.hall_manager_id, 
+            m.bar_manager_id, m.referee_id, m.referee_2_id
+        ];
 
-                // 2. Fallback: Try matching original name (handles legacy "Axel")
-                if (candidates.length === 0) {
-                    candidates = allPlayers.filter((ap: any) => ap.originalName === name);
-                }
-
-                if (candidates.length > 0) {
-                    let selectedPlayer = candidates[0];
-
-                    // If multiple candidates, try to resolve by team
-                    if (candidates.length > 1) {
-                        const perfectMatch = candidates.find((p: any) => p.team === m.category || (m.designation && m.designation.includes(p.team)));
-                        if (perfectMatch) selectedPlayer = perfectMatch;
-                    }
-
-                    // Only credit if the RESOLVED player is one of the logged-in coach's players
-                    if (playerStatsMap.has(selectedPlayer.id)) {
-                        playerStatsMap.set(selectedPlayer.id, (playerStatsMap.get(selectedPlayer.id) || 0) + 1);
-                    }
-                }
+        officialIds.forEach(id => {
+            if (id !== null && playerStatsMap.has(Number(id))) {
+                playerStatsMap.set(Number(id), (playerStatsMap.get(Number(id)) || 0) + 1);
             }
         });
     });
+
 
     const playersWithStats = players.map((p: any) => ({
         ...p,

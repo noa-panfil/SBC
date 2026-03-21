@@ -3,14 +3,21 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
+
 function PlayerSelector({ players, value, idValue, onChange, label, disabled = false, highlight = false, theme = 'green' }: { players: any[], value: string, idValue?: number | null, onChange: (val: string, id?: number | null) => void, label: any, disabled?: boolean, highlight?: boolean, theme?: 'green' | 'blue' | 'orange' }) {
     const [isOpen, setIsOpen] = useState(false);
     const [isTyping, setIsTyping] = useState(false);
+    const [search, setSearch] = useState("");
     const containerRef = useRef<HTMLDivElement>(null);
 
     const isKnown = players.some(p => p.fullname === value || (idValue && p.id === idValue));
     const selectedPlayer = players.find(p => (idValue && p.id === idValue) || p.fullname === value);
     const showInput = isTyping || (value && !isKnown);
+
+    const filteredPlayers = players.filter(p => 
+        p.fullname.toLowerCase().includes(search.toLowerCase()) || 
+        (p.team && p.team.toLowerCase().includes(search.toLowerCase()))
+    );
 
     const themeColors = {
         green: {
@@ -44,6 +51,7 @@ function PlayerSelector({ players, value, idValue, onChange, label, disabled = f
         function handleClickOutside(event: MouseEvent) {
             if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
                 setIsOpen(false);
+                setSearch("");
             }
         }
         document.addEventListener("mousedown", handleClickOutside);
@@ -55,9 +63,11 @@ function PlayerSelector({ players, value, idValue, onChange, label, disabled = f
             setIsTyping(true);
             onChange('', null);
             setIsOpen(false);
+            setSearch("");
         } else {
             onChange(val, id);
             setIsOpen(false);
+            setSearch("");
         }
     };
 
@@ -124,28 +134,53 @@ function PlayerSelector({ players, value, idValue, onChange, label, disabled = f
                     </button>
 
                     {isOpen && (
-                        <div className="absolute z-50 left-0 w-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl max-h-60 overflow-y-auto">
-                            {players.map((p, idx) => (
-                                <div
-                                    key={idx}
-                                    className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-0"
-                                    onClick={() => handleSelect(p.fullname, p.id)}
-                                >
-                                    {p.image_id ? (
-                                        <img src={`/api/image/${p.image_id}`} className="w-8 h-8 rounded-full object-cover border border-gray-200 shadow-sm" />
-                                    ) : (
-                                        <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center text-xs font-bold">
-                                            {p.fullname.charAt(0)}
-                                        </div>
-                                    )}
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-bold text-gray-900 truncate">{p.fullname}</p>
-                                        <p className="text-[10px] text-gray-400 truncate">{p.team}</p>
-                                    </div>
+                        <div className="absolute z-50 left-0 w-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl flex flex-col max-h-80">
+                            {/* Search Bar */}
+                            <div className="p-2 border-b border-gray-50 sticky top-0 bg-white rounded-t-xl z-10">
+                                <div className="relative">
+                                    <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px]"></i>
+                                    <input 
+                                        type="text"
+                                        className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border-none rounded-lg text-xs outline-none focus:ring-1 focus:ring-gray-200"
+                                        placeholder="Rechercher un joueur..."
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                        autoFocus
+                                        onClick={(e) => e.stopPropagation()}
+                                    />
                                 </div>
-                            ))}
+                            </div>
+
+                            <div className="overflow-y-auto flex-1">
+                                {filteredPlayers.length > 0 ? (
+                                    filteredPlayers.map((p, idx) => (
+                                        <div
+                                            key={idx}
+                                            className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-0"
+                                            onClick={() => handleSelect(p.fullname, p.id)}
+                                        >
+                                            {p.image_id ? (
+                                                <img src={`/api/image/${p.image_id}`} className="w-8 h-8 rounded-full object-cover border border-gray-200 shadow-sm" />
+                                            ) : (
+                                                <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center text-xs font-bold">
+                                                    {p.fullname.charAt(0)}
+                                                </div>
+                                            )}
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-bold text-gray-900 truncate">{p.fullname}</p>
+                                                <p className="text-[10px] text-gray-400 truncate">{p.team}</p>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="px-3 py-4 text-center">
+                                        <p className="text-xs text-gray-400 italic">Aucun résultat</p>
+                                    </div>
+                                )}
+                            </div>
+
                             <div
-                                className={`flex items-center gap-3 px-3 py-3 hover:bg-gray-50 cursor-pointer ${t.text} font-bold bg-gray-50/50 sticky bottom-0 backdrop-blur-sm`}
+                                className={`flex items-center gap-3 px-3 py-3 hover:bg-gray-50 cursor-pointer ${t.text} font-bold bg-gray-50/50 sticky bottom-0 backdrop-blur-sm border-t border-gray-50 rounded-b-xl`}
                                 onClick={() => handleSelect('___CUSTOM___')}
                             >
                                 <div className={`w-8 h-8 rounded-full ${t.bgIcon} flex items-center justify-center border ${t.borderIcon}`}>
@@ -160,6 +195,7 @@ function PlayerSelector({ players, value, idValue, onChange, label, disabled = f
         </div>
     );
 }
+
 
 
 export default function CoachOTMManager({ matches, myTeamNames, players, otherCoaches, allPlayers, currentUser, currentPersonId, coachImageId }: { matches: any[], myTeamNames: string[], players?: any[], otherCoaches?: any[], allPlayers?: any[], currentUser?: string, currentPersonId?: number, coachImageId?: number | null }) {
@@ -202,10 +238,27 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
         }
     };
 
+
     const handleResolveHelp = async (player: string, playerId: number | null = null) => {
         if (!resolvingRequest) return;
         setLoading(true);
         try {
+            let finalPlayerId = playerId;
+
+            // If name is typed but no ID, create/find volunteer
+            if (player && playerId === null) {
+                const resV = await fetch('/api/volunteers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: player })
+                });
+                if (resV.ok) {
+                    const data = await resV.json();
+                    // Volunteers are negative IDs
+                    finalPlayerId = data.id * -1;
+                }
+            }
+
             const res = await fetch('/api/otm/help/resolve', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -213,7 +266,7 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
                     requestId: resolvingRequest.id,
                     matchId: resolvingRequest.match_id,
                     role: resolvingRequest.role,
-                    playerId
+                    playerId: finalPlayerId
                 })
             });
             if (res.ok) {
@@ -228,6 +281,7 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
             setLoading(false);
         }
     };
+
 
     const selectablePlayers = [
         ...(currentUser ? [{ id: currentPersonId, fullname: currentUser, team: "Moi (Coach)", image_id: coachImageId }] : []),
@@ -286,17 +340,40 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
         setEditForm({});
     };
 
+
     const handleSave = async () => {
         setLoading(true);
         try {
+            const updatedForm = { ...editForm };
+            const roles = ['scorer', 'timer', 'hall_manager', 'bar_manager', 'referee', 'referee_2'];
+
+            for (const role of roles) {
+                const name = editForm[role];
+                const id = editForm[`${role}_id`];
+
+                // If name is typed but no ID, create/find volunteer
+                if (name && id === null) {
+                    const res = await fetch('/api/volunteers', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name })
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        // Volunteers are stored as negative IDs in otm_matches
+                        updatedForm[`${role}_id`] = data.id * -1;
+                    }
+                }
+            }
+
             const payload = {
-                id: editForm.id,
-                scorer_id: editForm.scorer_id,
-                timer_id: editForm.timer_id,
-                hall_manager_id: editForm.hall_manager_id,
-                bar_manager_id: editForm.bar_manager_id,
-                referee_id: editForm.referee_id,
-                referee_2_id: editForm.referee_2_id
+                id: updatedForm.id,
+                scorer_id: updatedForm.scorer_id,
+                timer_id: updatedForm.timer_id,
+                hall_manager_id: updatedForm.hall_manager_id,
+                bar_manager_id: updatedForm.bar_manager_id,
+                referee_id: updatedForm.referee_id,
+                referee_2_id: updatedForm.referee_2_id
             };
 
             const res = await fetch(`/api/otm/${editForm.id}`, {
@@ -319,6 +396,7 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
             setLoading(false);
         }
     };
+
 
     const [currentDate, setCurrentDate] = useState(new Date());
     const [viewFilter, setViewFilter] = useState<'all' | 'my_matches' | 'my_designations' | 'open_matches'>('all');
@@ -779,7 +857,7 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
                                                             ] : [])
                                                         ].map((item, i) => {
                                                             const isAllowed = allowedRoles.has(item.key);
-                                                            const isMissing = isAllowed && !item.val;
+                                                            const isMissing = isAllowed && !item.val && !match[item.key + '_id'];
 
                                                             return (
                                                                 <div key={i} className={`p-4 rounded-xl border transition-all duration-200 
@@ -801,13 +879,15 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
                                                                         <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">{item.label}</span>
                                                                         <i className={`fas ${item.icon} text-xs ${item.val ? (isPlaying ? 'text-sbc' : 'text-blue-600') : 'text-gray-200'}`}></i>
                                                                     </div>
-                                                                    {item.val ? (
+                                                                    {item.val || match[item.key + '_id'] ? (
                                                                         (() => {
                                                                             const providedId = match[item.key + '_id'];
+                                                                            let displayName = item.val;
                                                                             let foundPlayer = null;
+                                                                            
                                                                             if (providedId) {
                                                                                 foundPlayer = (allPlayers || []).find(p => Number(p.id) === Number(providedId));
-                                                                            } else {
+                                                                            } else if (item.val) {
                                                                                 const candidates = (allPlayers || []).filter(p => p.fullname === item.val);
                                                                                 foundPlayer = candidates[0];
                                                                                 if (candidates.length > 1) {
@@ -815,17 +895,27 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
                                                                                     if (perfectMatch) foundPlayer = perfectMatch;
                                                                                 }
                                                                             }
-                                                                            if (!foundPlayer) foundPlayer = selectablePlayers.find(p => p.fullname === item.val || (providedId && p.id === providedId));
+                                                                            
+                                                                            if (!foundPlayer && providedId) {
+                                                                                foundPlayer = selectablePlayers.find(p => Number(p.id) === Number(providedId));
+                                                                            }
+                                                                            
+                                                                            if (!displayName && foundPlayer) {
+                                                                                displayName = foundPlayer.fullname;
+                                                                            }
+                                                                            
+                                                                            if (!displayName) displayName = "Inconnu";
+
                                                                             return (
                                                                                 <div className="flex items-center gap-2 mt-1">
                                                                                     {foundPlayer?.image_id ? (
-                                                                                        <img src={`/api/image/${foundPlayer.image_id}`} className="w-6 h-6 rounded-full object-cover border border-gray-200 shadow-sm shrink-0" alt={item.val} />
+                                                                                        <img src={`/api/image/${foundPlayer.image_id}`} className="w-6 h-6 rounded-full object-cover border border-gray-200 shadow-sm shrink-0" alt={displayName} />
                                                                                     ) : (
                                                                                         <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500 border border-gray-200 shrink-0 uppercase">
-                                                                                            {item.val?.substring(0, 2) || "?? "}
+                                                                                            {displayName.substring(0, 2)}
                                                                                         </div>
                                                                                     )}
-                                                                                    <p className="text-sm font-bold text-gray-900 capitalize truncate" title={item.val}>{item.val}</p>
+                                                                                    <p className="text-sm font-bold text-gray-900 capitalize truncate" title={displayName}>{displayName}</p>
                                                                                 </div>
                                                                             );
                                                                         })()

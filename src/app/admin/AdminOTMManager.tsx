@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, Fragment } from "react";
+import React from "react";
 import { useRouter } from "next/navigation";
 
 function TeamSelector({ teams, value, onChange, label, position = 'bottom' }: { teams: any[], value: string, onChange: (val: string) => void, label: string, position?: 'top' | 'bottom' }) {
@@ -102,6 +103,99 @@ type Assignment = {
         buvette: boolean;
     }
 };
+
+function OfficialSelector({ officials, value, idValue, onChange, label, position = 'bottom' }: { officials: any[], value: string, idValue?: number | null, onChange: (val: string, id?: number | null) => void, label: string, position?: 'top' | 'bottom' }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [search, setSearch] = useState("");
+    const wrapperRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [wrapperRef]);
+
+    const filteredOfficials = officials.filter(o => o.fullname.toLowerCase().includes(search.toLowerCase()));
+
+    return (
+        <div className="relative" ref={wrapperRef}>
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{label}</label>
+            <div
+                className="w-full p-2 border rounded-lg flex items-center justify-between cursor-pointer bg-white"
+                onClick={() => setIsOpen(!isOpen)}
+            >
+                <div className="flex items-center gap-2 overflow-hidden">
+                    {value ? (
+                        <span className="font-bold text-gray-900 truncate">{value}</span>
+                    ) : (
+                        <span className="text-gray-400">Libre...</span>
+                    )}
+                </div>
+                {value && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onChange("", null);
+                        }}
+                        className="ml-2 text-gray-400 hover:text-red-500"
+                    >
+                        <i className="fas fa-times-circle"></i>
+                    </button>
+                )}
+                <i className={`fas fa-chevron-${isOpen ? 'up' : 'down'} ml-2 text-xs text-gray-400`}></i>
+            </div>
+
+            {isOpen && (
+                <div className={`absolute left-0 right-0 z-50 bg-white border border-gray-100 rounded-lg shadow-xl max-h-60 overflow-y-auto ${position === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'}`}>
+                    <div className="p-2 sticky top-0 bg-white border-b border-gray-50">
+                        <input
+                            type="text"
+                            placeholder="Rechercher..."
+                            className="w-full p-2 text-sm bg-gray-50 rounded-md outline-none focus:ring-1 focus:ring-sbc/20"
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            onClick={e => e.stopPropagation()}
+                            autoFocus
+                        />
+                    </div>
+                    {filteredOfficials.map(off => (
+                        <div
+                            key={off.id}
+                            className="p-3 hover:bg-gray-50 cursor-pointer flex items-center gap-3 transition-colors"
+                            onClick={() => {
+                                onChange(off.fullname, off.id);
+                                setIsOpen(false);
+                            }}
+                        >
+                            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-gray-100 border border-gray-100">
+                                {off.image_id ? (
+                                    <img src={`/api/image/${off.image_id}`} className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                        <i className="fas fa-user text-xs"></i>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-sm font-bold text-gray-700 truncate">{off.fullname}</p>
+                                <p className="text-[10px] text-gray-400 font-bold uppercase truncate">{off.team || off.role}</p>
+                            </div>
+                        </div>
+                    ))}
+                    {filteredOfficials.length === 0 && (
+                        <div className="p-4 text-center text-xs text-gray-400 italic">
+                            Aucun officiel trouvé
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
 
 function DesignationEditor({ teams, value, onChange }: { teams: any[], value: string, onChange: (val: string) => void }) {
     const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -317,34 +411,20 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
             is_coach?: boolean
         }>();
 
-        const addStat = (name: string, role: 'scorer' | 'timer' | 'referee' | 'hall_manager' | 'bar_manager', match: any) => {
-            if (!name || name.trim() === "") return;
-            const cleanName = name.trim();
+        const addStat = (role: 'scorer' | 'timer' | 'referee' | 'hall_manager' | 'bar_manager', match: any, refereeIdx: number = 1) => {
+            const idKey = role === 'referee' ? (refereeIdx === 1 ? 'referee_id' : 'referee_2_id') : `${role}_id`;
+            const providedId = match[idKey];
+            if (!providedId) return;
 
-            // Resolve Player
-            let candidates = officials.filter(o => o.fullname === cleanName);
-            if (candidates.length === 0) {
-                candidates = officials.filter(o => o.originalName === cleanName);
-            }
-            let selectedOfficial = candidates[0];
-
-            if (candidates.length > 1) {
-                // Try to find the one matching the team
-                const perfectMatch = candidates.find(candidate => {
-                    const candidateTeams = candidate.teams || (candidate.team ? [candidate.team] : []);
-                    return candidateTeams.some((t: string) => t === match.category || (match.designation && match.designation.includes(t)));
-                });
-                if (perfectMatch) selectedOfficial = perfectMatch;
-            }
-
-            // Use ID if available, otherwise fallback to name
-            const key = selectedOfficial ? `ID_${selectedOfficial.id}` : `NAME_${cleanName}`;
+            const key = `ID_${providedId}`;
+            const selectedOfficial = officials.find(o => Number(o.id) === Number(providedId));
+            if (!selectedOfficial) return;
 
             if (!stats.has(key)) {
                 const isCoach = selectedOfficial?.role?.toLowerCase().includes('coach');
 
                 stats.set(key, {
-                    name: selectedOfficial ? selectedOfficial.fullname : cleanName,
+                    name: selectedOfficial.fullname,
                     scorer: 0,
                     timer: 0,
                     hall_manager: 0,
@@ -362,7 +442,7 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
             s[role]++;
             s.total++;
 
-            // Legacy Parsing
+            // Legacy Parsing (keeping for designation parsing)
             if (match.designation && match.designation.includes("Table = 2 Joueurs/Parents ")) {
                 const teamName = match.designation.replace("Table = 2 Joueurs/Parents ", "").trim();
                 s.teams[teamName] = (s.teams[teamName] || 0) + 1;
@@ -381,12 +461,12 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
         };
 
         rawMatches.forEach(m => {
-            addStat(m.scorer, 'scorer', m);
-            addStat(m.timer, 'timer', m);
-            addStat(m.hall_manager, 'hall_manager', m);
-            addStat(m.bar_manager, 'bar_manager', m);
-            addStat(m.referee, 'referee', m);
-            addStat(m.referee_2, 'referee', m);
+            addStat('scorer', m);
+            addStat('timer', m);
+            addStat('hall_manager', m);
+            addStat('bar_manager', m);
+            addStat('referee', m, 1);
+            addStat('referee', m, 2);
         });
 
         return Array.from(stats.values());
@@ -784,12 +864,26 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                                 </td>
                                 <td className="py-4 pl-1 pr-4 text-xs text-gray-500 min-w-[160px] max-w-[250px] whitespace-normal">
                                     <div className="grid grid-cols-[70px_1fr] gap-y-1 items-start">
-                                        {match.scorer && <><span className="font-bold text-gray-400 uppercase text-[10px]">Marqueur:</span> <span className="text-gray-900 font-semibold truncate">{match.scorer}</span></>}
-                                        {match.timer && <><span className="font-bold text-gray-400 uppercase text-[10px]">Chrono:</span> <span className="text-gray-900 font-semibold truncate">{match.timer}</span></>}
-                                        {match.hall_manager && <><span className="font-bold text-gray-400 uppercase text-[10px]">Resp.:</span> <span className="text-gray-900 font-semibold truncate">{match.hall_manager}</span></>}
-                                        {match.bar_manager && <><span className="font-bold text-gray-400 uppercase text-[10px]">Buvette:</span> <span className="text-gray-900 font-semibold truncate">{match.bar_manager}</span></>}
-                                        {match.referee && <><span className="font-bold text-gray-400 uppercase text-[10px]">Arb 1:</span> <span className="text-gray-900 font-semibold truncate">{match.referee}</span></>}
-                                        {match.referee_2 && <><span className="font-bold text-gray-400 uppercase text-[10px]">Arb 2:</span> <span className="text-gray-900 font-semibold truncate">{match.referee_2}</span></>}
+                                        {[
+                                            { label: 'Marqueur:', key: 'scorer_id' },
+                                            { label: 'Chrono:', key: 'timer_id' },
+                                            { label: 'Resp.:', key: 'hall_manager_id' },
+                                            { label: 'Buvette:', key: 'bar_manager_id' },
+                                            { label: 'Arb 1:', key: 'referee_id' },
+                                            { label: 'Arb 2:', key: 'referee_2_id' },
+                                        ].map(item => {
+                                            const id = match[item.key];
+                                            if (!id) return null;
+                                            const official = officials.find(o => Number(o.id) === Number(id));
+                                            return (
+                                                <Fragment key={item.key}>
+                                                    <span className="font-bold text-gray-400 uppercase text-[10px]">{item.label}</span>
+                                                    <span className="text-gray-900 font-semibold truncate">
+                                                        {official ? official.fullname : `ID: ${id}`}
+                                                    </span>
+                                                </Fragment>
+                                            );
+                                        })}
                                     </div>
                                 </td>
                                 <td className="p-4 text-right flex gap-2 justify-end">
@@ -1077,13 +1171,53 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                             {currentMatch.id && (
                                 <div className="mt-6 pt-6 border-t border-gray-100">
                                     <h4 className="text-sm font-black uppercase text-gray-400 mb-4">Affectations (Optionnel pour admin)</h4>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <input className="p-2 border rounded text-sm" placeholder="Marqueur" value={currentMatch.scorer || ''} onChange={e => setCurrentMatch({ ...currentMatch, scorer: e.target.value })} />
-                                        <input className="p-2 border rounded text-sm" placeholder="Chronométreur" value={currentMatch.timer || ''} onChange={e => setCurrentMatch({ ...currentMatch, timer: e.target.value })} />
-                                        <input className="p-2 border rounded text-sm" placeholder="Resp. Salle" value={currentMatch.hall_manager || ''} onChange={e => setCurrentMatch({ ...currentMatch, hall_manager: e.target.value })} />
-                                        <input className="p-2 border rounded text-sm" placeholder="Buvette" value={currentMatch.bar_manager || ''} onChange={e => setCurrentMatch({ ...currentMatch, bar_manager: e.target.value })} />
-                                        <input className="p-2 border rounded text-sm" placeholder="Arbitre Club 1" value={currentMatch.referee || ''} onChange={e => setCurrentMatch({ ...currentMatch, referee: e.target.value })} />
-                                        <input className="p-2 border rounded text-sm" placeholder="Arbitre Club 2" value={currentMatch.referee_2 || ''} onChange={e => setCurrentMatch({ ...currentMatch, referee_2: e.target.value })} />
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        <OfficialSelector
+                                            label="Marqueur"
+                                            officials={officials}
+                                            value={currentMatch.scorer}
+                                            idValue={currentMatch.scorer_id}
+                                            onChange={(name, id) => setCurrentMatch({ ...currentMatch, scorer: name, scorer_id: id })}
+                                        />
+                                        <OfficialSelector
+                                            label="Chronométreur"
+                                            officials={officials}
+                                            value={currentMatch.timer}
+                                            idValue={currentMatch.timer_id}
+                                            onChange={(name, id) => setCurrentMatch({ ...currentMatch, timer: name, timer_id: id })}
+                                        />
+                                        <OfficialSelector
+                                            label="Resp. Salle"
+                                            officials={officials}
+                                            value={currentMatch.hall_manager}
+                                            idValue={currentMatch.hall_manager_id}
+                                            onChange={(name, id) => setCurrentMatch({ ...currentMatch, hall_manager: name, hall_manager_id: id })}
+                                            position="top"
+                                        />
+                                        <OfficialSelector
+                                            label="Buvette"
+                                            officials={officials}
+                                            value={currentMatch.bar_manager}
+                                            idValue={currentMatch.bar_manager_id}
+                                            onChange={(name, id) => setCurrentMatch({ ...currentMatch, bar_manager: name, bar_manager_id: id })}
+                                            position="top"
+                                        />
+                                        <OfficialSelector
+                                            label="Arbitre 1"
+                                            officials={officials}
+                                            value={currentMatch.referee}
+                                            idValue={currentMatch.referee_id}
+                                            onChange={(name, id) => setCurrentMatch({ ...currentMatch, referee: name, referee_id: id })}
+                                            position="top"
+                                        />
+                                        <OfficialSelector
+                                            label="Arbitre 2"
+                                            officials={officials}
+                                            value={currentMatch.referee_2}
+                                            idValue={currentMatch.referee_2_id}
+                                            onChange={(name, id) => setCurrentMatch({ ...currentMatch, referee_2: name, referee_2_id: id })}
+                                            position="top"
+                                        />
                                     </div>
                                 </div>
                             )}

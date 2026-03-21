@@ -3,13 +3,13 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-function PlayerSelector({ players, value, onChange, label, disabled = false, highlight = false, theme = 'green' }: { players: any[], value: string, onChange: (val: string) => void, label: any, disabled?: boolean, highlight?: boolean, theme?: 'green' | 'blue' | 'orange' }) {
+function PlayerSelector({ players, value, idValue, onChange, label, disabled = false, highlight = false, theme = 'green' }: { players: any[], value: string, idValue?: number | null, onChange: (val: string, id?: number | null) => void, label: any, disabled?: boolean, highlight?: boolean, theme?: 'green' | 'blue' | 'orange' }) {
     const [isOpen, setIsOpen] = useState(false);
     const [isTyping, setIsTyping] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    const isKnown = players.some(p => p.fullname === value);
-    const selectedPlayer = players.find(p => p.fullname === value);
+    const isKnown = players.some(p => p.fullname === value || (idValue && p.id === idValue));
+    const selectedPlayer = players.find(p => (idValue && p.id === idValue) || p.fullname === value);
     const showInput = isTyping || (value && !isKnown);
 
     const themeColors = {
@@ -50,13 +50,13 @@ function PlayerSelector({ players, value, onChange, label, disabled = false, hig
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    const handleSelect = (val: string) => {
+    const handleSelect = (val: string, id: number | null = null) => {
         if (val === '___CUSTOM___') {
             setIsTyping(true);
-            onChange('');
+            onChange('', null);
             setIsOpen(false);
         } else {
-            onChange(val);
+            onChange(val, id);
             setIsOpen(false);
         }
     };
@@ -83,12 +83,12 @@ function PlayerSelector({ players, value, onChange, label, disabled = false, hig
                     <input
                         className={`w-full text-sm font-bold text-gray-900 border-b-2 ${t.border} outline-none py-1 bg-transparent placeholder-gray-300`}
                         value={value}
-                        onChange={e => onChange(e.target.value)}
+                        onChange={e => onChange(e.target.value, null)}
                         placeholder="Saisir Prénom Nom..."
                         autoFocus
                     />
                     <button
-                        onClick={() => { setIsTyping(false); onChange(''); }}
+                        onClick={() => { setIsTyping(false); onChange('', null); }}
                         className="text-gray-400 hover:text-red-500 transition-colors p-1"
                         title="Revenir à la liste"
                     >
@@ -102,7 +102,7 @@ function PlayerSelector({ players, value, onChange, label, disabled = false, hig
                         onClick={() => setIsOpen(!isOpen)}
                     >
                         <div className="flex items-center gap-2 overflow-hidden">
-                            {value ? (
+                            {value || idValue ? (
                                 <>
                                     {selectedPlayer?.image_id ? (
                                         <img src={`/api/image/${selectedPlayer.image_id}`} className="w-6 h-6 rounded-full object-cover border border-gray-200 shadow-sm" />
@@ -111,7 +111,7 @@ function PlayerSelector({ players, value, onChange, label, disabled = false, hig
                                             {selectedPlayer ? selectedPlayer.fullname.charAt(0) : value.charAt(0)}
                                         </div>
                                     )}
-                                    <span className={`text-sm font-bold text-gray-900 truncate group-hover:${t.text} transition-colors`}>{value}</span>
+                                    <span className={`text-sm font-bold text-gray-900 truncate group-hover:${t.text} transition-colors`}>{selectedPlayer ? selectedPlayer.fullname : value}</span>
                                 </>
                             ) : (
                                 <>
@@ -129,7 +129,7 @@ function PlayerSelector({ players, value, onChange, label, disabled = false, hig
                                 <div
                                     key={idx}
                                     className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-0"
-                                    onClick={() => handleSelect(p.fullname)}
+                                    onClick={() => handleSelect(p.fullname, p.id)}
                                 >
                                     {p.image_id ? (
                                         <img src={`/api/image/${p.image_id}`} className="w-8 h-8 rounded-full object-cover border border-gray-200 shadow-sm" />
@@ -162,7 +162,7 @@ function PlayerSelector({ players, value, onChange, label, disabled = false, hig
 }
 
 
-export default function CoachOTMManager({ matches, myTeamNames, players, otherCoaches, allPlayers, currentUser, coachImageId }: { matches: any[], myTeamNames: string[], players?: any[], otherCoaches?: any[], allPlayers?: any[], currentUser?: string, coachImageId?: number | null }) {
+export default function CoachOTMManager({ matches, myTeamNames, players, otherCoaches, allPlayers, currentUser, currentPersonId, coachImageId }: { matches: any[], myTeamNames: string[], players?: any[], otherCoaches?: any[], allPlayers?: any[], currentUser?: string, currentPersonId?: number, coachImageId?: number | null }) {
     const router = useRouter();
     const [selectedTeam, setSelectedTeam] = useState<string>('all');
     const activeTeamNames = selectedTeam === 'all' ? myTeamNames : [selectedTeam];
@@ -202,7 +202,7 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
         }
     };
 
-    const handleResolveHelp = async (player: string) => {
+    const handleResolveHelp = async (player: string, playerId: number | null = null) => {
         if (!resolvingRequest) return;
         setLoading(true);
         try {
@@ -213,7 +213,7 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
                     requestId: resolvingRequest.id,
                     matchId: resolvingRequest.match_id,
                     role: resolvingRequest.role,
-                    player
+                    playerId
                 })
             });
             if (res.ok) {
@@ -230,9 +230,10 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
     };
 
     const selectablePlayers = [
-        ...(currentUser ? [{ fullname: currentUser, team: "Moi (Coach)", image_id: coachImageId }] : []),
+        ...(currentUser ? [{ id: currentPersonId, fullname: currentUser, team: "Moi (Coach)", image_id: coachImageId }] : []),
         ...(otherCoaches ? otherCoaches.filter(c => activeTeamNames.some(t => c.team?.includes(t) || t === c.team)) : []),
-        ...(players ? players.filter(p => activeTeamNames.includes(p.team)) : [])
+        ...(players ? players.filter(p => activeTeamNames.includes(p.team)) : []),
+        ...(allPlayers ? allPlayers.filter(p => p.is_volunteer) : [])
     ];
 
     const getAllowedRoles = (match: any) => {
@@ -290,12 +291,12 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
         try {
             const payload = {
                 id: editForm.id,
-                scorer: editForm.scorer,
-                timer: editForm.timer,
-                hall_manager: editForm.hall_manager,
-                bar_manager: editForm.bar_manager,
-                referee: editForm.referee,
-                referee_2: editForm.referee_2
+                scorer_id: editForm.scorer_id,
+                timer_id: editForm.timer_id,
+                hall_manager_id: editForm.hall_manager_id,
+                bar_manager_id: editForm.bar_manager_id,
+                referee_id: editForm.referee_id,
+                referee_2_id: editForm.referee_2_id
             };
 
             const res = await fetch(`/api/otm/${editForm.id}`, {
@@ -443,7 +444,7 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
                             <PlayerSelector
                                 players={selectablePlayers}
                                 value=""
-                                onChange={(val) => { if (val) handleResolveHelp(val); }}
+                                onChange={(val, id) => { if (val) handleResolveHelp(val, id); }}
                                 label={<span className="text-xs font-bold text-gray-400 uppercase mb-2 block">Sélectionner un volontaire</span>}
                                 theme="orange"
                             />
@@ -726,7 +727,8 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
                                                                         <PlayerSelector
                                                                             players={selectablePlayers}
                                                                             value={editForm[field.key] || ''}
-                                                                            onChange={(val) => setEditForm({ ...editForm, [field.key]: val })}
+                                                                            idValue={editForm[field.key + '_id']}
+                                                                            onChange={(val, id) => setEditForm({ ...editForm, [field.key]: val, [field.key + '_id']: id })}
                                                                             disabled={!isAllowed}
                                                                             highlight={isAllowed}
                                                                             theme={isPlaying ? 'green' : isOpen ? 'orange' : 'blue'}
@@ -801,20 +803,26 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
                                                                     </div>
                                                                     {item.val ? (
                                                                         (() => {
-                                                                            const candidates = (allPlayers || []).filter(p => p.fullname === item.val);
-                                                                            let foundPlayer = candidates[0];
-                                                                            if (candidates.length > 1) {
-                                                                                const perfectMatch = candidates.find(p => p.team === match.category || (match.designation && match.designation.includes(p.team)));
-                                                                                if (perfectMatch) foundPlayer = perfectMatch;
+                                                                            const providedId = match[item.key + '_id'];
+                                                                            let foundPlayer = null;
+                                                                            if (providedId) {
+                                                                                foundPlayer = (allPlayers || []).find(p => Number(p.id) === Number(providedId));
+                                                                            } else {
+                                                                                const candidates = (allPlayers || []).filter(p => p.fullname === item.val);
+                                                                                foundPlayer = candidates[0];
+                                                                                if (candidates.length > 1) {
+                                                                                    const perfectMatch = candidates.find(p => p.team === match.category || (match.designation && match.designation.includes(p.team)));
+                                                                                    if (perfectMatch) foundPlayer = perfectMatch;
+                                                                                }
                                                                             }
-                                                                            if (!foundPlayer) foundPlayer = selectablePlayers.find(p => p.fullname === item.val);
+                                                                            if (!foundPlayer) foundPlayer = selectablePlayers.find(p => p.fullname === item.val || (providedId && p.id === providedId));
                                                                             return (
                                                                                 <div className="flex items-center gap-2 mt-1">
                                                                                     {foundPlayer?.image_id ? (
                                                                                         <img src={`/api/image/${foundPlayer.image_id}`} className="w-6 h-6 rounded-full object-cover border border-gray-200 shadow-sm shrink-0" alt={item.val} />
                                                                                     ) : (
                                                                                         <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500 border border-gray-200 shrink-0 uppercase">
-                                                                                            {item.val.substring(0, 2)}
+                                                                                            {item.val?.substring(0, 2) || "?? "}
                                                                                         </div>
                                                                                     )}
                                                                                     <p className="text-sm font-bold text-gray-900 capitalize truncate" title={item.val}>{item.val}</p>

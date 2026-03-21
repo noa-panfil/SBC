@@ -90,21 +90,63 @@ async function getOtmMatches(days?: number) {
 async function getAllPlayers() {
     try {
         const [rows] = await pool.query<RowDataPacket[]>(`
-            SELECT p.id, p.firstname, p.lastname, p.image_id, t.name as team_name
+            SELECT p.id, p.firstname, p.lastname, p.image_id, t.name as team_name, tm.role
             FROM persons p
-            JOIN team_members tm ON p.id = tm.person_id
-            JOIN teams t ON tm.team_id = t.id
-            WHERE tm.role NOT LIKE '%Coach%'
+            LEFT JOIN team_members tm ON p.id = tm.person_id
+            LEFT JOIN teams t ON tm.team_id = t.id
             ORDER BY p.lastname, p.firstname
         `);
-        return rows.map((r: any) => ({
-            id: r.id,
-            fullname: `${r.lastname.toUpperCase()} ${r.firstname}`,
-            team: r.team_name,
-            image_id: r.image_id
-        }));
+
+        const personMap = new Map<number, any>();
+        rows.forEach((r: any) => {
+            const fullname = `${r.lastname.toUpperCase()} ${r.firstname}`.trim();
+            if (!personMap.has(r.id)) {
+                personMap.set(r.id, {
+                    id: r.id,
+                    fullname,
+                    image_id: r.image_id,
+                    team: r.team_name,
+                    teams: r.team_name ? [r.team_name] : [],
+                    role: r.role
+                });
+            } else {
+                const existing = personMap.get(r.id);
+                if (r.team_name) {
+                    if (!existing.teams.includes(r.team_name)) {
+                        existing.teams.push(r.team_name);
+                    }
+                    if ((!existing.team || (existing.role && existing.role.includes('Coach'))) && r.role && !r.role.includes('Coach')) {
+                        existing.team = r.team_name;
+                        existing.role = r.role;
+                    }
+                }
+            }
+        });
+
+        const [volData] = await pool.query<RowDataPacket[]>(`
+            SELECT id, name, image_id FROM volunteers ORDER BY name
+        `);
+
+        volData.forEach((v: any) => {
+            const fullname = v.name.trim().toUpperCase();
+            const existing = Array.from(personMap.values()).find(p => p.fullname === fullname);
+            if (!existing) {
+                const vId = -v.id;
+                personMap.set(vId, {
+                    id: vId,
+                    fullname: fullname,
+                    image_id: v.image_id,
+                    team: "Bénévole",
+                    teams: [],
+                    role: 'Bénévole',
+                    is_volunteer: true
+                });
+            }
+        });
+
+        return Array.from(personMap.values());
     } catch (e) {
-        console.error("Error fetching all players", e);
+        console.error("Error fetching all players/volunteers", e);
         return [];
     }
 }
@@ -147,40 +189,7 @@ export default async function CoachDashboard() {
     // and for the stats calculation
     const otmMatches = await getOtmMatches();
 
-    const rawAllPlayers = await getAllPlayers();
-
-    // Disambiguate players with same name
-    const nameCounts: Record<string, number> = {};
-    rawAllPlayers.forEach((p: any) => {
-        nameCounts[p.fullname] = (nameCounts[p.fullname] || 0) + 1;
-    });
-
-    // First pass: Append Team if needed
-    const processedPlayers = rawAllPlayers.map((p: any) => ({
-        ...p,
-        originalName: p.fullname,
-        displayName: nameCounts[p.fullname] > 1 ? `${p.fullname} (${p.team || '?'})` : p.fullname
-    }));
-
-    const displayCounts: Record<string, number> = {};
-    processedPlayers.forEach((p: any) => {
-        displayCounts[p.displayName] = (displayCounts[p.displayName] || 0) + 1;
-    });
-
-    const seenCounts: Record<string, number> = {};
-    const allPlayers = processedPlayers.map((p: any) => {
-        if (displayCounts[p.displayName] > 1) {
-            seenCounts[p.displayName] = (seenCounts[p.displayName] || 0) + 1;
-            return {
-                ...p,
-                fullname: `${p.displayName} ${seenCounts[p.displayName]}`
-            };
-        }
-        return {
-            ...p,
-            fullname: p.displayName
-        };
-    });
+    const allPlayers = await getAllPlayers();
 
     // Update 'players' (my players) with the disambiguated names
     const players = (await getMyPlayers(teams.map(t => t.id))).map((p: any) => {
@@ -357,7 +366,7 @@ export default async function CoachDashboard() {
                     <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Planning OTM</h2>
                     <div className="h-px flex-grow bg-gray-200"></div>
                 </div>
-                <CoachOTMManager matches={otmMatches} myTeamNames={teams.map(t => t.name)} players={players} otherCoaches={await getOtherCoaches(teams.map(t => t.id), personId)} allPlayers={allPlayers} currentUser={session.user.name} coachImageId={coachImageId} />
+                <CoachOTMManager matches={otmMatches} myTeamNames={teams.map(t => t.name)} players={players} otherCoaches={await getOtherCoaches(teams.map(t => t.id), personId)} allPlayers={allPlayers} currentUser={session.user.name} currentPersonId={personId} coachImageId={coachImageId} />
             </section>
 
             <section id="otm-leaderboard" className="mt-12 scroll-mt-24">

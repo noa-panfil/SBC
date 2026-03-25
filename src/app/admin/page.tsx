@@ -39,7 +39,7 @@ async function getStats() {
 async function getVolunteers() {
     try {
         const [rows] = await pool.query<RowDataPacket[]>(
-            "SELECT id, name, DATE_FORMAT(birth_date, '%d/%m/%Y') as birth_date, image, image_id, role FROM volunteers WHERE display = 1 ORDER BY name ASC"
+            "SELECT id, name, DATE_FORMAT(birth_date, '%d/%m/%Y') as birth_date, image, image_id, role FROM volunteers WHERE display = 1 AND birth_date IS NOT NULL ORDER BY name ASC"
         );
         return rows.map((v: any) => ({
             id: v.id,

@@ -189,19 +189,7 @@ export default function VolunteersManager() {
         }
     };
 
-    const toggleDisplay = async (volunteer: Volunteer) => {
-        const newValue = volunteer.display === 1 ? 0 : 1;
-        try {
-            await fetch(`/api/volunteers/${volunteer.id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ display: newValue })
-            });
-            setVolunteers(prev => prev.map(v => v.id === volunteer.id ? { ...v, display: newValue } : v));
-        } catch (e) {
-            console.error(e);
-        }
-    };
+
 
     if (loading) return <div className="text-center py-10">Chargement...</div>;
 
@@ -305,7 +293,6 @@ export default function VolunteersManager() {
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bénévole</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date de naissance</th>
                             <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Sexe</th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Visibilité</th>
                             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
@@ -355,18 +342,7 @@ export default function VolunteersManager() {
                                         {volunteer.sexe === 'F' ? 'Femme' : 'Homme'}
                                     </button>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-center">
-                                    <button
-                                        onClick={() => toggleDisplay(volunteer)}
-                                        className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider transition-all
-                                            ${volunteer.display === 1 
-                                                ? 'bg-green-100 text-green-600 hover:bg-green-200' 
-                                                : 'bg-orange-100 text-orange-600 hover:bg-orange-200'
-                                            }`}
-                                    >
-                                        {volunteer.display === 1 ? 'Visible' : 'Masqué (Coach)'}
-                                    </button>
-                                </td>
+
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <button onClick={() => handleDelete(volunteer.id)} className="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 w-8 h-8 rounded-full transition flex items-center justify-center ml-auto">
                                         <i className="fas fa-trash text-xs"></i>
@@ -376,7 +352,7 @@ export default function VolunteersManager() {
                         ))}
                         {volunteers.length === 0 && (
                             <tr>
-                                <td colSpan={5} className="px-6 py-10 text-center text-gray-400 italic">
+                                <td colSpan={4} className="px-6 py-10 text-center text-gray-400 italic">
                                     Aucun bénévole enregistré
                                 </td>
                             </tr>

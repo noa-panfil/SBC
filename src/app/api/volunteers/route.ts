@@ -11,8 +11,8 @@ export async function GET(request: Request) {
         const all = searchParams.get('all') === 'true';
         
         const query = all 
-            ? "SELECT id, name, DATE_FORMAT(birth_date, '%d/%m/%Y') as birth_date, image, image_id, role, sexe, display FROM volunteers ORDER BY name ASC"
-            : "SELECT id, name, DATE_FORMAT(birth_date, '%d/%m/%Y') as birth_date, image, image_id, role, sexe FROM volunteers WHERE display = 1 ORDER BY name ASC";
+            ? "SELECT id, name, DATE_FORMAT(birth_date, '%d/%m/%Y') as birth_date, image, image_id, role, sexe, display FROM volunteers WHERE birth_date IS NOT NULL ORDER BY name ASC"
+            : "SELECT id, name, DATE_FORMAT(birth_date, '%d/%m/%Y') as birth_date, image, image_id, role, sexe FROM volunteers WHERE display = 1 AND birth_date IS NOT NULL ORDER BY name ASC";
 
         const [rows] = await pool.query<RowDataPacket[]>(query);
         const volunteers = rows.map((v: any) => ({

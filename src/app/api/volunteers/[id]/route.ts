@@ -11,7 +11,8 @@ export async function PATCH(
     try {
         const { id } = await params;
         const body = await request.json();
-        const { image_id, sexe } = body;
+
+        const { image_id, sexe, display } = body;
 
         if (!id) {
             return NextResponse.json({ error: 'ID is required' }, { status: 400 });
@@ -28,6 +29,11 @@ export async function PATCH(
             updates.push('sexe = ?');
             values.push(sexe);
         }
+        if (display !== undefined) {
+            updates.push('display = ?');
+            values.push(display);
+        }
+
 
         if (updates.length > 0) {
             values.push(id);

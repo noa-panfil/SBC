@@ -13,6 +13,7 @@ interface Volunteer {
     image_id?: number;
     role: string;
     sexe: string;
+    display: number;
 }
 
 export default function VolunteersManager() {
@@ -44,7 +45,7 @@ export default function VolunteersManager() {
 
     const fetchVolunteers = async () => {
         try {
-            const res = await fetch('/api/volunteers');
+            const res = await fetch('/api/volunteers?all=true');
             if (res.ok) {
                 const data = await res.json();
                 setVolunteers(data);
@@ -150,8 +151,7 @@ export default function VolunteersManager() {
         try {
             const payload = {
                 ...formData,
-                image: formData.image_id ? null : formData.image, // Prefer image_id logic on server or keep consistent
-                // Actually my updated API uses image_id if provided.
+                image: formData.image_id ? null : formData.image,
             };
 
             const res = await fetch('/api/volunteers', {
@@ -189,6 +189,8 @@ export default function VolunteersManager() {
         }
     };
 
+
+
     if (loading) return <div className="text-center py-10">Chargement...</div>;
 
     return (
@@ -210,9 +212,9 @@ export default function VolunteersManager() {
                 onChange={handleModifyFileChange}
             />
 
-            <h3 className="text-xl font-bold mb-6 text-gray-800">Ajouter un bénévole</h3>
+            <h3 className="text-xl font-bold mb-6 text-gray-800">Gestion des bénévoles</h3>
 
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10 items-start">
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10 items-start border-b border-gray-50 pb-10">
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Nom complet</label>
                     <input
@@ -257,10 +259,9 @@ export default function VolunteersManager() {
                             </button>
                         )}
                     </div>
-                    <p className="text-[10px] text-gray-400 mt-1">* Si vide, affiche le logo</p>
                 </div>
-                <div className="flex items-end h-full pt-6">
-                    <div className="w-full">
+                <div className="flex items-end h-full gap-4">
+                    <div className="flex-1">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Sexe</label>
                         <div className="flex bg-gray-100 p-1 rounded-lg">
                             <button
@@ -268,20 +269,18 @@ export default function VolunteersManager() {
                                 onClick={() => setFormData(p => ({ ...p, sexe: "M" }))}
                                 className={`flex-1 py-1.5 rounded-md text-xs font-bold transition ${formData.sexe === 'M' ? 'bg-white text-sbc shadow-sm' : 'text-gray-500'}`}
                             >
-                                Homme
+                                H
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setFormData(p => ({ ...p, sexe: "F" }))}
                                 className={`flex-1 py-1.5 rounded-md text-xs font-bold transition ${formData.sexe === 'F' ? 'bg-white text-sbc shadow-sm' : 'text-gray-500'}`}
                             >
-                                Femme
+                                F
                             </button>
                         </div>
                     </div>
-                </div>
-                <div className="flex items-end h-full pt-6">
-                    <button type="submit" className="w-full bg-sbc text-white font-bold py-2.5 px-4 rounded-lg hover:bg-sbc-dark transition shadow-md hover:shadow-lg uppercase tracking-wider text-sm">
+                    <button type="submit" className="bg-sbc text-white font-bold py-2.5 px-6 rounded-lg hover:bg-sbc-dark transition shadow-md hover:shadow-lg uppercase tracking-wider text-sm">
                         Ajouter
                     </button>
                 </div>
@@ -299,7 +298,7 @@ export default function VolunteersManager() {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                         {volunteers.map((volunteer) => (
-                            <tr key={volunteer.id}>
+                            <tr key={volunteer.id} className={volunteer.display === 0 ? "bg-orange-50/40" : ""}>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="flex items-center">
                                         <div className="relative group/avatar cursor-pointer mr-4" onClick={() => handleModifyImage(volunteer)} title="Modifier la photo">
@@ -343,6 +342,7 @@ export default function VolunteersManager() {
                                         {volunteer.sexe === 'F' ? 'Femme' : 'Homme'}
                                     </button>
                                 </td>
+
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <button onClick={() => handleDelete(volunteer.id)} className="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 w-8 h-8 rounded-full transition flex items-center justify-center ml-auto">
                                         <i className="fas fa-trash text-xs"></i>

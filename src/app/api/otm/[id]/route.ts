@@ -20,7 +20,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         const allowedFields = [
             'category', 'is_white_jersey', 'match_date', 'match_time', 'meeting_time',
             'opponent', 'match_code', 'designation',
-            'scorer', 'timer', 'hall_manager', 'bar_manager', 'referee', 'referee_2', 'is_club_referee', 'match_type', 'is_prefilled'
+            'is_club_referee', 'match_type', 'is_prefilled',
+            'scorer_id', 'timer_id', 'hall_manager_id', 'bar_manager_id', 'referee_id', 'referee_2_id'
         ];
 
         for (const key of Object.keys(body)) {

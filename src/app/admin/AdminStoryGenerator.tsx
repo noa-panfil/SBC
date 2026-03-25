@@ -709,7 +709,7 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
                             {/* GLOBAL VIEWS (Planning / Results) */}
                             {(mode === 'planning-semaine' || mode === 'resultats-semaine') && (
                                 (() => {
-                                    const matchesPerSlide = mode === 'planning-semaine' ? 10 : 8;
+                                    const matchesPerSlide = mode === 'planning-semaine' ? 8 : 7;
                                     return Array.from({ length: Math.ceil(displayedMatches.length / matchesPerSlide) }).map((_, slideIndex) => {
                                         const sliceStart = slideIndex * matchesPerSlide;
                                         const sliceEnd = sliceStart + matchesPerSlide;
@@ -786,6 +786,7 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
                                                                 {currentMatches.map((m, i) => {
                                                                     const sHome = parseInt(m.scoreHome || '0');
                                                                     const sVisitor = parseInt(m.scoreVisitor || '0');
+                                                                    const isU9 = m.teamName?.toLowerCase().includes('u9') || m.division?.toLowerCase().includes('u9') || m.teamCategory?.toLowerCase().includes('u9');
 
                                                                     let resultStatus = 'neutral';
                                                                     if (mode === 'resultats-semaine' && m.seclinSide) {
@@ -802,8 +803,28 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
                                                                         : resultStatus === 'loss' ? 'bg-red-500/20 border-red-500'
                                                                             : 'bg-white/5 border-white/10';
 
-                                                                    return (
-                                                                        <div key={i} className={`${bgClass} backdrop-blur-sm border rounded-xl p-4 flex items-center relative overflow-hidden group transition-colors duration-300`}>
+                                                                    const showDateHeader = i === 0 || m.date !== currentMatches[i - 1].date;
+                                                                    const formattedDate = showDateHeader ? (() => {
+                                                                        if (!m.date) return '';
+                                                                        const parts = m.date.split('/');
+                                                                        if (parts.length < 3) return m.date;
+                                                                        const [d, month, y] = parts;
+                                                                        let year = parseInt(y);
+                                                                        if (year < 100) year += 2000;
+                                                                        const dateObj = new Date(year, parseInt(month) - 1, parseInt(d));
+                                                                        if (isNaN(dateObj.getTime())) return m.date;
+                                                                        return new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(dateObj).toUpperCase();
+                                                                    })() : '';
+
+                                                                    return [
+                                                                        showDateHeader ? (
+                                                                            <div key={`header-${i}`} className="w-full flex justify-center py-2 z-20">
+                                                                                <div className="bg-sbc text-white px-10 py-2 rounded-full font-black text-3xl tracking-widest shadow-xl border-2 border-white/20">
+                                                                                    {formattedDate}
+                                                                                </div>
+                                                                            </div>
+                                                                        ) : null,
+                                                                        <div key={`match-${i}`} className={`${bgClass} backdrop-blur-sm border rounded-xl p-4 flex items-center relative overflow-hidden group transition-colors duration-300`}>
 
                                                                             {/* HOME TEAM (Left) */}
                                                                             <div className="w-5/12 flex flex-col items-end pr-8 border-r border-white/10">
@@ -811,8 +832,8 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
                                                                                     {m.homeDisplay || m.home}
                                                                                 </div>
                                                                                 {mode === 'resultats-semaine' && (
-                                                                                    <div className={`text-6xl font-black mt-2 ${parseInt(m.scoreHome || '0') > parseInt(m.scoreVisitor || '0') ? 'text-green-400' : 'text-white/50'}`}>
-                                                                                        {m.scoreHome}
+                                                                                    <div className={`${isU9 ? 'text-4xl' : 'text-6xl'} font-black mt-2 ${sHome > sVisitor ? 'text-green-400' : 'text-white/50'}`}>
+                                                                                        {isU9 ? (sHome > sVisitor ? 'VICTOIRE' : sHome < sVisitor ? 'DÉFAITE' : 'NUL') : m.scoreHome}
                                                                                     </div>
                                                                                 )}
                                                                             </div>
@@ -834,14 +855,14 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
                                                                                     {m.visitorDisplay || m.visitor}
                                                                                 </div>
                                                                                 {mode === 'resultats-semaine' && (
-                                                                                    <div className={`text-6xl font-black mt-2 ${parseInt(m.scoreVisitor || '0') > parseInt(m.scoreHome || '0') ? 'text-green-400' : 'text-white/50'}`}>
-                                                                                        {m.scoreVisitor}
+                                                                                    <div className={`${isU9 ? 'text-4xl' : 'text-6xl'} font-black mt-2 ${sVisitor > sHome ? 'text-green-400' : 'text-white/50'}`}>
+                                                                                        {isU9 ? (sVisitor > sHome ? 'VICTOIRE' : sVisitor < sHome ? 'DÉFAITE' : 'NUL') : m.scoreVisitor}
                                                                                     </div>
                                                                                 )}
                                                                             </div>
 
                                                                         </div>
-                                                                    );
+                                                                    ];
                                                                 })}
                                                             </div>
                                                         </div>
@@ -865,6 +886,7 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
                                         {displayedMatches.map((match, i) => {
                                             const sHome = parseInt(match.scoreHome || '0');
                                             const sVisitor = parseInt(match.scoreVisitor || '0');
+                                            const isU9 = match.teamName?.toLowerCase().includes('u9') || match.division?.toLowerCase().includes('u9') || match.teamCategory?.toLowerCase().includes('u9');
 
                                             let resultStatus = 'neutral';
                                             if (mode === 'match-resultat' && match.seclinSide) {
@@ -971,11 +993,19 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
                                                                     </div>
 
                                                                     {mode === 'match-resultat' ? (
-                                                                        <div className="flex items-center gap-16 bg-black/40 px-12 py-6 rounded-3xl backdrop-blur-md border border-white/10">
-                                                                            <span className={`text-9xl font-black ${parseInt(match.scoreHome || '0') > parseInt(match.scoreVisitor || '0') ? 'text-green-400' : 'text-white'}`}>{match.scoreHome}</span>
-                                                                            <span className="text-6xl font-bold text-gray-500">-</span>
-                                                                            <span className={`text-9xl font-black ${parseInt(match.scoreVisitor || '0') > parseInt(match.scoreHome || '0') ? 'text-green-400' : 'text-white'}`}>{match.scoreVisitor}</span>
-                                                                        </div>
+                                                                        isU9 ? (
+                                                                            <div className="flex items-center justify-center bg-black/40 px-16 py-8 rounded-3xl backdrop-blur-md border border-white/10">
+                                                                                <span className={`text-6xl font-black tracking-widest ${resultStatus === 'win' ? 'text-green-400' : resultStatus === 'loss' ? 'text-red-500' : 'text-white'}`}>
+                                                                                    {resultStatus === 'win' ? 'VICTOIRE' : resultStatus === 'loss' ? 'DÉFAITE' : sHome === sVisitor ? 'ÉGALITÉ' : 'RÉSULTAT'}
+                                                                                </span>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <div className="flex items-center gap-16 bg-black/40 px-12 py-6 rounded-3xl backdrop-blur-md border border-white/10">
+                                                                                <span className={`text-9xl font-black ${sHome > sVisitor ? 'text-green-400' : 'text-white'}`}>{match.scoreHome}</span>
+                                                                                <span className="text-6xl font-bold text-gray-500">-</span>
+                                                                                <span className={`text-9xl font-black ${sVisitor > sHome ? 'text-green-400' : 'text-white'}`}>{match.scoreVisitor}</span>
+                                                                            </div>
+                                                                        )
                                                                     ) : (
                                                                         <div className="text-8xl font-black text-sbc-light italic transform -skew-x-12">VS</div>
                                                                     )}

@@ -188,7 +188,21 @@ export default function VolunteersManager() {
             console.error("Error deleting volunteer:", error);
         }
     };
-
+    const toggleDisplay = async (volunteer: Volunteer) => {
+        const newDisplay = volunteer.display === 1 ? 0 : 1;
+        try {
+            const res = await fetch(`/api/volunteers/${volunteer.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ display: newDisplay })
+            });
+            if (res.ok) {
+                setVolunteers(prev => prev.map(v => v.id === volunteer.id ? { ...v, display: newDisplay } : v));
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    };
 
 
     if (loading) return <div className="text-center py-10">Chargement...</div>;
@@ -343,10 +357,19 @@ export default function VolunteersManager() {
                                     </button>
                                 </td>
 
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <button onClick={() => handleDelete(volunteer.id)} className="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 w-8 h-8 rounded-full transition flex items-center justify-center ml-auto">
-                                        <i className="fas fa-trash text-xs"></i>
-                                    </button>
+                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <div className="flex items-center justify-end gap-2">
+                                        <button
+                                            onClick={() => toggleDisplay(volunteer)}
+                                            className={`w-8 h-8 rounded-full transition flex items-center justify-center ${volunteer.display === 1 ? 'bg-orange-100 text-orange-600 hover:bg-orange-200' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
+                                            title={volunteer.display === 1 ? "Masquer des anniversaires" : "Afficher pour les anniversaires"}
+                                        >
+                                            <i className={`fas fa-birthday-cake text-[10px]`}></i>
+                                        </button>
+                                        <button onClick={() => handleDelete(volunteer.id)} className="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 w-8 h-8 rounded-full transition flex items-center justify-center">
+                                            <i className="fas fa-trash text-xs"></i>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}

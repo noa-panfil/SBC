@@ -248,7 +248,7 @@ async function getAllPersons() {
 
         // Mix in volunteers
         const [volData] = await pool.query<RowDataPacket[]>(`
-            SELECT id, name, image_id FROM volunteers WHERE display = 1 ORDER BY name
+            SELECT id, name, image_id FROM volunteers ORDER BY name
         `);
 
         volData.forEach((v: any) => {

@@ -949,7 +949,7 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                     <i className="fas fa-user-clock text-sbc"></i>
                     Classement des Officiels (Joueurs/Parents)
                 </h3>
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
                     <table className="w-full text-left">
                         <thead className="bg-gray-50 border-b border-gray-100">
                             <tr>

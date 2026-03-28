@@ -15,7 +15,7 @@ async function getUpcomingMatches() {
             FROM otm_matches o
             LEFT JOIN teams t ON o.category = t.name
             WHERE o.match_date >= CURDATE() 
-            ORDER BY o.match_date ASC, o.match_time ASC 
+            ORDER BY o.is_featured DESC, o.match_date ASC, o.match_time ASC 
             LIMIT 15
         `);
 
@@ -28,21 +28,8 @@ async function getUpcomingMatches() {
     const oneWeekFromNow = new Date();
     oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
 
-    let featuredMatchIndex = validMatches.findIndex(m =>
-      (m as any).is_featured === 1 && m._rawDate <= oneWeekFromNow
-    );
-
-    let featuredMatch = null;
-    let upcomingList = [];
-
-    if (featuredMatchIndex !== -1) {
-      featuredMatch = validMatches[featuredMatchIndex];
-      upcomingList = validMatches
-        .filter((_, idx) => idx !== featuredMatchIndex)
-        .slice(0, 3);
-    } else {
-      upcomingList = validMatches.slice(0, 3);
-    }
+    let featuredMatch = validMatches.find(m => (m as any).is_featured && m._rawDate <= oneWeekFromNow) || null;
+    let upcomingList = validMatches.filter(m => !(m as any).is_featured).slice(0, 3);
 
 
     const result = [featuredMatch, ...upcomingList].map(m => {

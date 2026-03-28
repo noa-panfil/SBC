@@ -107,6 +107,7 @@ type Assignment = {
 function OfficialSelector({ officials, value, idValue, onChange, label, position = 'bottom' }: { officials: any[], value: string, idValue?: number | null, onChange: (val: string, id?: number | null) => void, label: string, position?: 'top' | 'bottom' }) {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState("");
+    const [isCreating, setIsCreating] = useState(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -119,7 +120,33 @@ function OfficialSelector({ officials, value, idValue, onChange, label, position
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [wrapperRef]);
 
+    const handleCreateVolunteer = async () => {
+        if (!search.trim() || isCreating) return;
+        setIsCreating(true);
+        try {
+            const resV = await fetch('/api/volunteers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: search.trim() })
+            });
+            if (resV.ok) {
+                const data = await resV.json();
+                onChange(search.trim(), data.id * -1);
+                setIsOpen(false);
+                setSearch("");
+            } else {
+                alert("Erreur lors de la création du bénévole.");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Erreur réseau lors de la création.");
+        } finally {
+            setIsCreating(false);
+        }
+    };
+
     const filteredOfficials = officials.filter(o => o.fullname.toLowerCase().includes(search.toLowerCase()));
+    const displayValue = value || (idValue ? officials.find(o => Number(o.id) === Number(idValue))?.fullname : "");
 
     return (
         <div className="relative" ref={wrapperRef}>
@@ -129,13 +156,13 @@ function OfficialSelector({ officials, value, idValue, onChange, label, position
                 onClick={() => setIsOpen(!isOpen)}
             >
                 <div className="flex items-center gap-2 overflow-hidden">
-                    {value ? (
-                        <span className="font-bold text-gray-900 truncate">{value}</span>
+                    {displayValue ? (
+                        <span className="font-bold text-gray-900 truncate">{displayValue}</span>
                     ) : (
                         <span className="text-gray-400">Libre...</span>
                     )}
                 </div>
-                {value && (
+                {(value || idValue) && (
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
@@ -151,7 +178,7 @@ function OfficialSelector({ officials, value, idValue, onChange, label, position
 
             {isOpen && (
                 <div className={`absolute left-0 right-0 z-50 bg-white border border-gray-100 rounded-lg shadow-xl max-h-60 overflow-y-auto ${position === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'}`}>
-                    <div className="p-2 sticky top-0 bg-white border-b border-gray-50">
+                    <div className="p-2 sticky top-0 bg-white border-b border-gray-50 flex items-center gap-2">
                         <input
                             type="text"
                             placeholder="Rechercher..."
@@ -161,6 +188,18 @@ function OfficialSelector({ officials, value, idValue, onChange, label, position
                             onClick={e => e.stopPropagation()}
                             autoFocus
                         />
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleCreateVolunteer();
+                            }}
+                            disabled={!search.trim() || isCreating}
+                            className={`flex flex-shrink-0 items-center justify-center w-10 h-10 rounded-md transition-colors ${!search.trim() ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-sbc text-white hover:bg-sbc-dark shadow-sm'}`}
+                            title="Ajouter comme bénévole"
+                        >
+                            {isCreating ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-user-plus"></i>}
+                        </button>
                     </div>
                     {filteredOfficials.map(off => (
                         <div

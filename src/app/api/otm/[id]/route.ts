@@ -20,7 +20,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         const allowedFields = [
             'category', 'is_white_jersey', 'match_date', 'match_time', 'meeting_time',
             'opponent', 'match_code', 'designation',
-            'is_club_referee', 'match_type', 'is_prefilled',
+            'is_club_referee', 'match_type', 'is_prefilled', 'is_featured',
             'scorer_id', 'timer_id', 'hall_manager_id', 'bar_manager_id', 'referee_id', 'referee_2_id'
         ];
 
@@ -33,6 +33,13 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
         if (fields.length === 0) {
             return NextResponse.json({ error: "No fields to update" }, { status: 400 });
+        }
+
+        if (body.is_featured && body.match_date) {
+            await pool.query(
+                "UPDATE otm_matches SET is_featured = 0 WHERE YEARWEEK(match_date, 1) = YEARWEEK(?, 1) AND id != ?",
+                [body.match_date, id]
+            );
         }
 
         values.push(id);

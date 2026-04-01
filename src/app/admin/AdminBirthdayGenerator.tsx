@@ -444,12 +444,13 @@ export default function AdminBirthdayGenerator({ teams, volunteers = [] }: { tea
                                         {(() => {
                                             const count = birthdays.reduce((acc, curr) => acc + curr.members.length, 0);
 
-                                            // Improved Tiers for better responsiveness
-                                            const isSuperDense = count > 20; // 4 Cols
-                                            const isXDense = count >= 15 && count <= 20; // 3 Cols (Smaller)
-                                            const isDense = count >= 10 && count < 15; // 3 Cols (Larger)
-                                            const isMedium = count > 5 && count < 10; // 2 Cols
-                                            const isSpacious = count <= 5; // 1 Col
+                                            // Height-Safe Tiers: dynamically determined to PREVENT vertical overflow in ANY layout
+                                            const numDays = birthdays.length;
+                                            const isSuperDense = numDays > 15 || count > 24; // 4 Cols: up to ~32 days
+                                            const isXDense = !isSuperDense && (numDays > 9 || count > 14); // 3 Cols: up to 15 days (5 rows)
+                                            const isDense = !isSuperDense && !isXDense && (numDays > 6 || count > 9); // 3 Cols (Larger): up to 9 days (3 rows)
+                                            const isMedium = !isSuperDense && !isXDense && !isDense && (numDays > 3 || count > 4); // 2 Cols: up to 6 days (3 rows)
+                                            const isSpacious = !isSuperDense && !isXDense && !isDense && !isMedium; // 1 Col: up to 3 days (3 rows max)
 
                                             // Container scaling
                                             const containerClass = isSpacious
@@ -467,38 +468,38 @@ export default function AdminBirthdayGenerator({ teams, volunteers = [] }: { tea
                                             // Element sizing - 5 tiers of scaling
                                             const dateSize = isSpacious
                                                 ? "w-32 h-32 text-7xl rounded-3xl"
-                                                : isSuperDense ? "w-10 h-10 text-sm rounded-lg"
+                                                : isSuperDense ? "w-12 h-12 text-lg rounded-xl"
                                                     : isXDense ? "w-14 h-14 text-xl rounded-xl"
                                                         : isDense ? "w-18 h-18 text-3xl rounded-xl"
                                                             : "w-24 h-24 text-5xl rounded-2xl";
 
-                                            const gapGroup = isSpacious ? "gap-6" : isSuperDense ? "gap-1.5" : isXDense ? "gap-3" : "gap-4";
-                                            const containerGap = isSpacious ? "gap-4 pt-4" : isSuperDense ? "gap-0.5 pt-0" : isXDense ? "gap-1 pt-0.5" : "gap-2 pt-1.5";
+                                            const gapGroup = isSpacious ? "gap-6" : isSuperDense ? "gap-2" : isXDense ? "gap-3" : "gap-4";
+                                            const containerGap = isSpacious ? "gap-4 pt-4" : isSuperDense ? "gap-1 pt-0.5" : isXDense ? "gap-1 pt-0.5" : "gap-2 pt-1.5";
 
                                             const cardPadding = isSpacious
                                                 ? "p-6 pr-10 rounded-3xl"
-                                                : isSuperDense ? "p-1 pr-2 rounded-md"
+                                                : isSuperDense ? "p-1.5 pr-2.5 rounded-lg"
                                                     : isXDense ? "p-2 pr-3.5 rounded-xl"
                                                         : isDense ? "p-3.5 pr-5 rounded-2xl"
                                                             : "p-5 pr-8 rounded-3xl";
 
                                             const avatarSize = isSpacious
                                                 ? "w-28 h-28 border-[6px]"
-                                                : isSuperDense ? "w-7 h-7 border"
+                                                : isSuperDense ? "w-9 h-9 border"
                                                     : isXDense ? "w-10 h-10 border-2"
                                                         : isDense ? "w-14 h-14 border-2"
                                                             : "w-18 h-18 border-4";
 
                                             const nameSize = isSpacious
                                                 ? "text-6xl"
-                                                : isSuperDense ? "text-xs"
+                                                : isSuperDense ? "text-sm"
                                                     : isXDense ? "text-lg"
                                                         : isDense ? "text-2xl"
                                                             : "text-4xl";
 
                                             const roleSize = isSpacious
                                                 ? "text-3xl mt-3"
-                                                : isSuperDense ? "text-[9px] mt-0"
+                                                : isSuperDense ? "text-[10px] sm:text-xs mt-0"
                                                     : isXDense ? "text-xs mt-0.5"
                                                         : isDense ? "text-sm mt-1"
                                                             : "text-lg mt-2";
@@ -559,8 +560,14 @@ export default function AdminBirthdayGenerator({ teams, volunteers = [] }: { tea
                                             );
 
                                             const total = allMembers.length;
-                                            // Dynamic columns: 6 if > 10 items, else 5
-                                            const cols = total > 10 ? 6 : 5;
+                                            
+                                            // Dynamic columns based on volume to prevent vertical overflow
+                                            let cols = 5;
+                                            if (total > 32) cols = 9;
+                                            else if (total > 26) cols = 8;
+                                            else if (total > 18) cols = 7;
+                                            else if (total > 10) cols = 6;
+                                            
                                             const remainder = total % cols;
                                             const mainCount = remainder === 0 ? total : total - remainder;
 
@@ -568,16 +575,20 @@ export default function AdminBirthdayGenerator({ teams, volunteers = [] }: { tea
                                             const lastItems = allMembers.slice(mainCount);
 
                                             // Dynamic width for flex items
-                                            // gap-3 (0.75rem). For N cols, width = (100% - (N-1)*gap) / N
-                                            // For 5 cols: (100% - 3rem) / 5
-                                            // For 6 cols: (100% - 3.75rem) / 6
-                                            const flexBasis = total > 10 ? 'calc((100% - 3.75rem) / 6)' : 'calc((100% - 3rem) / 5)';
+                                            const gapCount = cols - 1;
+                                            const flexBasis = `calc((100% - ${gapCount * 0.75}rem) / ${cols})`;
+                                            
+                                            const gridColsClass = 
+                                                cols === 9 ? 'grid-cols-9' :
+                                                cols === 8 ? 'grid-cols-8' :
+                                                cols === 7 ? 'grid-cols-7' :
+                                                cols === 6 ? 'grid-cols-6' : 'grid-cols-5';
 
                                             return (
                                                 <div className="flex flex-col gap-3 content-start h-full">
                                                     {/* Main Grid for full rows */}
                                                     {mainItems.length > 0 && (
-                                                        <div className={`grid gap-3 ${total > 10 ? 'grid-cols-6' : 'grid-cols-5'}`}>
+                                                        <div className={`grid gap-3 ${gridColsClass}`}>
                                                             {mainItems.map((member, idx) => (
                                                                 <div key={`main-${idx}`} className="bg-white rounded-lg shadow-sm border border-gray-100 flex flex-col overflow-hidden relative group">
                                                                     <div className="relative aspect-[2/3] bg-gray-100 w-full">

@@ -129,6 +129,13 @@ export async function POST(request: NextRequest) {
             scorer_id || null, timer_id || null, hall_manager_id || null, bar_manager_id || null, referee_id || null, referee_2_id || null
         ]);
 
+        if (designation) {
+            import("@/lib/push").then(({ notifyCoachesForDesignation }) => {
+                notifyCoachesForDesignation({ category, opponent, match_date, match_time }, designation);
+            });
+        }
+
+
         return NextResponse.json({
             id: result.insertId,
             category,

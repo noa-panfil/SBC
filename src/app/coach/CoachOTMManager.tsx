@@ -198,6 +198,8 @@ function PlayerSelector({ players, value, idValue, onChange, label, disabled = f
 
 
 
+import { PushSubscriptionManager, PWARegistration } from "@/components/PushSubscriptionManager";
+
 export default function CoachOTMManager({ matches, myTeamNames, players, otherCoaches, allPlayers, currentUser, currentPersonId, coachImageId }: { matches: any[], myTeamNames: string[], players?: any[], otherCoaches?: any[], allPlayers?: any[], currentUser?: string, currentPersonId?: number, coachImageId?: number | null }) {
     const router = useRouter();
     const [selectedTeam, setSelectedTeam] = useState<string>('all');
@@ -237,7 +239,6 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
             console.error(e);
         }
     };
-
 
     const handleResolveHelp = async (player: string, playerId: number | null = null) => {
         if (!resolvingRequest) return;
@@ -340,7 +341,6 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
         setEditForm({});
     };
 
-
     const handleSave = async () => {
         setLoading(true);
         try {
@@ -396,7 +396,6 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
             setLoading(false);
         }
     };
-
 
     const [currentDate, setCurrentDate] = useState(new Date());
     const [viewFilter, setViewFilter] = useState<'all' | 'my_matches' | 'my_designations' | 'open_matches'>('all');
@@ -464,6 +463,8 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
 
     return (
         <div className="space-y-8">
+            <PWARegistration />
+            <PushSubscriptionManager />
             {/* Help Section */}
             {helpRequests.length > 0 && (
                 <div className="bg-red-50 border-l-4 border-red-500 p-6 rounded-r-xl shadow-sm relative overflow-hidden">

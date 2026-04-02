@@ -48,7 +48,14 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             UPDATE otm_matches SET ${fields.join(', ')} WHERE id = ?
         `, values);
 
+        if (body.designation) {
+            import("@/lib/push").then(({ notifyCoachesForDesignation }) => {
+                notifyCoachesForDesignation(body, body.designation);
+            });
+        }
+
         return NextResponse.json({ success: true });
+
     } catch (error: any) {
         console.error("Error updating OTM match:", error);
         return NextResponse.json({ error: error.message }, { status: 500 });

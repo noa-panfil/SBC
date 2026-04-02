@@ -9,6 +9,13 @@ export async function GET(req: NextRequest) {
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     try {
+        const today = new Date().toISOString().split('T')[0];
+        await pool.query(`
+            DELETE h FROM otm_help_requests h
+            JOIN otm_matches m ON h.match_id = m.id
+            WHERE m.match_date < ?
+        `, [today]);
+
         const [rows] = await pool.query<RowDataPacket[]>(`
             SELECT h.*, m.category, m.opponent, m.match_date, m.match_time 
             FROM otm_help_requests h

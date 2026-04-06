@@ -586,7 +586,7 @@ export default function VolunteerOTMManager({ matches, currentUser, currentPerso
             <div className="space-y-12">
                 {Object.entries(groupedMatches).map(([date, dateMatches]: [string, any]) => (
                     <div key={date} className="relative">
-                        <div className="sticky top-0 bg-gray-50/95 backdrop-blur-sm z-30 py-3 mb-6 border-b border-gray-200">
+                        <div className="sticky top-0 bg-gray-50/95 backdrop-blur-sm z-10 py-3 mb-6 border-b border-gray-200">
                             <h3 className="text-xl font-black text-gray-800 capitalize flex items-center gap-3">
                                 <span className="w-2 h-8 bg-sbc rounded-r-md"></span>
                                 {date}

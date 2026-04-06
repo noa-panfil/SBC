@@ -12,6 +12,7 @@ import AdminOTMManager from "./AdminOTMManager";
 import AdminAppearanceManager from "./AdminAppearanceManager";
 import AdminStoryGenerator from "./AdminStoryGenerator";
 import AdminBirthdayGenerator from "./AdminBirthdayGenerator";
+import AdminVolunteerLoginsManager from "./AdminVolunteerLoginsManager";
 import VolunteersManager from "@/components/admin/VolunteersManager";
 import BureauManager from "@/components/admin/BureauManager";
 import { authOptions } from "@/lib/auth";
@@ -75,6 +76,22 @@ async function getCoachLogins() {
         }));
     } catch (e) {
         console.error("Error fetching coach logins", e);
+        return [];
+    }
+}
+
+async function getVolunteerLogins() {
+    try {
+        const [rows] = await pool.query<RowDataPacket[]>("SELECT id, firstname, lastname, email, volunteer_id FROM login_volunteers ORDER BY lastname ASC");
+        return rows.map((r: any) => ({
+            id: r.id,
+            firstname: r.firstname,
+            lastname: r.lastname,
+            email: r.email,
+            volunteer_id: r.volunteer_id
+        }));
+    } catch (e) {
+        console.error("Error fetching volunteer logins", e);
         return [];
     }
 }
@@ -297,6 +314,7 @@ export default async function AdminDashboard() {
     const volunteers = await getVolunteers();
     const bureauCount = await getBureauMembersCount();
     const coachLogins = await getCoachLogins();
+    const volunteerLogins = await getVolunteerLogins();
     const otmMatches = await getOtmMatches();
     const rawOfficials = await getAllPersons();
 
@@ -379,6 +397,9 @@ export default async function AdminDashboard() {
                     <div className="h-px flex-grow bg-gray-200"></div>
                 </div>
                 <VolunteersManager />
+                <div className="mt-8">
+                    <AdminVolunteerLoginsManager initialLogins={volunteerLogins} volunteers={volunteers} />
+                </div>
             </section>
 
             <section id="events" className="scroll-mt-24">

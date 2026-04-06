@@ -1,0 +1,929 @@
+
+"use client";
+
+import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
+
+
+function PlayerSelector({ players, value, idValue, onChange, label, disabled = false, highlight = false, theme = 'green' }: { players: any[], value: string, idValue?: number | null, onChange: (val: string, id?: number | null) => void, label: any, disabled?: boolean, highlight?: boolean, theme?: 'green' | 'blue' | 'orange' }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [isTyping, setIsTyping] = useState(false);
+    const [search, setSearch] = useState("");
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    const isKnown = players.some(p => p.fullname === value || (idValue && p.id === idValue));
+    const selectedPlayer = players.find(p => (idValue && p.id === idValue) || p.fullname === value);
+    const showInput = isTyping || (value && !isKnown);
+
+    const filteredPlayers = players.filter(p =>
+        p.fullname.toLowerCase().includes(search.toLowerCase()) ||
+        (p.team && p.team.toLowerCase().includes(search.toLowerCase()))
+    );
+
+    const themeColors = {
+        green: {
+            ring: 'ring-green-500',
+            bgHighlight: 'bg-green-50/30',
+            border: 'border-sbc',
+            text: 'text-sbc',
+            bgIcon: 'bg-sbc/10',
+            borderIcon: 'border-sbc/20'
+        },
+        blue: {
+            ring: 'ring-blue-500',
+            bgHighlight: 'bg-blue-50/30',
+            border: 'border-blue-500',
+            text: 'text-blue-600',
+            bgIcon: 'bg-blue-100',
+            borderIcon: 'border-blue-200'
+        },
+        orange: {
+            ring: 'ring-orange-500',
+            bgHighlight: 'bg-orange-50/30',
+            border: 'border-orange-500',
+            text: 'text-orange-600',
+            bgIcon: 'bg-orange-100',
+            borderIcon: 'border-orange-200'
+        }
+    };
+    const t = themeColors[theme];
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+                setSearch("");
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const handleSelect = (val: string, id: number | null = null) => {
+        if (val === '___CUSTOM___') {
+            setIsTyping(true);
+            onChange('', null);
+            setIsOpen(false);
+            setSearch("");
+        } else {
+            onChange(val, id);
+            setIsOpen(false);
+            setSearch("");
+        }
+    };
+
+    if (disabled) {
+        return (
+            <div className="relative opacity-60">
+                {label}
+                <div className="py-1 border-b border-gray-100 flex items-center gap-2">
+                    <span className="text-sm font-bold text-gray-400 italic">Non assigné à votre équipe</span>
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div className={`relative rounded-lg transition-all ${highlight ? `ring-2 ${t.ring} ${t.bgHighlight} p-1 -m-1` : ''}`} ref={containerRef}>
+            {label}
+            {showInput ? (
+                <div className="flex items-center gap-2 animate-fade-in mt-1">
+                    <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 shrink-0">
+                        <i className="fas fa-user-edit text-xs"></i>
+                    </div>
+                    <input
+                        className={`w-full text-sm font-bold text-gray-900 border-b-2 ${t.border} outline-none py-1 bg-transparent placeholder-gray-300`}
+                        value={value}
+                        onChange={e => onChange(e.target.value, null)}
+                        placeholder="Saisir Prénom Nom..."
+                        autoFocus
+                    />
+                    <button
+                        onClick={() => { setIsTyping(false); onChange('', null); }}
+                        className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                        title="Revenir à la liste"
+                    >
+                        <i className="fas fa-times"></i>
+                    </button>
+                </div>
+            ) : (
+                <div className="relative mt-1">
+                    <button
+                        className="w-full text-left flex items-center justify-between py-1 border-b border-gray-100 hover:border-gray-300 transition-colors group"
+                        onClick={() => setIsOpen(!isOpen)}
+                    >
+                        <div className="flex items-center gap-2 overflow-hidden">
+                            {value || idValue ? (
+                                <>
+                                    {selectedPlayer?.image_id ? (
+                                        <img src={`/api/image/${selectedPlayer.image_id}`} className="w-6 h-6 rounded-full object-cover border border-gray-200 shadow-sm" />
+                                    ) : (
+                                        <div className={`w-6 h-6 rounded-full ${t.bgIcon} ${t.text} flex items-center justify-center text-xs font-bold border ${t.borderIcon}`}>
+                                            {selectedPlayer ? selectedPlayer.fullname.charAt(0) : value.charAt(0)}
+                                        </div>
+                                    )}
+                                    <span className={`text-sm font-bold text-gray-900 truncate group-hover:${t.text} transition-colors`}>{selectedPlayer ? selectedPlayer.fullname : value}</span>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="w-6 h-6 rounded-full bg-gray-50 border border-gray-100"></div>
+                                    <span className="text-sm text-gray-400 italic">Sélectionner...</span>
+                                </>
+                            )}
+                        </div>
+                        <i className={`fas fa-chevron-down text-xs text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}></i>
+                    </button>
+
+                    {isOpen && (
+                        <div className="absolute z-50 left-0 w-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl flex flex-col max-h-80">
+                            {/* Search Bar */}
+                            <div className="p-2 border-b border-gray-50 sticky top-0 bg-white rounded-t-xl z-10">
+                                <div className="relative">
+                                    <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px]"></i>
+                                    <input
+                                        type="text"
+                                        className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border-none rounded-lg text-xs outline-none focus:ring-1 focus:ring-gray-200"
+                                        placeholder="Rechercher un joueur..."
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                        autoFocus
+                                        onClick={(e) => e.stopPropagation()}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="overflow-y-auto flex-1">
+                                {filteredPlayers.length > 0 ? (
+                                    filteredPlayers.map((p, idx) => (
+                                        <div
+                                            key={idx}
+                                            className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-0"
+                                            onClick={() => handleSelect(p.fullname, p.id)}
+                                        >
+                                            {p.image_id ? (
+                                                <img src={`/api/image/${p.image_id}`} className="w-8 h-8 rounded-full object-cover border border-gray-200 shadow-sm" />
+                                            ) : (
+                                                <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center text-xs font-bold">
+                                                    {p.fullname.charAt(0)}
+                                                </div>
+                                            )}
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-bold text-gray-900 truncate">{p.fullname}</p>
+                                                <p className="text-[10px] text-gray-400 truncate">{p.team}</p>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="px-3 py-4 text-center">
+                                        <p className="text-xs text-gray-400 italic">Aucun résultat</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div
+                                className={`flex items-center gap-3 px-3 py-3 hover:bg-gray-50 cursor-pointer ${t.text} font-bold bg-gray-50/50 sticky bottom-0 backdrop-blur-sm border-t border-gray-50 rounded-b-xl`}
+                                onClick={() => handleSelect('___CUSTOM___')}
+                            >
+                                <div className={`w-8 h-8 rounded-full ${t.bgIcon} flex items-center justify-center border ${t.borderIcon}`}>
+                                    <i className={`fas fa-pen ${t.text} text-xs`}></i>
+                                </div>
+                                <span className="text-sm">Autre (Saisir un nom)</span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
+
+
+import { PushSubscriptionManager, PWARegistration } from "@/components/PushSubscriptionManager";
+
+export default function VolunteerOTMManager({ matches, currentUser, currentPersonId, volunteerImageId }: { matches: any[], currentUser?: string, currentPersonId?: number, volunteerImageId?: number | null }) {
+    const router = useRouter();
+    const [editingId, setEditingId] = useState<number | null>(null);
+    const [editForm, setEditForm] = useState<any>({});
+    const activeTeamNames: string[] = [];
+    const [loading, setLoading] = useState(false);
+    const [helpRequests, setHelpRequests] = useState<any[]>([]);
+    const [resolvingRequest, setResolvingRequest] = useState<any>(null);
+
+    useEffect(() => {
+        fetchHelpRequests();
+    }, []);
+
+    const fetchHelpRequests = async () => {
+        try {
+            const res = await fetch('/api/otm/help');
+            if (res.ok) setHelpRequests(await res.json());
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const handleAskHelp = async (matchId: number, role: string) => {
+        if (!confirm("Voulez-vous demander de l'aide aux autres coachs pour ce rôle ?")) return;
+        try {
+            const res = await fetch('/api/otm/help', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ matchId, role })
+            });
+            if (res.ok) {
+                alert("Demande d'aide envoyée !");
+                fetchHelpRequests();
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const handleResolveHelp = async (player: string, playerId: number | null = null) => {
+        if (!resolvingRequest) return;
+        setLoading(true);
+        try {
+            let finalPlayerId = playerId;
+
+            // If name is typed but no ID, create/find volunteer
+            if (player && playerId === null) {
+                const resV = await fetch('/api/volunteers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: player })
+                });
+                if (resV.ok) {
+                    const data = await resV.json();
+                    // Volunteers are negative IDs
+                    finalPlayerId = data.id * -1;
+                }
+            }
+
+            const res = await fetch('/api/otm/help/resolve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    requestId: resolvingRequest.id,
+                    matchId: resolvingRequest.match_id,
+                    role: resolvingRequest.role,
+                    playerId: finalPlayerId
+                })
+            });
+            if (res.ok) {
+                alert("Merci pour votre aide ! Le rôle a été assigné.");
+                setResolvingRequest(null);
+                fetchHelpRequests();
+                router.refresh();
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
+    const selectablePlayers = [
+        ...(currentUser ? [{ id: currentPersonId, fullname: currentUser, team: "Bénévole", image_id: volunteerImageId }] : [])
+    ];
+
+    const getAllowedRoles = (match: any) => {
+        const allowed = new Set<string>();
+        if (!match.scorer) allowed.add('scorer');
+        if (!match.timer) allowed.add('timer');
+        if (!match.hall_manager) allowed.add('hall_manager');
+        if (!match.bar_manager) allowed.add('bar_manager');
+        if (match.is_club_referee) {
+            if (!match.referee) allowed.add('referee');
+            if (!match.referee_2) allowed.add('referee_2');
+        }
+
+        if (match.scorer_id === currentPersonId || match.scorer === currentUser) allowed.add('scorer');
+        if (match.timer_id === currentPersonId || match.timer === currentUser) allowed.add('timer');
+        if (match.hall_manager_id === currentPersonId || match.hall_manager === currentUser) allowed.add('hall_manager');
+        if (match.bar_manager_id === currentPersonId || match.bar_manager === currentUser) allowed.add('bar_manager');
+        if (match.referee_id === currentPersonId || match.referee === currentUser) allowed.add('referee');
+        if (match.referee_2_id === currentPersonId || match.referee_2 === currentUser) allowed.add('referee_2');
+        return allowed;
+    };
+
+    const handleEdit = (match: any) => {
+        console.log("Editing match ID:", match.id);
+        setEditingId(match.id);
+        setEditForm(match);
+    };
+
+    const handleCancel = () => {
+        setEditingId(null);
+        setEditForm({});
+    };
+
+    const handleSave = async () => {
+        setLoading(true);
+        try {
+            const updatedForm = { ...editForm };
+            const roles = ['scorer', 'timer', 'hall_manager', 'bar_manager', 'referee', 'referee_2'];
+
+            for (const role of roles) {
+                const name = editForm[role];
+                const id = editForm[`${role}_id`];
+
+                // If name is typed but no ID, create/find volunteer
+                if (name && id === null) {
+                    const res = await fetch('/api/volunteers', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name })
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        // Volunteers are stored as negative IDs in otm_matches
+                        updatedForm[`${role}_id`] = data.id * -1;
+                    }
+                }
+            }
+
+            const payload = {
+                id: updatedForm.id,
+                scorer_id: updatedForm.scorer_id,
+                timer_id: updatedForm.timer_id,
+                hall_manager_id: updatedForm.hall_manager_id,
+                bar_manager_id: updatedForm.bar_manager_id,
+                referee_id: updatedForm.referee_id,
+                referee_2_id: updatedForm.referee_2_id
+            };
+
+            const res = await fetch(`/api/otm/${editForm.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || "Une erreur est survenue");
+            }
+
+            setEditingId(null);
+            router.refresh();
+        } catch (e: any) {
+            console.error(e);
+            alert("Erreur: " + e.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [viewFilter, setViewFilter] = useState<'all' | 'my_matches' | 'my_designations' | 'open_matches'>('all');
+
+    // Helper to get Monday of the week
+    const getStartOfWeek = (d: Date) => {
+        const date = new Date(d);
+        const day = date.getDay();
+        const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(date.setDate(diff));
+        monday.setHours(0, 0, 0, 0);
+        return monday;
+    };
+
+    const getEndOfWeek = (d: Date) => {
+        const start = getStartOfWeek(d);
+        const end = new Date(start);
+        end.setDate(start.getDate() + 6);
+        end.setHours(23, 59, 59, 999);
+        return end;
+    };
+
+    const startOfWeek = getStartOfWeek(currentDate);
+    const endOfWeek = getEndOfWeek(currentDate);
+
+    const filteredMatches = matches.filter(match => {
+        const matchDate = new Date(match.match_date);
+        const inWeek = matchDate >= startOfWeek && matchDate <= endOfWeek;
+        if (!inWeek) return false;
+
+        if (viewFilter === 'all') return true;
+
+        const isAssignedOTM = (
+            match.scorer_id === currentPersonId || 
+            match.timer_id === currentPersonId || 
+            match.hall_manager_id === currentPersonId || 
+            match.bar_manager_id === currentPersonId || 
+            match.referee_id === currentPersonId || 
+            match.referee_2_id === currentPersonId
+        );
+        
+        if (viewFilter === 'my_designations') return isAssignedOTM;
+        if (viewFilter === 'open_matches') {
+            return !match.scorer || !match.timer || !match.hall_manager || !match.bar_manager || (match.is_club_referee && (!match.referee || !match.referee_2));
+        }
+        return true;
+    });
+
+    const groupedMatches = filteredMatches.reduce((acc: any, match) => {
+        const date = new Date(match.match_date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        if (!acc[date]) acc[date] = [];
+        acc[date].push(match);
+        return acc;
+    }, {});
+
+    const changeWeek = (offset: number) => {
+        const newDate = new Date(currentDate);
+        newDate.setDate(newDate.getDate() + (offset * 7));
+        setCurrentDate(newDate);
+    };
+
+    const cleanTeamName = (name: string) => {
+        if (!name) return "";
+        return name
+            .split('(')[0]
+            .replace(/\s+-\s+.*/, '')   // Remove " - ..."
+            .replace(/-(\d+.*)/, '')    // Remove "-2..."
+            .trim();
+    };
+
+    return (
+        <div className="space-y-8">
+            <PWARegistration />
+            <PushSubscriptionManager />
+            {/* Help Section */}
+            {helpRequests.length > 0 && (
+                <div className="bg-red-50 border-l-4 border-red-500 p-6 rounded-r-xl shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                        <i className="fas fa-life-ring text-9xl text-red-500"></i>
+                    </div>
+                    <h3 className="text-xl font-black text-red-600 mb-4 flex items-center gap-2">
+                        <i className="fas fa-exclamation-circle animate-pulse"></i> DEMANDES D'AIDE OTM
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 relative z-10">
+                        {helpRequests.map(req => {
+                            const labels: any = { scorer: 'Marqueur', timer: 'Chronométreur', hall_manager: 'Resp. Salle', bar_manager: 'Buvette', referee: 'Arbitre 1', referee_2: 'Arbitre 2' };
+                            const roleLabel = labels[req.role] || req.role;
+
+                            return (
+                                <div key={req.id} className="bg-white p-4 rounded-lg border border-red-100 shadow-sm flex flex-col justify-between gap-3">
+                                    <div>
+                                        <div className="flex justify-between items-start mb-2">
+                                            <span className="font-black text-gray-800 uppercase">{req.category} vs {cleanTeamName(req.opponent)}</span>
+                                            <span className="text-[10px] font-bold text-red-500 bg-red-100 px-2 py-1 rounded uppercase tracking-wider">SOS</span>
+                                        </div>
+                                        <p className="text-sm text-gray-600 mb-1">
+                                            <i className="fas fa-calendar-alt mr-1 text-gray-400"></i>
+                                            {new Date(req.match_date).toLocaleDateString()} à {req.match_time.slice(0, 5)}
+                                        </p>
+                                        <p className="font-bold text-red-600">
+                                            Role requis : <span className="underline">{roleLabel}</span>
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => setResolvingRequest(req)}
+                                        className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <i className="fas fa-hand-holding-heart"></i> Je m'en occupe
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* Resolve Modal */}
+            {resolvingRequest && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl animate-fade-in relative">
+                        <button onClick={() => setResolvingRequest(null)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                            <i className="fas fa-times text-xl"></i>
+                        </button>
+                        <h3 className="text-xl font-black text-gray-900 mb-2">Assigner un joueur</h3>
+                        <p className="text-sm text-gray-500 mb-6">
+                            Confirmez que vous souhaitez aider sur le match <strong>{resolvingRequest.category}</strong> en tant que <strong>{resolvingRequest.role}</strong>.
+                        </p>
+
+                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 mb-4">
+                            <PlayerSelector
+                                players={selectablePlayers}
+                                value=""
+                                onChange={(val, id) => { if (val) handleResolveHelp(val, id); }}
+                                label={<span className="text-xs font-bold text-gray-400 uppercase mb-2 block">Sélectionner un volontaire</span>}
+                                theme="orange"
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Week Navigation */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                <div className="flex flex-wrap items-center justify-center gap-3 w-full sm:w-auto">
+                    <div className="flex items-center gap-2 bg-gray-50 rounded-full p-1 border border-gray-100">
+                        <button
+                            onClick={() => changeWeek(-1)}
+                            className="w-8 h-8 rounded-full bg-white text-gray-400 hover:text-sbc hover:scale-110 transition-all shadow-sm flex items-center justify-center"
+                        >
+                            <i className="fas fa-chevron-left text-xs"></i>
+                        </button>
+                        <button
+                            onClick={() => setCurrentDate(new Date())}
+                            className="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider text-gray-500 hover:text-sbc transition-colors"
+                        >
+                            Aujourd'hui
+                        </button>
+                        <button
+                            onClick={() => changeWeek(1)}
+                            className="w-8 h-8 rounded-full bg-white text-gray-400 hover:text-sbc hover:scale-110 transition-all shadow-sm flex items-center justify-center"
+                        >
+                            <i className="fas fa-chevron-right text-xs"></i>
+                        </button>
+                    </div>
+
+                    <select
+                        value={viewFilter}
+                        onChange={(e) => setViewFilter(e.target.value as any)}
+                        className={`bg-white border text-xs font-bold uppercase rounded-lg px-3 py-2 outline-none focus:ring-1 transition-all cursor-pointer shadow-sm w-full sm:w-auto
+                            ${viewFilter === 'my_designations' ? 'border-blue-500 text-blue-600 focus:border-blue-500 focus:ring-blue-500' :
+                                viewFilter === 'open_matches' ? 'border-orange-500 text-orange-600 focus:border-orange-500 focus:ring-orange-500' :
+                                    'border-gray-200 text-gray-700 focus:border-sbc focus:ring-sbc'
+                            }
+                        `}
+                    >
+                        <option value="all" className="text-gray-700">Tous les matchs</option>
+                        <option value="my_designations" className="text-blue-600 font-bold">Mes Désignations</option>
+                        <option value="open_matches" className="text-orange-600 font-bold">Matchs Open</option>
+                    </select>
+                </div>
+
+                <div className="text-center sm:text-right">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Semaine du</p>
+                    <h3 className="text-lg font-black text-gray-900 capitalize flex items-center gap-2 justify-center sm:justify-end">
+                        <i className="fas fa-calendar-alt text-sbc"></i>
+                        {startOfWeek.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} au {endOfWeek.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </h3>
+                </div>
+            </div>
+
+            <div className="flex items-center gap-4 py-4 px-1 overflow-x-auto no-scrollbar">
+                <div className="flex items-center gap-2 whitespace-nowrap">
+                    <span className="w-3 h-3 rounded-full bg-sbc border border-sbc ring-2 ring-sbc/20"></span>
+                    <span className="text-xs font-bold text-gray-600">Votre Match</span>
+                </div>
+                <div className="flex items-center gap-2 whitespace-nowrap">
+                    <span className="w-3 h-3 rounded-full bg-blue-500 border border-blue-500 ring-2 ring-blue-500/20"></span>
+                    <span className="text-xs font-bold text-gray-600">Désignation OTM</span>
+                </div>
+                <div className="flex items-center gap-2 whitespace-nowrap">
+                    <span className="w-3 h-3 rounded-full bg-orange-500 border border-orange-500 ring-2 ring-orange-500/20"></span>
+                    <span className="text-xs font-bold text-gray-600">Match Open</span>
+                </div>
+                <div className="flex items-center gap-2 whitespace-nowrap">
+                    <span className="w-3 h-3 rounded-full bg-white border border-gray-200 ring-2 ring-gray-100"></span>
+                    <span className="text-xs font-bold text-gray-400">Autre Match</span>
+                </div>
+            </div>
+
+            <div className="space-y-12">
+                {Object.entries(groupedMatches).map(([date, dateMatches]: [string, any]) => (
+                    <div key={date} className="relative">
+                        <div className="sticky top-0 bg-gray-50/95 backdrop-blur-sm z-30 py-3 mb-6 border-b border-gray-200">
+                            <h3 className="text-xl font-black text-gray-800 capitalize flex items-center gap-3">
+                                <span className="w-2 h-8 bg-sbc rounded-r-md"></span>
+                                {date}
+                            </h3>
+                        </div>
+                        <div className="grid gap-6">
+                            {dateMatches.map((match: any) => {
+                                const isPlaying = false;
+                                const isAssignedOTM = (
+                                    match.scorer_id === currentPersonId || 
+                                    match.timer_id === currentPersonId || 
+                                    match.hall_manager_id === currentPersonId || 
+                                    match.bar_manager_id === currentPersonId || 
+                                    match.referee_id === currentPersonId || 
+                                    match.referee_2_id === currentPersonId
+                                );
+                                const isOpen = getAllowedRoles(match).size > 0 && !isAssignedOTM;
+                                const allowedRoles = getAllowedRoles(match);
+
+                                return (
+                                    <div key={match.id} className={`rounded-2xl shadow-sm border hover:shadow-md transition-shadow group
+                                        ${isPlaying
+                                            ? 'bg-green-50/60 border-sbc ring-1 ring-sbc'
+                                            : isAssignedOTM
+                                                ? 'bg-blue-50/60 border-blue-400 ring-1 ring-blue-400'
+                                                : isOpen
+                                                    ? 'bg-orange-50/60 border-orange-400 ring-1 ring-orange-400'
+                                                    : 'bg-white border-gray-100'
+                                        }`}>
+                                        <div className="grid grid-cols-1 lg:grid-cols-12">
+                                            <div className={`lg:col-span-4 p-6 flex flex-col justify-between border-b lg:border-b-0 lg:border-r relative overflow-hidden rounded-t-2xl lg:rounded-bl-2xl lg:rounded-tr-none
+                                                ${isPlaying
+                                                    ? 'bg-green-100/30 border-green-200'
+                                                    : isAssignedOTM
+                                                        ? 'bg-blue-100/30 border-blue-200'
+                                                        : isOpen
+                                                            ? 'bg-orange-100/30 border-orange-200'
+                                                            : 'bg-gray-50 border-gray-100'
+                                                }`}>
+
+                                                {/* Background Gradient */}
+                                                <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r opacity-30
+                                                    ${isPlaying ? 'from-sbc to-green-300' : isAssignedOTM ? 'from-blue-500 to-indigo-400' : isOpen ? 'from-orange-500 to-amber-400' : 'from-gray-300 to-gray-200'}
+                                                `}></div>
+
+                                                <div className="space-y-4">
+                                                    <div className="flex justify-between items-start">
+                                                        <span className="bg-green-600 text-white text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider">{match.category}</span>
+                                                        <span className="font-mono text-[10px] text-gray-500 bg-white px-2 py-1 rounded border border-gray-200" title="Code Rencontre">
+                                                            <span className="font-bold text-gray-300 mr-1">CODE:</span>
+                                                            {match.match_code}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Context Badge */}
+                                                    {(isPlaying || isAssignedOTM || isOpen) && (
+                                                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-widest mb-1
+                                                            ${isPlaying
+                                                                ? 'bg-sbc/10 border-sbc/20 text-sbc'
+                                                                : isAssignedOTM
+                                                                    ? 'bg-blue-50 border-blue-200 text-blue-600'
+                                                                    : 'bg-orange-50 border-orange-200 text-orange-600'
+                                                            }`}>
+                                                            {isPlaying ? (
+                                                                <>
+                                                                    <i className="fas fa-basketball-ball"></i>
+                                                                    Votre Match
+                                                                </>
+                                                            ) : isAssignedOTM ? (
+                                                                <>
+                                                                    <i className="fas fa-clipboard-list"></i>
+                                                                    Désignation OTM
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <i className="fas fa-lock-open"></i>
+                                                                    Match Open
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    <div>
+                                                        <p className="text-xs font-bold text-gray-400 uppercase mb-1">Adversaire</p>
+                                                        <h4 className="text-xl font-black text-gray-900 leading-tight uppercase">{cleanTeamName(match.opponent)}</h4>
+                                                    </div>
+
+                                                    <div className="flex flex-col gap-2 pt-2">
+                                                        <div className="flex items-center gap-3 text-gray-700 bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
+                                                            <div className="w-8 h-8 rounded-full bg-sbc/10 flex items-center justify-center text-sbc shrink-0">
+                                                                <i className="fas fa-clock"></i>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-[10px] uppercase font-bold text-gray-400">Heure du Match</p>
+                                                                <p className="font-black text-lg">{match.match_time}</p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className={`flex items-center gap-3 p-3 rounded-xl border shadow-sm
+                                                            ${isPlaying ? 'text-sbc bg-sbc/5 border-sbc/10' : isOpen ? 'text-orange-600 bg-orange-50/50 border-orange-100' : 'text-blue-600 bg-blue-50/50 border-blue-100'}
+                                                        `}>
+                                                            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm">
+                                                                <i className={`fas fa-map-marker-alt ${isPlaying ? 'text-sbc' : isOpen ? 'text-orange-500' : 'text-blue-500'}`}></i>
+                                                            </div>
+                                                            <div>
+                                                                <p className={`text-[10px] uppercase font-bold ${isPlaying ? 'text-sbc/60' : isOpen ? 'text-orange-400' : 'text-blue-400'}`}>Rendez-vous (OTM)</p>
+                                                                <p className="font-black text-lg">{match.meeting_time}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="mt-6 flex flex-wrap gap-2 text-xs">
+                                                    <span className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg font-bold shadow-sm ${match.is_white_jersey
+                                                        ? 'bg-white border border-gray-200 text-gray-500'
+                                                        : 'bg-green-50 border border-green-200 text-green-700'
+                                                        }`}>
+                                                        <i className="fas fa-tshirt"></i>
+                                                        {match.is_white_jersey ? 'Maillots Blancs' : 'Maillots Verts'}
+                                                    </span>
+                                                    {match.is_club_referee ? (
+                                                        <span className="inline-flex items-center gap-2 px-3 py-2 rounded-lg font-bold shadow-sm bg-purple-50 border border-purple-200 text-purple-700">
+                                                            <i className="fas fa-whistle"></i>
+                                                            Arb. Club
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-2 px-3 py-2 rounded-lg font-bold shadow-sm bg-gray-100 border border-gray-200 text-gray-500">
+                                                            <i className="fas fa-user-tie"></i>
+                                                            Arb. Fédération
+                                                        </span>
+                                                    )}
+                                                    {match.match_type === 'Coupe' && (
+                                                        <span className="inline-flex items-center gap-2 px-3 py-2 rounded-lg font-bold shadow-sm bg-yellow-100 border border-yellow-200 text-yellow-700">
+                                                            <i className="fas fa-trophy"></i>
+                                                            Coupe
+                                                        </span>
+                                                    )}
+                                                    {match.match_type === 'Amical' && (
+                                                        <span className="inline-flex items-center gap-2 px-3 py-2 rounded-lg font-bold shadow-sm bg-blue-100 border border-blue-200 text-blue-700">
+                                                            <i className="fas fa-handshake"></i>
+                                                            Amical
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="lg:col-span-8 p-6 relative">
+                                                <div className="flex justify-between items-center mb-6">
+                                                    <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
+                                                        <i className="fas fa-users text-gray-400"></i>
+                                                        Officiels de Table
+                                                    </h4>
+                                                    {!editingId && (isPlaying || isAssignedOTM || isOpen) && (
+                                                        <button
+                                                            onClick={() => handleEdit(match)}
+                                                            className={`rounded-lg px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2
+                                                                ${isPlaying
+                                                                    ? 'bg-sbc/10 text-sbc hover:bg-sbc hover:text-white'
+                                                                    : isOpen
+                                                                        ? 'bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white'
+                                                                        : 'bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white'
+                                                                }`}
+                                                        >
+                                                            <i className="fas fa-edit"></i> Modifier
+                                                        </button>
+                                                    )}
+                                                    {match.designation && (
+                                                        <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200 whitespace-normal flex items-center gap-1.5" title={match.designation}>
+                                                            <i className="fas fa-clipboard-check"></i>
+                                                            <span className="uppercase">{match.designation.replace("Table = 2 Joueurs/Parents ", "")}</span>
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                {editingId === match.id ? (
+                                                    <div className={`bg-gray-50 rounded-2xl p-6 border animate-fade-in relative ${isPlaying ? 'border-sbc/20' : isOpen ? 'border-orange-200' : 'border-blue-200'}`}>
+                                                        <div className={`absolute top-0 right-0 w-16 h-16 opacity-5 rounded-bl-full rounded-tr-2xl pointer-events-none ${isPlaying ? 'bg-sbc' : isOpen ? 'bg-orange-500' : 'bg-blue-600'}`}></div>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            {[
+                                                                { label: "Marqueur", key: "scorer", icon: "fa-pen" },
+                                                                { label: "Chronométreur", key: "timer", icon: "fa-stopwatch" },
+                                                                { label: "Resp. Salle", key: "hall_manager", icon: "fa-building" },
+                                                                { label: "Buvette", key: "bar_manager", icon: "fa-coffee" },
+                                                                ...(match.is_club_referee ? [
+                                                                    { label: "Arbitre Club 1", key: "referee", icon: "fa-whistle" },
+                                                                    { label: "Arbitre Club 2", key: "referee_2", icon: "fa-whistle" },
+                                                                ] : [])
+                                                            ].map(field => {
+                                                                const isAllowed = allowedRoles.has(field.key);
+                                                                return (
+                                                                    <div key={field.key} className={`bg-white p-2 rounded-xl border shadow-sm ${isAllowed ? 'border-gray-100' : 'border-gray-50 bg-gray-50'}`}>
+                                                                        <PlayerSelector
+                                                                            players={selectablePlayers}
+                                                                            value={editForm[field.key] || ''}
+                                                                            idValue={editForm[field.key + '_id']}
+                                                                            onChange={(val, id) => setEditForm({ ...editForm, [field.key]: val, [field.key + '_id']: id })}
+                                                                            disabled={!isAllowed}
+                                                                            highlight={isAllowed}
+                                                                            theme={isPlaying ? 'green' : isOpen ? 'orange' : 'blue'}
+                                                                            label={
+                                                                                <div className="flex items-center justify-between w-full mb-1">
+                                                                                    <label className="text-[10px] font-bold text-gray-400 uppercase flex items-center gap-2">
+                                                                                        <i className={`fas ${field.icon} opacity-50`}></i> {field.label}
+                                                                                    </label>
+                                                                                    {isAllowed && !editForm[field.key] && !helpRequests.some(r => r.match_id === match.id && r.role === field.key) && (
+                                                                                        <button
+                                                                                            onClick={() => handleAskHelp(match.id, field.key)}
+                                                                                            className="text-[10px] font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-0.5 rounded transition-colors"
+                                                                                            title="Demander de l'aide aux autres coachs"
+                                                                                        >
+                                                                                            <i className="fas fa-life-ring mr-1"></i> SOS
+                                                                                        </button>
+                                                                                    )}
+                                                                                    {helpRequests.some(r => r.match_id === match.id && r.role === field.key) && (
+                                                                                        <span className="text-[10px] font-bold text-orange-500 bg-orange-50 px-2 py-0.5 rounded">
+                                                                                            <i className="fas fa-spinner fa-spin mr-1"></i> Aide demandée...
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                            }
+                                                                        />
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                        <div className="flex justify-end gap-3 mt-6">
+                                                            <button onClick={handleCancel} className="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-700 uppercase transition-colors">Annuler</button>
+                                                            <button onClick={handleSave} disabled={loading} className={`${isPlaying ? 'bg-sbc hover:bg-sbc-dark shadow-sbc/20' : isOpen ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'} text-white px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest shadow-lg transition-all transform active:scale-95 disabled:opacity-70 flex items-center gap-2`}>
+                                                                {loading ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-check"></i>}
+                                                                Enregistrer
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                                        {[
+                                                            { label: "Marqueur", val: match.scorer, icon: "fa-pen", key: "scorer" },
+                                                            { label: "Chronométreur", val: match.timer, icon: "fa-stopwatch", key: "timer" },
+                                                            { label: "Resp. Salle", val: match.hall_manager, icon: "fa-building", key: "hall_manager" },
+                                                            { label: "Bar / Buvette", val: match.bar_manager, icon: "fa-coffee", key: "bar_manager" },
+                                                            ...(match.is_club_referee ? [
+                                                                { label: "Arbitre Club 1", val: match.referee, icon: "fa-gavel", key: "referee" },
+                                                                { label: "Arbitre Club 2", val: match.referee_2, icon: "fa-gavel", key: "referee_2" },
+                                                            ] : [])
+                                                        ].map((item, i) => {
+                                                            const isAllowed = allowedRoles.has(item.key);
+                                                            const isMissing = isAllowed && !item.val && !match[item.key + '_id'];
+
+                                                            return (
+                                                                <div key={i} className={`p-4 rounded-xl border transition-all duration-200 
+                                                                ${isMissing
+                                                                        ? isPlaying
+                                                                            ? 'bg-green-50 border-green-300 ring-2 ring-green-500 shadow-md transform scale-[1.02]'
+                                                                            : isOpen
+                                                                                ? 'bg-orange-50 border-orange-300 ring-2 ring-orange-500 shadow-md transform scale-[1.02]'
+                                                                                : 'bg-blue-50 border-blue-300 ring-2 ring-blue-500 shadow-md transform scale-[1.02]'
+                                                                        : item.val
+                                                                            ? 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-sm'
+                                                                            : 'bg-gray-50/50 border-transparent border-dashed'
+                                                                    }
+                                                                ${isAllowed && item.val
+                                                                        ? isPlaying ? 'border-green-200 bg-green-50/20' : 'border-blue-200 bg-blue-50/20'
+                                                                        : ''}
+                                                            `}>
+                                                                    <div className="flex items-start justify-between mb-2">
+                                                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">{item.label}</span>
+                                                                        <i className={`fas ${item.icon} text-xs ${item.val ? (isPlaying ? 'text-sbc' : 'text-blue-600') : 'text-gray-200'}`}></i>
+                                                                    </div>
+                                                                    {item.val || match[item.key + '_id'] ? (
+                                                                        (() => {
+                                                                            const providedId = match[item.key + '_id'];
+                                                                            let displayName = item.val;
+                                                                            let foundPlayer = null;
+
+                                                                            if (providedId) {
+                                                                                foundPlayer = (selectablePlayers || []).find(p => Number(p.id) === Number(providedId));
+                                                                            } else if (item.val) {
+                                                                                const candidates = (selectablePlayers || []).filter(p => p.fullname === item.val);
+                                                                                foundPlayer = candidates[0];
+                                                                                if (candidates.length > 1) {
+                                                                                    const perfectMatch = candidates.find(p => p.team === match.category || (match.designation && match.designation.includes(p.team)));
+                                                                                    if (perfectMatch) foundPlayer = perfectMatch;
+                                                                                }
+                                                                            }
+
+                                                                            if (!foundPlayer && providedId) {
+                                                                                foundPlayer = selectablePlayers.find(p => Number(p.id) === Number(providedId));
+                                                                            }
+
+                                                                            if (!displayName && foundPlayer) {
+                                                                                displayName = foundPlayer.fullname;
+                                                                            }
+
+                                                                            if (!displayName) displayName = "Inconnu";
+
+                                                                            return (
+                                                                                <div className="flex items-center gap-2 mt-1">
+                                                                                    {foundPlayer?.image_id ? (
+                                                                                        <img src={`/api/image/${foundPlayer.image_id}`} className="w-6 h-6 rounded-full object-cover border border-gray-200 shadow-sm shrink-0" alt={displayName} />
+                                                                                    ) : (
+                                                                                        <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500 border border-gray-200 shrink-0 uppercase">
+                                                                                            {displayName.substring(0, 2)}
+                                                                                        </div>
+                                                                                    )}
+                                                                                    <p className="text-sm font-bold text-gray-900 capitalize truncate" title={displayName}>{displayName}</p>
+                                                                                </div>
+                                                                            );
+                                                                        })()
+                                                                    ) : (
+                                                                        <p className={`text-xs italic flex items-center gap-1 ${isMissing ? (isPlaying ? 'text-green-700 font-bold animate-pulse' : isOpen ? 'text-orange-700 font-bold animate-pulse' : 'text-blue-700 font-bold animate-pulse') : 'text-gray-400'}`}>
+                                                                            <span className={`w-1.5 h-1.5 rounded-full ${isMissing ? (isPlaying ? 'bg-green-600' : isOpen ? 'bg-orange-600' : 'bg-blue-600') : 'bg-red-400'}`}></span>
+                                                                            {isMissing ? 'À définir (Vous)' : 'À définir'}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                ))}
+                {filteredMatches.length === 0 && (
+                    <div className="text-center py-20 px-4">
+                        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i className="fas fa-calendar-times text-gray-300 text-2xl"></i>
+                        </div>
+                        <h3 className="text-gray-900 font-bold mb-1">Aucun match OTM cette semaine</h3>
+                        <p className="text-gray-400 text-sm">Le calendrier est vide pour la période du {startOfWeek.toLocaleDateString('fr-FR')} au {endOfWeek.toLocaleDateString('fr-FR')}.</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}

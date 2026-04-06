@@ -50,6 +50,26 @@ export const authOptions: NextAuthOptions = {
                         }
                     }
 
+                    // 3. Check Volunteer
+                    const [volunteerRows] = await pool.query<RowDataPacket[]>(
+                        "SELECT * FROM login_volunteers WHERE email = ?",
+                        [credentials.email]
+                    );
+
+                    if (volunteerRows && volunteerRows.length > 0) {
+                        const user = volunteerRows[0];
+                        const isValid = await bcrypt.compare(credentials.password, user.password);
+                        if (isValid) {
+                            return {
+                                id: user.id.toString(),
+                                email: user.email,
+                                name: `${user.firstname} ${user.lastname}`,
+                                role: 'volunteer',
+                                volunteerId: user.volunteer_id
+                            };
+                        }
+                    }
+
                     return null;
                 } catch (error) {
                     console.error("Auth error:", error);
@@ -64,6 +84,7 @@ export const authOptions: NextAuthOptions = {
                 token.role = user.role;
                 token.id = user.id;
                 token.personId = user.personId;
+                token.volunteerId = user.volunteerId;
             }
             return token;
         },
@@ -72,6 +93,7 @@ export const authOptions: NextAuthOptions = {
                 session.user.role = token.role;
                 session.user.id = token.id;
                 session.user.personId = token.personId;
+                session.user.volunteerId = token.volunteerId;
             }
             return session;
         }

@@ -68,6 +68,8 @@ export default function LoginPage() {
 
                 if (session?.user?.role === 'coach') {
                     router.push("/coach");
+                } else if (session?.user?.role === 'volunteer') {
+                    router.push("/volunteer");
                 } else {
                     router.push("/admin");
                 }
@@ -190,7 +192,7 @@ export default function LoginPage() {
                             </div>
                             <div className="flex-1">
                                 <h4 className="text-white font-bold group-hover:text-sbc transition">{savedAccount.name}</h4>
-                                <p className="text-gray-400 text-xs">{savedAccount.role === 'coach' ? 'Coach' : 'Admin'}</p>
+                                <p className="text-gray-400 text-xs">{savedAccount.role === 'coach' ? 'Coach' : savedAccount.role === 'volunteer' ? 'Bénévole' : 'Admin'}</p>
                             </div>
                             <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 group-hover:bg-sbc group-hover:text-white transition">
                                 <i className="fas fa-sign-in-alt"></i>

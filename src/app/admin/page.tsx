@@ -17,6 +17,7 @@ import VolunteersManager from "@/components/admin/VolunteersManager";
 import BureauManager from "@/components/admin/BureauManager";
 import { authOptions } from "@/lib/auth";
 import InstallPWA from "@/components/InstallPWA";
+import AdminCoachPlanningManager from "./AdminCoachPlanningManager";
 
 async function getStats() {
     try {
@@ -343,9 +344,10 @@ export default async function AdminDashboard() {
                 {[
                     { label: "Joueurs", value: stats.players, icon: "fas fa-users", color: "from-blue-500 to-indigo-600", link: "/admin/players" },
                     { label: "Coachs", value: stats.coaches, icon: "fas fa-user-tie", color: "from-emerald-500 to-teal-600", link: "/admin/coaches" },
+                    { label: "Planning", value: "Saison", icon: "fas fa-calendar-alt", color: "from-rose-400 to-orange-500", link: "#planning" },
                     { label: "Bureau", value: bureauCount, icon: "fas fa-users-cog", color: "from-purple-500 to-pink-600", link: "#bureau" },
                     { label: "Bénévoles", value: volunteers.length, icon: "fas fa-hands-helping", color: "from-orange-500 to-red-500", link: "#volunteers" },
-                    { label: "Équipes", value: teams.length, icon: "fas fa-shield-alt", color: "from-sbc to-sbc-dark", link: "#teams", fullMobile: true },
+                    { label: "Équipes", value: teams.length, icon: "fas fa-shield-alt", color: "from-sbc to-sbc-dark", link: "#teams", fullMobile: false },
                 ].map((stat, i) => (
                     <div key={i} className={`group relative ${stat.fullMobile ? 'col-span-2 lg:col-span-1' : 'col-span-1'}`}>
                         {stat.link ? (
@@ -381,6 +383,14 @@ export default async function AdminDashboard() {
                 <div className="mt-8">
                     <AdminCoachLoginsManager initialLogins={coachLogins} />
                 </div>
+            </section>
+
+            <section id="planning" className="scroll-mt-24">
+                <div className="flex items-center gap-3 mb-6">
+                    <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Disponibilités Coachs</h2>
+                    <div className="h-px flex-grow bg-gray-200"></div>
+                </div>
+                <AdminCoachPlanningManager />
             </section>
 
             <section id="bureau" className="scroll-mt-24">

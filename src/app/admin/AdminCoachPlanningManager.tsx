@@ -37,6 +37,7 @@ export default function AdminCoachPlanningManager() {
   const [data, setData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'coachs' | 'creneaux'>('creneaux');
+  const [highlightCoachId, setHighlightCoachId] = useState<number | 'global'>('global');
 
   useEffect(() => {
     fetch('/api/admin/coach-planning')
@@ -59,93 +60,105 @@ export default function AdminCoachPlanningManager() {
     return obj;
   }, []);
 
-  // Mode "Par Créneau" - Aide à l'attribution
+  // Mode "Par Créneau" - Aide à l'attribution (Vue Planning Visuel)
   const renderBySlot = () => {
     return (
-      <div className="space-y-12">
-        {DAYS.map(day => (
-          <div key={day.id} className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 overflow-hidden">
-            <h3 className="text-2xl font-black text-gray-900 uppercase tracking-widest mb-6 pb-4 border-b border-gray-200 flex items-center gap-3">
-              <i className="far fa-calendar-alt text-sbc"></i>
-              {day.label}
-            </h3>
-            
-            <div className="space-y-3">
-              {daySlots[day.id].map((slot: any) => {
-                // Trouver les coachs pour ce créneau
-                const dispos: any[] = [];
-                const indispos: any[] = [];
-                const neutres: any[] = [];
-
-                data.forEach(coach => {
-                  const s = coach.slots.find((st: any) => st.day_of_week === day.id && st.start_time.startsWith(slot.start));
-                  if (!s) {
-                    neutres.push(coach);
-                  } else if (s.is_unavailable) {
-                    indispos.push(coach);
-                  } else {
-                    dispos.push(coach);
-                  }
-                });
-
-                return (
-                  <div key={slot.start} className="flex flex-col lg:flex-row border border-gray-200 rounded-2xl overflow-hidden hover:border-gray-300 transition-colors bg-gray-50/50">
-                    <div className="bg-gray-100 px-6 py-4 flex items-center justify-center border-b lg:border-b-0 lg:border-r border-gray-200 lg:w-48 shrink-0 relative overflow-hidden">
-                      <div className="absolute top-0 left-0 w-1 h-full bg-sbc rounded-l-2xl"></div>
-                      <span className="text-lg font-black text-gray-900 font-mono tracking-tighter">
-                        {slot.start} - {slot.end}
-                      </span>
-                    </div>
-                    
-                    <div className="flex-1 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-200">
-                      {/* Disponibles */}
-                      <div className="p-4 bg-white">
-                        <div className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-3 flex items-center gap-1.5 bg-green-50 w-max px-2 py-1 rounded-md">
-                          <i className="fas fa-check-circle"></i> Disponibles réels ({dispos.length})
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {dispos.length === 0 ? <span className="text-xs text-gray-400 italic">Aucun</span> : dispos.map(c => (
-                            <span key={c.id} className="text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded-lg border border-green-200">
-                              {c.first_name} {c.last_name[0]}. <span className="opacity-75 font-medium ml-1">({c.team})</span>
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Neutres (Libres) */}
-                      <div className="p-4 bg-white">
-                        <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-1.5 bg-gray-100 w-max px-2 py-1 rounded-md">
-                          <i className="far fa-square"></i> Neutres (Attribuables) ({neutres.length})
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {neutres.length === 0 ? <span className="text-xs text-gray-400 italic">Aucun</span> : neutres.map(c => (
-                            <span key={c.id} className="text-xs font-bold text-gray-700 bg-gray-100 px-2 py-1 rounded-lg border border-gray-200">
-                              {c.first_name} {c.last_name[0]}.
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Indisponibles */}
-                      <div className="p-4 bg-red-50/20">
-                        <div className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-3 flex items-center gap-1.5 bg-red-50 w-max px-2 py-1 rounded-md">
-                          <i className="fas fa-times-circle"></i> Indisponibles ({indispos.length})
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {indispos.length === 0 ? <span className="text-xs text-gray-400 italic">Aucun</span> : indispos.map(c => (
-                            <span key={c.id} className="text-xs font-bold text-red-700 bg-red-100 px-2 py-1 rounded-lg border border-red-200 line-through decoration-red-300 opacity-70">
-                              {c.first_name} {c.last_name[0]}.
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+      <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 overflow-hidden">
+        <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4">
+          <h3 className="text-xl font-black text-gray-900 uppercase tracking-widest flex items-center gap-3">
+            <i className="far fa-calendar-alt text-sbc"></i>
+            Planning Global (Demandes)
+          </h3>
+          <div className="flex flex-wrap gap-3 text-xs font-bold uppercase tracking-wider bg-gray-50 px-4 py-2 rounded-xl border border-gray-100">
+            <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-green-100 border border-green-400"></div> 1 Demande</span>
+            <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-red-100 border border-red-500"></div> Superposition</span>
+            <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-gray-100 border border-gray-300 shadow-inner"></div> Libre</span>
           </div>
-        ))}
+        </div>
+        
+        <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-gray-50 p-4 rounded-2xl border border-gray-200 mb-6">
+          <div className="text-sm font-bold text-gray-600 flex items-center gap-2">
+             <i className="fas fa-filter text-sbc"></i> Mettre en évidence :
+          </div>
+          <select 
+             value={highlightCoachId} 
+             onChange={(e) => setHighlightCoachId(e.target.value === 'global' ? 'global' : Number(e.target.value))}
+             className="w-full md:w-max min-w-[250px] bg-white border border-gray-300 text-gray-900 text-sm rounded-xl px-4 py-2 cursor-pointer focus:ring-2 focus:ring-sbc outline-none font-medium shadow-sm transition-all"
+          >
+             <option value="global">🌍 Global (Tous les coachs)</option>
+             {data.map(c => (
+                <option key={c.id} value={c.id}>{c.first_name} {c.last_name} ({c.team})</option>
+             ))}
+          </select>
+        </div>
+
+        <p className="text-sm text-gray-500 mb-6 font-medium">Ce tableau affiche uniquement les horaires <strong>IDÉAUX (Verts)</strong> demandés par les coachs. S'il y a plusieurs coachs sur le même créneau, la case devient <strong className="text-red-500">rouge</strong> pour signaler la superposition.</p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          {DAYS.map(day => (
+            <div key={day.id} className="flex flex-col bg-gray-50 rounded-2xl p-3 border border-gray-200">
+              <h4 className="text-center font-black text-gray-900 uppercase tracking-widest pb-3 mb-3 border-b border-gray-200 sticky top-0 bg-gray-50 z-10 pt-1">
+                {day.label}
+              </h4>
+              
+              <div className="flex flex-col gap-2">
+                {daySlots[day.id].map((slot: any) => {
+                  const dispos: any[] = [];
+                  const indispos: any[] = [];
+
+                  data.forEach(coach => {
+                    const s = coach.slots.find((st: any) => st.day_of_week === day.id && st.start_time.startsWith(slot.start));
+                    if (s) {
+                       if (!s.is_unavailable) { dispos.push(coach); }
+                       else { indispos.push(coach); }
+                    }
+                  });
+
+                  // Déduire le style de la case (basé uniquement sur les dispos ou superpositions)
+                  let boxStyle = "bg-white border-gray-200 text-gray-400 shadow-sm"; 
+                  if (dispos.length === 1) boxStyle = "bg-green-50 border-green-300 text-green-800 shadow-sm ring-1 ring-green-500/20";
+                  if (dispos.length > 1) boxStyle = "bg-red-50 border-red-400 text-red-900 shadow-sm ring-2 ring-red-500";
+
+                  return (
+                    <div key={slot.start} className={`flex flex-col py-2 px-3 rounded-xl border transition-all ${boxStyle}`}>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="font-mono text-xs font-bold opacity-80">{slot.start}</span>
+                        {dispos.length > 1 && (
+                          <span className="bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                            <i className="fas fa-exclamation-triangle"></i> {dispos.length}
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="flex flex-col gap-1 mt-1">
+                        {dispos.map(c => {
+                          const isHighlighted = highlightCoachId === 'global' || highlightCoachId === c.id;
+                          return (
+                          <div key={`d-${c.id}`} className={`text-[10px] font-black px-1.5 py-1 rounded border flex flex-col leading-tight transition-all duration-300 ${isHighlighted ? 'bg-white/90 border-black/10 shadow-sm' : 'bg-white/30 border-transparent opacity-20 grayscale'}`}>
+                            <span>{c.team}</span>
+                            <span className="opacity-70 font-bold">{c.first_name} {c.last_name[0]}.</span>
+                          </div>
+                        )})}
+                      </div>
+                      
+                      {indispos.length > 0 && (
+                        <div className="mt-1 pt-1 border-t border-black/10 flex flex-wrap gap-1">
+                          {indispos.map(c => {
+                             const isHighlighted = highlightCoachId === 'global' || highlightCoachId === c.id;
+                             return (
+                             <span key={`i-${c.id}`} title={`Coach ${c.first_name} ${c.last_name}`} className={`text-[8px] font-bold px-1 py-0.5 rounded border line-through leading-none tracking-tight transition-all duration-300 ${isHighlighted ? 'bg-red-100 text-red-700 border-red-200 opacity-80' : 'bg-gray-100 text-gray-400 border-transparent opacity-20 grayscale'}`}>
+                               {c.first_name} {c.last_name[0]}.
+                             </span>
+                          )})}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   };

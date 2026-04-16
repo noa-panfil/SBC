@@ -311,7 +311,7 @@ export default function PlanningApp() {
                         onClick={() => handleSlotToggle(day.id, slot.start, slot.timeInt)}
                         className={`w-full py-2 px-3 rounded-xl text-sm font-bold border transition-all duration-150 flex items-center justify-between ${dynamicStyles}`}
                       >
-                        <span className="font-mono">{slot.start}</span>
+                        <span className="font-mono text-xs tracking-tighter">{slot.start.replace(':', 'h')}/{slot.end.replace(':', 'h')}</span>
                         {state === 'neutral' && <i className="fas fa-plus text-[10px] text-gray-300"></i>}
                         {state === 'available' && <i className="fas fa-check text-[10px] text-green-600"></i>}
                         {state === 'unavailable' && <i className="fas fa-times text-[10px] text-red-500"></i>}

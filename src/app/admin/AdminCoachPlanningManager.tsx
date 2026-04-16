@@ -122,7 +122,7 @@ export default function AdminCoachPlanningManager() {
                   return (
                     <div key={slot.start} className={`flex flex-col py-2 px-3 rounded-xl border transition-all ${boxStyle}`}>
                       <div className="flex justify-between items-center mb-1">
-                        <span className="font-mono text-xs font-bold opacity-80">{slot.start}</span>
+                        <span className="font-mono text-[10px] sm:text-xs font-bold opacity-80 tracking-tighter">{slot.start.replace(':', 'h')}/{slot.end.replace(':', 'h')}</span>
                         {dispos.length > 1 && (
                           <span className="bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full flex items-center gap-1">
                             <i className="fas fa-exclamation-triangle"></i> {dispos.length}
@@ -201,7 +201,7 @@ export default function AdminCoachPlanningManager() {
                       <div className="space-y-1.5">
                         {slots.sort((a,b) => a.start_time.localeCompare(b.start_time)).map((slot: any) => (
                           <div key={slot.id} className={`flex items-center justify-between px-2 py-1.5 rounded-lg text-xs font-medium border ${slot.is_unavailable ? 'bg-red-50 text-red-700 border-red-100 line-through opacity-80' : 'bg-green-50 text-green-700 border-green-100'}`}>
-                            <span className="font-mono">{slot.start_time.substring(0,5)} - {slot.end_time.substring(0,5)}</span>
+                            <span className="font-mono tracking-tighter">{slot.start_time.substring(0,5).replace(':', 'h')}/{slot.end_time.substring(0,5).replace(':', 'h')}</span>
                             {slot.is_unavailable ? <i className="fas fa-times-circle text-[10px]"></i> : <i className="fas fa-check-circle text-[10px]"></i>}
                           </div>
                         ))}

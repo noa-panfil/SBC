@@ -209,10 +209,14 @@ export default function PlanningApp() {
           <div>
             <h4 className="text-blue-900 font-bold mb-1">Règles de sélection des disponibilités :</h4>
             <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside font-medium opacity-90">
-              <li>Vous pouvez sélectionner <strong className="text-blue-900 font-black">au maximum 6 créneaux de 15 minutes</strong> consécutifs par jour (soit 1h30 d'entraînement).</li>
-              <li>Vous ne pouvez être disponible que sur <strong className="text-blue-900 font-black">3 jours différents au maximum</strong> dans la semaine.</li>
-              <li>Utilisez le mode "Indisponible" pour indiquer librement tous les autres créneaux où vous ne pourrez absolument pas entraîner.</li>
+              <li>Les créneaux verts ("Disponible") représentent <strong>vos horaires IDÉAUX</strong>. Ce sont les horaires parfaits pour vous.</li>
+              <li>Vous pouvez sélectionner <strong className="text-blue-900 font-black">au maximum 6 créneaux de 15 minutes</strong> consécutifs par jour (soit 1h30 d'entraînement idéal).</li>
+              <li>Vous ne pouvez indiquer ces créneaux idéaux que sur <strong className="text-blue-900 font-black">3 jours différents au maximum</strong> dans la semaine.</li>
             </ul>
+            <div className="mt-4 p-3 bg-red-100 border-l-4 border-red-500 rounded-r-lg">
+              <p className="text-sm text-red-800 font-bold"><i className="fas fa-exclamation-triangle mr-2"></i> TRÈS IMPORTANT : Utilisez le mode "Indisponible"</p>
+              <p className="text-xs text-red-700 mt-1">Il est crucial de colorier en rouge toutes vos réelles indisponibilités. Si une case est laissée "Libre" (blanche), le club considérera que vous êtes potentiellement disponible sur cet horaire et <strong>un créneau pourrait donc vous y être attribué par défaut !</strong></p>
+            </div>
           </div>
         </div>
 
@@ -264,7 +268,7 @@ export default function PlanningApp() {
                 onClick={() => setBrushMode('available')}
                 className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap ${brushMode === 'available' ? 'bg-white text-green-600 shadow-sm border border-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
               >
-                <div className="w-3 h-3 rounded-sm bg-green-100 border border-green-400"></div> Disponible
+                <div className="w-3 h-3 rounded-sm bg-green-100 border border-green-400"></div> Idéal (Dispo)
               </button>
               <button
                 onClick={() => setBrushMode('unavailable')}

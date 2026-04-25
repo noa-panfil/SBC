@@ -22,7 +22,7 @@ interface Event {
     description: string;
     location: string;
     time_info: string;
-    mode: 'joueur' | 'benevole' | 'public' | 'boutique' | 'sondage' | 'depot';
+    mode: 'joueur' | 'benevole' | 'public' | 'boutique' | 'sondage' | 'sondage_communautaire' | 'depot';
     image_id?: number | null;
     image?: string | null;
     allowed_teams?: string[];
@@ -47,6 +47,7 @@ interface Registration {
     file_mime_type?: string;
     created_at: string;
     poll_option_text?: string;
+    custom_response?: string;
 }
 
 export default function AdminEventsManager({ teams }: { teams: any[] }) {
@@ -188,7 +189,7 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
                 roles: editingEvent.mode === 'benevole' ? editingEvent.roles : [],
                 requiresFile: editingEvent.mode === 'depot',
                 helloassoIframe: editingEvent.mode === 'boutique' ? editingEvent.helloasso_iframe : null,
-                pollOptions: editingEvent.mode === 'sondage' ? editingEvent.poll_options : []
+                pollOptions: (editingEvent.mode === 'sondage' || editingEvent.mode === 'sondage_communautaire') ? editingEvent.poll_options : []
             };
 
             const res = await fetch('/api/admin/events/save', {
@@ -349,7 +350,7 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
                                     </button>
                                 </div>
                                 <div className="absolute bottom-2 left-2 bg-sbc text-white text-xs font-bold px-2 py-1 rounded shadow">
-                                    {event.mode === 'benevole' ? 'Bénévoles' : event.mode === 'joueur' ? 'Joueurs' : event.mode === 'boutique' ? 'Boutique' : event.mode === 'sondage' ? 'Sondage' : event.mode === 'depot' ? 'Dépôt Fichier' : 'Public'}
+                                    {event.mode === 'benevole' ? 'Bénévoles' : event.mode === 'joueur' ? 'Joueurs' : event.mode === 'boutique' ? 'Boutique' : event.mode === 'sondage' ? 'Sondage' : event.mode === 'sondage_communautaire' ? 'Communautaire' : event.mode === 'depot' ? 'Dépôt Fichier' : 'Public'}
                                 </div>
                             </div>
                             <div className="p-4 flex-grow flex flex-col">
@@ -480,6 +481,63 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
                                                 </table>
                                             </div>
                                         </div>
+                                    </div>
+                                </div>
+                            ) : currentEvent?.mode === 'sondage_communautaire' ? (
+                                <div className="flex-grow overflow-y-auto p-6 space-y-4">
+                                    <div className="space-y-6">
+                                        <h4 className="font-bold text-gray-800 uppercase italic mb-4">
+                                            <i className="fas fa-comments mr-2 text-sbc"></i> Réponses au sondage ({new Set(registrations.map(r => r.firstname + r.lastname)).size} participants)
+                                        </h4>
+                                        {(() => {
+                                            // Group by option text (question)
+                                            const byQuestion: Record<string, Registration[]> = {};
+                                            registrations.forEach(r => {
+                                                const q = r.poll_option_text || 'Inconnu';
+                                                if (!byQuestion[q]) byQuestion[q] = [];
+                                                byQuestion[q].push(r);
+                                            });
+
+                                            if (Object.keys(byQuestion).length === 0) {
+                                                return <p className="text-gray-500 italic">Aucune réponse pour le moment.</p>;
+                                            }
+
+                                            return Object.entries(byQuestion).map(([question, answers], idx) => (
+                                                <div key={idx} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+                                                    <div className="bg-gray-50 p-4 border-b border-gray-100">
+                                                        <h5 className="font-bold text-gray-800">
+                                                            <span className="text-sbc mr-2">Q{idx + 1}.</span>
+                                                            {question}
+                                                        </h5>
+                                                    </div>
+                                                    <div className="p-0">
+                                                        <table className="w-full text-left border-collapse">
+                                                            <tbody>
+                                                                {answers.length === 0 ? (
+                                                                    <tr>
+                                                                        <td className="p-4 text-gray-500 text-sm italic">Pas de réponse</td>
+                                                                    </tr>
+                                                                ) : (
+                                                                    answers.map(ans => (
+                                                                        <tr key={ans.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition">
+                                                                            <td className="p-4 w-1/4 align-top">
+                                                                                <div className="font-bold text-gray-800 text-sm">{ans.firstname} {ans.lastname}</div>
+                                                                                <div className="text-[10px] text-gray-400">
+                                                                                    {new Date(ans.created_at).toLocaleDateString()}
+                                                                                </div>
+                                                                            </td>
+                                                                            <td className="p-4 text-gray-700 text-sm break-words whitespace-pre-wrap">
+                                                                                {ans.custom_response || <span className="text-gray-400 italic">Aucune réponse textuelle</span>}
+                                                                            </td>
+                                                                        </tr>
+                                                                    ))
+                                                                )}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            ));
+                                        })()}
                                     </div>
                                 </div>
                             ) : registrationsModal.viewMode === 'galerie' ? (
@@ -767,22 +825,28 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
                                         <input type="radio" name="mode" value="sondage" checked={editingEvent.mode === 'sondage'} onChange={() => setEditingEvent({ ...editingEvent, mode: 'sondage', allowed_teams: [], roles: [], requires_file: false })} className="hidden" />
                                         <i className="fas fa-poll mr-2"></i> Sondage
                                     </label>
+                                    <label className={`flex-1 p-3 rounded border text-center cursor-pointer transition ${editingEvent.mode === 'sondage_communautaire' ? 'bg-sbc text-white border-sbc' : 'bg-white border-gray-200 hover:border-sbc'}`}>
+                                        <input type="radio" name="mode" value="sondage_communautaire" checked={editingEvent.mode === 'sondage_communautaire'} onChange={() => setEditingEvent({ ...editingEvent, mode: 'sondage_communautaire', allowed_teams: [], roles: [], requires_file: false })} className="hidden" />
+                                        <i className="fas fa-comments mr-2"></i> Sondage Communautaire
+                                    </label>
                                     <label className={`flex-1 p-3 rounded border text-center cursor-pointer transition ${editingEvent.mode === 'depot' ? 'bg-sbc text-white border-sbc' : 'bg-white border-gray-200 hover:border-sbc'}`}>
                                         <input type="radio" name="mode" value="depot" checked={editingEvent.mode === 'depot'} onChange={() => setEditingEvent({ ...editingEvent, mode: 'depot', allowed_teams: [], roles: [], poll_options: [], requires_file: true })} className="hidden" />
                                         <i className="fas fa-file-upload mr-2"></i> Dépôt
                                     </label>
                                 </div>
 
-                                {editingEvent.mode === 'sondage' && (
+                                {(editingEvent.mode === 'sondage' || editingEvent.mode === 'sondage_communautaire') && (
                                     <div className="bg-gray-50 p-4 rounded-lg mb-4">
                                         <div className="flex justify-between items-center mb-3">
-                                            <h4 className="text-sm font-bold text-gray-700">Options du sondage</h4>
+                                            <h4 className="text-sm font-bold text-gray-700">
+                                                {editingEvent.mode === 'sondage' ? 'Options du sondage' : 'Questions du sondage'}
+                                            </h4>
                                             <button
                                                 onClick={() => setEditingEvent(prev => ({ ...prev, poll_options: [...(prev.poll_options || []), { option_text: "" }] }))}
                                                 type="button"
                                                 className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 px-2 py-1 rounded font-bold"
                                             >
-                                                <i className="fas fa-plus mr-1"></i> Ajouter une option
+                                                <i className="fas fa-plus mr-1"></i> {editingEvent.mode === 'sondage' ? 'Ajouter une option' : 'Ajouter une question'}
                                             </button>
                                         </div>
                                         <div className="space-y-2">
@@ -812,7 +876,9 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
                                                 </div>
                                             ))}
                                             {(editingEvent.poll_options?.length === 0 || !editingEvent.poll_options) && (
-                                                <p className="text-xs text-gray-400 italic text-center">Aucune option définie. Ajoutez-en au moins deux pour un sondage.</p>
+                                                <p className="text-xs text-gray-400 italic text-center">
+                                                    {editingEvent.mode === 'sondage' ? 'Aucune option définie. Ajoutez-en au moins deux pour un sondage.' : 'Aucune question définie. Ajoutez-en au moins une.'}
+                                                </p>
                                             )}
                                         </div>
                                     </div>

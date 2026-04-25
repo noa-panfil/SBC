@@ -56,7 +56,7 @@ export async function POST(request: Request) {
 
         // Handle Poll Options
         await pool.query('DELETE FROM event_poll_options WHERE event_id = ?', [eventId]);
-        if (mode === 'sondage' && pollOptions && pollOptions.length > 0) {
+        if ((mode === 'sondage' || mode === 'sondage_communautaire') && pollOptions && pollOptions.length > 0) {
             const values = pollOptions.map((opt: any) => [eventId, opt.option_text]);
             await pool.query(
                 'INSERT INTO event_poll_options (event_id, option_text) VALUES ?',

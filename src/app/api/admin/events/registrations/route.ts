@@ -26,9 +26,9 @@ export async function POST(request: Request) {
 
         const mode = eventRows[0].mode;
 
-        if (mode === 'sondage') {
+        if (mode === 'sondage' || mode === 'sondage_communautaire') {
             const [rows] = await pool.query<RowDataPacket[]>(
-                `SELECT v.id, v.lastname, v.firstname, v.created_at, o.option_text as poll_option_text 
+                `SELECT v.id, v.lastname, v.firstname, v.created_at, o.option_text as poll_option_text, v.custom_response 
                  FROM event_poll_votes v
                  JOIN event_poll_options o ON v.option_id = o.id
                  WHERE v.event_id = ? 

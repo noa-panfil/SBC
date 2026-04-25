@@ -38,6 +38,19 @@ export async function POST(request: Request) {
                  VALUES (?, ?, ?, ?)`,
                 [eventId, pollOptionId, firstname, lastname]
             );
+        } else if (mode === 'sondage_communautaire') {
+            const pollResponsesString = formData.get('pollResponses') as string | null;
+            if (pollResponsesString) {
+                const pollResponses = JSON.parse(pollResponsesString);
+                for (const resp of pollResponses) {
+                    await pool.query(
+                        `INSERT INTO event_poll_votes (event_id, option_id, firstname, lastname, custom_response)
+                         VALUES (?, ?, ?, ?, ?)`,
+                        [eventId, resp.optionId, firstname, lastname, resp.response]
+                    );
+                }
+            }
+            // Also insert into registrations if they want contact info? No, regular sondage doesn't. We'll skip registration insert unless needed.
         } else {
             await pool.query(
                 `INSERT INTO event_registrations (event_id, lastname, firstname, email, team_name, role_name, file_name, file_mime_type, file_data)

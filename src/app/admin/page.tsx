@@ -202,7 +202,7 @@ async function getOtmMatches() {
             SELECT *, 'home' as loc FROM otm_matches 
         `);
         const [awayRows] = await pool.query<RowDataPacket[]>(`
-            SELECT id, match_code, match_date, match_time, category, opponent, location, status, created_at, 'away' as loc FROM external_matches 
+            SELECT id, match_code, match_date, match_time, category, opponent, location, match_type, status, created_at, 'away' as loc FROM external_matches 
         `);
 
         const rows = [...homeRows, ...awayRows].sort((a: any, b: any) => {

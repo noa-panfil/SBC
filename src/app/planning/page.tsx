@@ -39,7 +39,7 @@ async function getMatches() {
                 opponent, 
                 NULL as is_white_jersey, 
                 NULL as is_featured,
-                'Championnat' as match_type,
+                match_type,
                 location
             FROM external_matches 
             WHERE match_date >= CURDATE() AND opponent NOT LIKE '%Exempt%'

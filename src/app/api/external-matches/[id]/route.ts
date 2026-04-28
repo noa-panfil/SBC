@@ -15,11 +15,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     try {
         const body = await req.json();
         const { id } = await params;
-        const { match_date, match_time, category, opponent, location } = body;
+        const { match_date, match_time, category, opponent, location, match_type } = body;
 
         await pool.query(
-            `UPDATE external_matches SET category=?, match_date=?, match_time=?, opponent=?, location=? WHERE id=?`,
-            [category, match_date, match_time, opponent, location, id]
+            `UPDATE external_matches SET category=?, match_date=?, match_time=?, opponent=?, location=?, match_type=? WHERE id=?`,
+            [category, match_date, match_time, opponent, location, match_type || 'Championnat', id]
         );
 
         return NextResponse.json({

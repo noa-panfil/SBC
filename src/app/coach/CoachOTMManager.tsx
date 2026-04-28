@@ -755,6 +755,12 @@ export default function CoachOTMManager({ matches, myTeamNames, players, otherCo
                                                             Amical
                                                         </span>
                                                     )}
+                                                    {match.match_type?.startsWith('Playoffs') && (
+                                                        <span className="inline-flex items-center gap-2 px-3 py-2 rounded-lg font-bold shadow-sm bg-orange-100 border border-orange-200 text-orange-700">
+                                                            <i className="fas fa-fire"></i>
+                                                            PLAYOFFS - {match.match_type.replace('Playoffs - ', '')}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
 

@@ -74,9 +74,12 @@ export default function HomeMatches({ matches }: { matches: Match[] }) {
                                             </div>
                                             <div className={`inline-block px-4 py-1.5 rounded-full font-black text-xs uppercase tracking-widest border ${nextMatch.match_type === 'Coupe' ? 'bg-yellow-500/20 text-yellow-500 border-yellow-500/50' :
                                                 nextMatch.match_type === 'Amical' ? 'bg-blue-500/20 text-blue-500 border-blue-500/50' :
-                                                    'bg-white/10 text-gray-300 border-white/10'
+                                                    nextMatch.match_type?.startsWith('Playoffs') ? 'bg-orange-500/20 text-orange-500 border-orange-500/50' :
+                                                        'bg-white/10 text-gray-300 border-white/10'
                                                 }`}>
-                                                {nextMatch.match_type}
+                                                {nextMatch.match_type?.startsWith('Playoffs') ? (
+                                                    <><i className="fas fa-fire mr-2"></i>PLAYOFFS - {nextMatch.match_type.replace('Playoffs - ', '')}</>
+                                                ) : nextMatch.match_type}
                                             </div>
                                         </div>
 

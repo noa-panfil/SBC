@@ -821,6 +821,11 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                                             <i className="fas fa-handshake mr-1"></i> Amical
                                         </span>
                                     )}
+                                    {match.match_type?.startsWith('Playoffs') && (
+                                        <span className="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-orange-100 text-orange-700 border border-orange-200">
+                                            <i className="fas fa-fire mr-1"></i> PLAYOFFS - {match.match_type.replace('Playoffs - ', '')}
+                                        </span>
+                                    )}
                                 </td>
                                 <td className="p-4 text-center pb-2">
                                     <div className="flex flex-col items-center gap-1">
@@ -1161,6 +1166,11 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                                         <option value="Championnat">Championnat</option>
                                         <option value="Coupe">Coupe</option>
                                         <option value="Amical">Amical</option>
+                                        <option value="Playoffs - 16ème">Playoffs - 16ème</option>
+                                        <option value="Playoffs - 8ème">Playoffs - 8ème</option>
+                                        <option value="Playoffs - Quart">Playoffs - Quart</option>
+                                        <option value="Playoffs - Demi">Playoffs - Demi</option>
+                                        <option value="Playoffs - Finale">Playoffs - Finale</option>
                                     </select>
                                 </div>
                                 <div className="col-span-2 space-y-4">
@@ -1302,6 +1312,23 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                                 <div className="col-span-2">
                                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Lieu du match</label>
                                     <input className="w-full p-2 border rounded-lg" placeholder="Ville ou Salle de l'adversaire" value={currentMatch.location || ''} onChange={e => setCurrentMatch({ ...currentMatch, location: e.target.value })} />
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Type de Match</label>
+                                    <select
+                                        className="w-full p-2 border rounded-lg font-bold"
+                                        value={currentMatch.match_type || 'Championnat'}
+                                        onChange={e => setCurrentMatch({ ...currentMatch, match_type: e.target.value })}
+                                    >
+                                        <option value="Championnat">Championnat</option>
+                                        <option value="Coupe">Coupe</option>
+                                        <option value="Amical">Amical</option>
+                                        <option value="Playoffs - 16ème">Playoffs - 16ème</option>
+                                        <option value="Playoffs - 8ème">Playoffs - 8ème</option>
+                                        <option value="Playoffs - Quart">Playoffs - Quart</option>
+                                        <option value="Playoffs - Demi">Playoffs - Demi</option>
+                                        <option value="Playoffs - Finale">Playoffs - Finale</option>
+                                    </select>
                                 </div>
                             </div>
 

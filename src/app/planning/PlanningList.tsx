@@ -141,8 +141,14 @@ function MatchCard({ match }: { match: Match }) {
                             </span>
                         )}
                         {match.match_type !== 'Championnat' && (
-                            <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded self-center md:self-start ${match.match_type === 'Coupe' ? 'bg-yellow-100 text-yellow-600 border border-yellow-200' : 'bg-blue-100 text-blue-600 border border-blue-200'}`}>
-                                {match.match_type}
+                            <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded self-center md:self-start border ${
+                                match.match_type === 'Coupe' ? 'bg-yellow-100 text-yellow-600 border-yellow-200' : 
+                                match.match_type === 'Amical' ? 'bg-blue-100 text-blue-600 border-blue-200' : 
+                                'bg-orange-100 text-orange-600 border-orange-200'
+                            }`}>
+                                {match.match_type?.startsWith('Playoffs') ? (
+                                    <><i className="fas fa-fire mr-1"></i> PLAYOFFS - {match.match_type.replace('Playoffs - ', '')}</>
+                                ) : match.match_type}
                             </span>
                         )}
                     </div>

@@ -1158,20 +1158,23 @@ export default function AdminOTMManager({ initialMatches, teams, officials = [] 
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Type de Match</label>
-                                    <select
+                                    <input
+                                        list="match-types"
                                         className="w-full p-2 border rounded-lg font-bold bg-white"
+                                        placeholder="Ex: Championnat, Coupe..."
                                         value={currentMatch.match_type || 'Championnat'}
                                         onChange={e => setCurrentMatch({ ...currentMatch, match_type: e.target.value })}
-                                    >
-                                        <option value="Championnat">Championnat</option>
-                                        <option value="Coupe">Coupe</option>
-                                        <option value="Amical">Amical</option>
-                                        <option value="Playoffs - 16ème">Playoffs - 16ème</option>
-                                        <option value="Playoffs - 8ème">Playoffs - 8ème</option>
-                                        <option value="Playoffs - Quart">Playoffs - Quart</option>
-                                        <option value="Playoffs - Demi">Playoffs - Demi</option>
-                                        <option value="Playoffs - Finale">Playoffs - Finale</option>
-                                    </select>
+                                    />
+                                    <datalist id="match-types">
+                                        <option value="Championnat" />
+                                        <option value="Coupe" />
+                                        <option value="Amical" />
+                                        <option value="Playoffs - 16ème" />
+                                        <option value="Playoffs - 8ème" />
+                                        <option value="Playoffs - Quart" />
+                                        <option value="Playoffs - Demi" />
+                                        <option value="Playoffs - Finale" />
+                                    </datalist>
                                 </div>
                                 <div className="col-span-2 space-y-4">
                                     <label className="flex items-center gap-2 cursor-pointer bg-orange-50 p-3 rounded-lg border border-orange-100">

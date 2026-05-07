@@ -35,6 +35,7 @@ interface Match {
     scoreVisitor?: string;
     teamImage?: string;
     seclinSide?: 'home' | 'visitor';
+    matchType?: string;
 }
 
 type Mode = 'match-affiche' | 'planning-semaine' | 'match-resultat' | 'resultats-semaine';
@@ -825,6 +826,11 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
                                                                             </div>
                                                                         ) : null,
                                                                         <div key={`match-${i}`} className={`${bgClass} backdrop-blur-sm border rounded-xl p-4 flex items-center relative overflow-hidden group transition-colors duration-300`}>
+                                                                            {m.matchType && (
+                                                                                <div className="absolute top-0 left-0 bg-sbc text-white text-xl font-black uppercase px-6 py-1 rounded-br-2xl shadow-[5px_5px_15px_rgba(0,0,0,0.5)] z-20 tracking-widest border-r border-b border-white/20">
+                                                                                    {m.matchType}
+                                                                                </div>
+                                                                            )}
 
                                                                             {/* HOME TEAM (Left) */}
                                                                             <div className="w-5/12 flex flex-col items-end pr-8 border-r border-white/10">
@@ -905,8 +911,31 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
 
                                             return (
                                                 <div key={i} className="flex flex-col gap-2">
-                                                    <div className="flex justify-between items-center bg-gray-100 p-2 rounded-lg text-xs">
-                                                        <span className="font-bold text-gray-600 truncate max-w-[100px]">{match.division}</span>
+                                                    <div className="flex justify-between items-center bg-gray-100 p-2 rounded-lg text-xs gap-2">
+                                                        <span className="font-bold text-gray-600 truncate max-w-[100px]" title={match.division}>{match.division}</span>
+                                                        <input 
+                                                            type="text" 
+                                                            placeholder="Type (ex: Coupe...)"
+                                                            value={match.matchType || ''}
+                                                            onChange={(e) => {
+                                                                const newVal = e.target.value;
+                                                                setMatches(prev => {
+                                                                    const newMatches = [...prev];
+                                                                    const idx = newMatches.findIndex(m => 
+                                                                        m.division === match.division && 
+                                                                        m.home === match.home && 
+                                                                        m.visitor === match.visitor && 
+                                                                        m.date === match.date && 
+                                                                        m.time === match.time
+                                                                    );
+                                                                    if (idx !== -1) {
+                                                                        newMatches[idx] = { ...newMatches[idx], matchType: newVal };
+                                                                    }
+                                                                    return newMatches;
+                                                                });
+                                                            }}
+                                                            className="flex-1 min-w-[80px] px-2 py-1 rounded border border-gray-300 focus:border-sbc focus:ring-1 focus:ring-sbc outline-none"
+                                                        />
                                                         {!match.teamId && (
                                                             <button
                                                                 onClick={() => {
@@ -915,17 +944,19 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
                                                                     setNewTeamNameString(likelySeclin);
                                                                     setActiveTab('mappings');
                                                                 }}
-                                                                className="text-sbc hover:underline"
+                                                                className="text-sbc hover:underline whitespace-nowrap"
                                                             >
                                                                 Assigner ?
                                                             </button>
                                                         )}
-                                                        <button onClick={() => shareStory(i)} title="Partager" className="text-gray-500 hover:text-black mr-2">
-                                                            <i className="fas fa-share-alt"></i>
-                                                        </button>
-                                                        <button onClick={() => downloadStory(i)} title="Télécharger" className="text-gray-500 hover:text-black">
-                                                            <i className="fas fa-download"></i>
-                                                        </button>
+                                                        <div className="flex items-center gap-1">
+                                                            <button onClick={() => shareStory(i)} title="Partager" className="text-gray-500 hover:text-black p-1">
+                                                                <i className="fas fa-share-alt"></i>
+                                                            </button>
+                                                            <button onClick={() => downloadStory(i)} title="Télécharger" className="text-gray-500 hover:text-black p-1">
+                                                                <i className="fas fa-download"></i>
+                                                            </button>
+                                                        </div>
                                                     </div>
 
                                                     {/* STORY PREVIEW CONTAINER */}
@@ -976,6 +1007,11 @@ export default function AdminStoryGenerator({ teams }: { teams: Team[] }) {
                                                                 <h1 className="text-5xl font-black uppercase tracking-widest text-sbc-light mb-4">
                                                                     {mode === 'match-resultat' ? 'RÉSULTAT DU MATCH' : 'MATCH DAY'}
                                                                 </h1>
+                                                                {match.matchType && (
+                                                                    <div className="inline-block bg-sbc text-white px-8 py-3 rounded-2xl shadow-2xl mb-8 transform -skew-x-6 border-2 border-white/20">
+                                                                        <h2 className="text-5xl font-black uppercase tracking-widest transform skew-x-6">{match.matchType}</h2>
+                                                                    </div>
+                                                                )}
                                                                 <div className="h-2 w-32 bg-white mx-auto rounded-full"></div>
                                                             </div>
 

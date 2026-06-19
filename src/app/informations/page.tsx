@@ -60,7 +60,7 @@ export default async function Informations() {
 
                 <section>
                     <h2 className="text-2xl font-bold text-sbc border-b-2 border-gray-200 pb-2 mb-8">
-                        <i className="fas fa-tag mr-2"></i> Grille Tarifaire 2024-2025
+                        <i className="fas fa-tag mr-2"></i> Grille Tarifaire 2026-2027
                     </h2>
 
                     <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
@@ -78,59 +78,59 @@ export default async function Informations() {
                                 <tbody className="text-gray-700 text-sm font-medium">
                                     <tr className="border-b border-gray-200 hover:bg-green-50 transition">
                                         <td className="py-4 px-6 font-bold text-sbc-dark">SENIORS</td>
-                                        <td className="py-4 px-6">Avant 2005</td>
-                                        <td className="py-4 px-6 text-center bg-green-50 text-base font-bold text-gray-800">110 €</td>
-                                        <td className="py-4 px-6 text-center">90 €</td>
-                                        <td className="py-4 px-6 text-center text-gray-500">170 €</td>
+                                        <td className="py-4 px-6">Avant 2007</td>
+                                        <td className="py-4 px-6 text-center bg-green-50 text-base font-bold text-gray-800">135 €</td>
+                                        <td className="py-4 px-6 text-center">115 €</td>
+                                        <td className="py-4 px-6 text-center text-gray-500">195 €</td>
                                     </tr>
                                     <tr className="border-b border-gray-200 hover:bg-green-50 transition">
                                         <td className="py-4 px-6 font-bold text-sbc-dark">U21</td>
-                                        <td className="py-4 px-6">2005 / 2006 / 2007</td>
-                                        <td className="py-4 px-6 text-center bg-green-50 text-base font-bold text-gray-800">110 €</td>
-                                        <td className="py-4 px-6 text-center">90 €</td>
-                                        <td className="py-4 px-6 text-center text-gray-500">170 €</td>
+                                        <td className="py-4 px-6">2007 / 2008 / 2009</td>
+                                        <td className="py-4 px-6 text-center bg-green-50 text-base font-bold text-gray-800">135 €</td>
+                                        <td className="py-4 px-6 text-center">115 €</td>
+                                        <td className="py-4 px-6 text-center text-gray-500">195 €</td>
                                     </tr>
                                     <tr className="border-b border-gray-200 hover:bg-green-50 transition">
                                         <td className="py-4 px-6 font-bold text-sbc-dark">U18</td>
-                                        <td className="py-4 px-6">2008 / 2009 / 2010</td>
+                                        <td className="py-4 px-6">2010 / 2011 / 2012</td>
+                                        <td className="py-4 px-6 text-center bg-green-50 text-base font-bold text-gray-800">120 €</td>
+                                        <td className="py-4 px-6 text-center">100 €</td>
+                                        <td className="py-4 px-6 text-center text-gray-500">180 €</td>
+                                    </tr>
+                                    <tr className="border-b border-gray-200 hover:bg-green-50 transition">
+                                        <td className="py-4 px-6 font-bold text-sbc-dark">U15</td>
+                                        <td className="py-4 px-6">2013 / 2014</td>
                                         <td className="py-4 px-6 text-center bg-green-50 text-base font-bold text-gray-800">105 €</td>
                                         <td className="py-4 px-6 text-center">85 €</td>
                                         <td className="py-4 px-6 text-center text-gray-500">165 €</td>
                                     </tr>
                                     <tr className="border-b border-gray-200 hover:bg-green-50 transition">
-                                        <td className="py-4 px-6 font-bold text-sbc-dark">U15</td>
-                                        <td className="py-4 px-6">2011 / 2012</td>
-                                        <td className="py-4 px-6 text-center bg-green-50 text-base font-bold text-gray-800">95 €</td>
-                                        <td className="py-4 px-6 text-center">75 €</td>
-                                        <td className="py-4 px-6 text-center text-gray-500">155 €</td>
-                                    </tr>
-                                    <tr className="border-b border-gray-200 hover:bg-green-50 transition">
                                         <td className="py-4 px-6 font-bold text-sbc-dark">U13</td>
-                                        <td className="py-4 px-6">2013 / 2014</td>
-                                        <td className="py-4 px-6 text-center bg-green-50 text-base font-bold text-gray-800">90 €</td>
-                                        <td className="py-4 px-6 text-center">70 €</td>
-                                        <td className="py-4 px-6 text-center text-gray-500">90 €</td>
+                                        <td className="py-4 px-6">2015 / 2016</td>
+                                        <td className="py-4 px-6 text-center bg-green-50 text-base font-bold text-gray-800">100 €</td>
+                                        <td className="py-4 px-6 text-center">80 €</td>
+                                        <td className="py-4 px-6 text-center text-gray-500">100 €</td>
                                     </tr>
                                     <tr className="border-b border-gray-200 hover:bg-green-50 transition">
                                         <td className="py-4 px-6 font-bold text-sbc-dark">U11</td>
-                                        <td className="py-4 px-6">2015 / 2016</td>
-                                        <td className="py-4 px-6 text-center bg-green-50 text-base font-bold text-gray-800">75 €</td>
-                                        <td className="py-4 px-6 text-center">65 €</td>
-                                        <td className="py-4 px-6 text-center text-gray-500">75 €</td>
+                                        <td className="py-4 px-6">2017 / 2018</td>
+                                        <td className="py-4 px-6 text-center bg-green-50 text-base font-bold text-gray-800">85 €</td>
+                                        <td className="py-4 px-6 text-center">75 €</td>
+                                        <td className="py-4 px-6 text-center text-gray-500">85 €</td>
                                     </tr>
                                     <tr className="border-b border-gray-200 hover:bg-green-50 transition">
                                         <td className="py-4 px-6 font-bold text-sbc-dark">U9</td>
-                                        <td className="py-4 px-6">2017 / 2018</td>
-                                        <td className="py-4 px-6 text-center bg-green-50 text-base font-bold text-gray-800">65 €</td>
-                                        <td className="py-4 px-6 text-center">65 €</td>
-                                        <td className="py-4 px-6 text-center text-gray-500">65 €</td>
+                                        <td className="py-4 px-6">2019 / 2020</td>
+                                        <td className="py-4 px-6 text-center bg-green-50 text-base font-bold text-gray-800">75 €</td>
+                                        <td className="py-4 px-6 text-center">75 €</td>
+                                        <td className="py-4 px-6 text-center text-gray-500">75 €</td>
                                     </tr>
                                     <tr className="hover:bg-green-50 transition">
                                         <td className="py-4 px-6 font-bold text-sbc-dark">U7</td>
-                                        <td className="py-4 px-6">2019 / 2020</td>
-                                        <td className="py-4 px-6 text-center bg-green-50 text-base font-bold text-gray-800">55 €</td>
-                                        <td className="py-4 px-6 text-center">55 €</td>
-                                        <td className="py-4 px-6 text-center text-gray-500">55 €</td>
+                                        <td className="py-4 px-6">2021 / 2022</td>
+                                        <td className="py-4 px-6 text-center bg-green-50 text-base font-bold text-gray-800">65 €</td>
+                                        <td className="py-4 px-6 text-center">65 €</td>
+                                        <td className="py-4 px-6 text-center text-gray-500">65 €</td>
                                     </tr>
                                 </tbody>
                             </table>

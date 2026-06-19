@@ -81,7 +81,7 @@ export default function Equipes() {
         return (
             <main className="container mx-auto px-4 py-12 flex-grow fade-in text-center">
                 <h1 className="text-4xl font-bold text-sbc-dark">Nos Équipes</h1>
-                <p className="text-gray-600 mt-2">Saison 2024 - 2025</p>
+                <p className="text-gray-600 mt-2">Saison 2026 - 2027</p>
                 <div className="mt-12 text-gray-500">Chargement des équipes...</div>
             </main>
         )
@@ -136,7 +136,7 @@ export default function Equipes() {
             <header className="bg-white py-12 shadow-sm text-center relative overflow-hidden">
                 <div className="relative z-10">
                     <h1 className="text-4xl font-bold text-sbc-dark mb-4 uppercase tracking-wide">Nos Équipes</h1>
-                    <p className="text-gray-600">Saison 2024 - 2025</p>
+                    <p className="text-gray-600">Saison 2026 - 2027</p>
                 </div>
                 <i className="fas fa-basketball-ball absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-9xl text-gray-100 -z-0"></i>
             </header>

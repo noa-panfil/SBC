@@ -65,9 +65,12 @@ function ProductCard({ product, onOpen }: { product: ShopProduct; onOpen: (produ
     const sizes = variants.map((variant) => variant.size);
 
     return (
-        <article className="group overflow-hidden rounded-[1.75rem] border border-gray-200/80 bg-white shadow-[0_8px_35px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_55px_rgba(15,23,42,0.12)]">
-            <button type="button" onClick={() => onOpen(product, selectedColor)} className="relative block aspect-square w-full overflow-hidden bg-[#f4f5f3] text-left focus:outline-none focus:ring-4 focus:ring-inset focus:ring-sbc/25" aria-label={`Découvrir ${product.name}`}>
-                {images[0] ? <img key={images[0].url} src={images[0].url} alt={`${product.name} - ${selectedColor}`} className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.035]" /> : <div className="flex h-full items-center justify-center text-6xl text-sbc/20"><i className="fas fa-tshirt" /></div>}
+        <article className="overflow-hidden rounded-[1.75rem] border border-gray-200/80 bg-white shadow-[0_8px_35px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_55px_rgba(15,23,42,0.12)]">
+            <button type="button" onClick={() => onOpen(product, selectedColor)} className="group/image relative block aspect-square w-full overflow-hidden bg-[#f4f5f3] text-left focus:outline-none focus:ring-4 focus:ring-inset focus:ring-sbc/25" aria-label={`Découvrir ${product.name}`}>
+                {images[0] ? <>
+                    <img key={`primary-${images[0].url}`} src={images[0].url} alt={`${product.name} - ${selectedColor}`} className={`absolute inset-0 h-full w-full object-cover opacity-100 transition-[opacity,transform] duration-500 ease-out group-hover/image:scale-[1.035] ${images[1] ? "group-hover/image:opacity-0" : ""}`} />
+                    {images[1] && <img key={`secondary-${images[1].url}`} src={images[1].url} alt={`${product.name} - ${selectedColor}, seconde vue`} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-[opacity,transform] duration-500 ease-out group-hover/image:scale-[1.035] group-hover/image:opacity-100" />}
+                </> : <div className="flex h-full items-center justify-center text-6xl text-sbc/20"><i className="fas fa-tshirt" /></div>}
                 <span className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-sbc-dark shadow-sm backdrop-blur">Collection SBC</span>
                 {images.length > 1 && <span className="absolute bottom-4 right-4 flex h-9 min-w-9 items-center justify-center rounded-full bg-gray-950/80 px-2 text-xs font-black text-white backdrop-blur"><i className="far fa-images mr-1.5" />{images.length}</span>}
             </button>
@@ -103,16 +106,26 @@ function ProductDialog({ product, initialColor, onClose }: { product: ShopProduc
     const [quantity, setQuantity] = useState(1);
     const [message, setMessage] = useState("");
     const [activeImage, setActiveImage] = useState(images[0]?.url || null);
+    const [isZoomed, setIsZoomed] = useState(false);
     const closeRef = useRef<HTMLButtonElement>(null);
     const variant = variants.find((candidate) => candidate.size === size);
+    const activeImageIndex = Math.max(0, images.findIndex((image) => image.url === activeImage));
 
     useEffect(() => {
         closeRef.current?.focus();
-        const listener = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
-        document.addEventListener("keydown", listener);
         document.body.style.overflow = "hidden";
-        return () => { document.removeEventListener("keydown", listener); document.body.style.overflow = ""; };
+        return () => { document.body.style.overflow = ""; };
     }, [onClose]);
+
+    useEffect(() => {
+        const listener = (event: KeyboardEvent) => {
+            if (event.key !== "Escape") return;
+            if (isZoomed) setIsZoomed(false);
+            else onClose();
+        };
+        document.addEventListener("keydown", listener);
+        return () => document.removeEventListener("keydown", listener);
+    }, [isZoomed, onClose]);
 
     const chooseColor = (color: string) => {
         const nextVariants = variantsForColor(product, color);
@@ -121,6 +134,12 @@ function ProductDialog({ product, initialColor, onClose }: { product: ShopProduc
         setSize(nextVariants[0]?.size || "");
         setActiveImage(nextImages[0]?.url || null);
         setMessage("");
+    };
+
+    const showAdjacentImage = (direction: -1 | 1) => {
+        if (images.length < 2) return;
+        const nextIndex = (activeImageIndex + direction + images.length) % images.length;
+        setActiveImage(images[nextIndex].url);
     };
 
     const add = () => {
@@ -144,10 +163,15 @@ function ProductDialog({ product, initialColor, onClose }: { product: ShopProduc
                 <div className="grid lg:grid-cols-[1.08fr_0.92fr]">
                     <div className="bg-[#f2f3f1] p-4 sm:p-6">
                         <div className="relative aspect-square overflow-hidden rounded-2xl bg-white">
-                            {activeImage ? <img src={activeImage} alt={`${product.name} - ${selectedColor}`} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-7xl text-sbc/20"><i className="fas fa-tshirt" /></div>}
-                            <button ref={closeRef} onClick={onClose} className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-white text-gray-900 shadow-lg transition hover:scale-105 focus:outline-none focus:ring-4 focus:ring-sbc/30" aria-label="Fermer la fiche produit"><i className="fas fa-times" /></button>
+                            {activeImage ? <button type="button" onClick={() => setIsZoomed(true)} className="group/zoom relative h-full w-full cursor-zoom-in focus:outline-none focus:ring-4 focus:ring-inset focus:ring-sbc/30" aria-label={`Agrandir la photo de ${product.name}`}><img src={activeImage} alt={`${product.name} - ${selectedColor}`} className="h-full w-full object-cover transition duration-500 group-hover/zoom:scale-[1.02]" /><span className="absolute bottom-4 left-4 rounded-full bg-white/95 px-3 py-2 text-xs font-black text-gray-900 opacity-0 shadow-lg backdrop-blur transition group-hover/zoom:opacity-100 group-focus/zoom:opacity-100"><i className="fas fa-search-plus mr-2" />Agrandir</span></button> : <div className="flex h-full items-center justify-center text-7xl text-sbc/20"><i className="fas fa-tshirt" /></div>}
+                            {images.length > 1 && <>
+                                <button type="button" onClick={() => showAdjacentImage(-1)} className="absolute left-4 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-gray-900 shadow-lg backdrop-blur transition hover:scale-105 focus:outline-none focus:ring-4 focus:ring-sbc/30" aria-label="Afficher la photo précédente"><i className="fas fa-chevron-left" /></button>
+                                <button type="button" onClick={() => showAdjacentImage(1)} className="absolute right-4 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-gray-900 shadow-lg backdrop-blur transition hover:scale-105 focus:outline-none focus:ring-4 focus:ring-sbc/30" aria-label="Afficher la photo suivante"><i className="fas fa-chevron-right" /></button>
+                                <span className="pointer-events-none absolute bottom-4 right-4 z-10 rounded-full bg-gray-950/75 px-3 py-1.5 text-xs font-black text-white backdrop-blur">{activeImageIndex + 1} / {images.length}</span>
+                            </>}
+                            <button ref={closeRef} onClick={onClose} className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white text-gray-900 shadow-lg transition hover:scale-105 focus:outline-none focus:ring-4 focus:ring-sbc/30" aria-label="Fermer la fiche produit"><i className="fas fa-times" /></button>
                         </div>
-                        {images.length > 1 && <div className="mt-3 flex gap-3 overflow-x-auto pb-1">{images.map((image, index) => <button key={image.id} onClick={() => setActiveImage(image.url)} className={`h-20 w-20 shrink-0 overflow-hidden rounded-xl border-2 bg-white transition focus:outline-none focus:ring-4 focus:ring-sbc/20 ${activeImage === image.url ? "border-sbc" : "border-transparent hover:border-gray-300"}`} aria-label={`Afficher la photo ${index + 1}`}><img src={image.url} alt="" className="h-full w-full object-cover" /></button>)}</div>}
+                        {images.length > 1 && <div className="mt-3"><p className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-gray-500">Toutes les photos · {selectedColor}</p><div className="flex gap-3 overflow-x-auto pb-1">{images.map((image, index) => <button type="button" key={image.id} onClick={() => setActiveImage(image.url)} className={`h-20 w-20 shrink-0 overflow-hidden rounded-xl border-2 bg-white transition focus:outline-none focus:ring-4 focus:ring-sbc/20 ${activeImage === image.url ? "border-sbc" : "border-transparent hover:border-gray-300"}`} aria-label={`Afficher la photo ${index + 1} sur ${images.length}`}><img src={image.url} alt="" className="h-full w-full object-cover" /></button>)}</div></div>}
                     </div>
 
                     <div className="flex flex-col p-6 sm:p-8 lg:p-10">
@@ -168,6 +192,17 @@ function ProductDialog({ product, initialColor, onClose }: { product: ShopProduc
                     </div>
                 </div>
             </div>
+            {isZoomed && activeImage && (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/95 p-4 backdrop-blur-sm sm:p-8" role="dialog" aria-modal="true" aria-label={`Photo agrandie de ${product.name}`} onMouseDown={(event) => { if (event.target === event.currentTarget) setIsZoomed(false); }}>
+                    <img src={activeImage} alt={`${product.name} - ${selectedColor}, vue agrandie`} className="max-h-[92vh] max-w-[94vw] object-contain drop-shadow-2xl" />
+                    <button type="button" onClick={() => setIsZoomed(false)} className="absolute right-4 top-4 flex h-12 w-12 items-center justify-center rounded-full bg-white text-gray-950 shadow-xl transition hover:scale-105 focus:outline-none focus:ring-4 focus:ring-sbc/40 sm:right-8 sm:top-8" aria-label="Fermer la photo agrandie"><i className="fas fa-times" /></button>
+                    {images.length > 1 && <>
+                        <button type="button" onClick={() => showAdjacentImage(-1)} className="absolute left-3 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-gray-950 shadow-xl transition hover:scale-105 focus:outline-none focus:ring-4 focus:ring-sbc/40 sm:left-8" aria-label="Photo agrandie précédente"><i className="fas fa-chevron-left" /></button>
+                        <button type="button" onClick={() => showAdjacentImage(1)} className="absolute right-3 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-gray-950 shadow-xl transition hover:scale-105 focus:outline-none focus:ring-4 focus:ring-sbc/40 sm:right-8" aria-label="Photo agrandie suivante"><i className="fas fa-chevron-right" /></button>
+                        <span className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-white/10 px-4 py-2 text-sm font-black text-white backdrop-blur sm:bottom-8">{activeImageIndex + 1} / {images.length}</span>
+                    </>}
+                </div>
+            )}
         </div>
     );
 }

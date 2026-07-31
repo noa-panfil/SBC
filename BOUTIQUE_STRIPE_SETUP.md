@@ -43,6 +43,20 @@ Ordre de création : `shop_products`, `shop_images`, `shop_product_images`, `sho
 
 Le script `database/boutique-stripe.sql` contient directement le schéma à jour complet. Aucun autre correctif SQL boutique n'est nécessaire pour une nouvelle installation.
 
+### Base boutique déjà créée avant la gestion des couleurs
+
+Si la base existe déjà, exécuter manuellement une seule fois ces deux ajouts avant de redémarrer l'application :
+
+```sql
+ALTER TABLE shop_product_variants
+    ADD COLUMN color_hex CHAR(7) NULL AFTER color;
+
+ALTER TABLE shop_product_images
+    ADD COLUMN color VARCHAR(100) NULL AFTER image_id;
+```
+
+`color_hex` définit la couleur de la pastille affichée au client. `shop_product_images.color` permet de rattacher une photo à une couleur du vêtement ; une valeur `NULL` conserve une photo générale visible pour toutes les couleurs.
+
 ## 2. Variables d'environnement
 
 ```env
@@ -107,7 +121,7 @@ Les envois utilisent une clé d'idempotence stable par commande et par type d'e-
 3. Démarrer l'application avec `npm run dev`.
 4. Se connecter avec un compte administrateur.
 5. Créer un produit inactif dans `/admin/boutique/produits`.
-6. Uploader une image, la recadrer dans l'outil obligatoire au format carré 1200 × 1200 px, créer plusieurs variantes, puis activer le produit.
+6. Créer les couleurs et leurs tailles, choisir la teinte de chaque pastille, puis uploader les images au format carré 1200 × 1200 px en les associant à la bonne couleur.
 7. Vérifier le choix couleur/taille, le changement de prix et les quantités sur mobile et ordinateur.
 8. Ajouter au panier, vérifier les champs client et accepter les deux confirmations.
 9. Effectuer un paiement test.

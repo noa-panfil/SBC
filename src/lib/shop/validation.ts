@@ -70,11 +70,13 @@ export function cleanVariantInput(value: unknown) {
     const body = value as Record<string, unknown>;
     const size = text(body.size, 80);
     const color = text(body.color, 100);
+    const colorHex = typeof body.colorHex === "string" && /^#[0-9a-f]{6}$/i.test(body.colorHex)
+        ? body.colorHex.toLowerCase()
+        : null;
     const sku = body.sku == null || body.sku === "" ? null : text(body.sku, 100);
     const priceCents = body.priceCents;
     const displayOrder = body.displayOrder;
     if (!size || !color || (body.sku && !sku) || typeof priceCents !== "number" || !Number.isInteger(priceCents) || priceCents < 1 || priceCents > 10_000_000) return null;
     if (typeof displayOrder !== "number" || !Number.isInteger(displayOrder) || Math.abs(displayOrder) > 100000) return null;
-    return { size, color, sku, priceCents, isActive: body.isActive === true, displayOrder };
+    return { size, color, colorHex, sku, priceCents, isActive: body.isActive === true, displayOrder };
 }
-

@@ -42,9 +42,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         for (const input of inputs) {
             if (!input) continue;
             const [result] = await connection.query<ResultSetHeader>(
-                `INSERT INTO shop_product_variants (product_id, sku, size, color, price_cents, is_active, display_order)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                [productId, input.sku, input.size, input.color, input.priceCents, input.isActive ? 1 : 0, input.displayOrder]
+                `INSERT INTO shop_product_variants (product_id, sku, size, color, color_hex, price_cents, is_active, display_order)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                [productId, input.sku, input.size, input.color, input.colorHex, input.priceCents, input.isActive ? 1 : 0, input.displayOrder]
             );
             ids.push(result.insertId);
         }

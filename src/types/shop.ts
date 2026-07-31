@@ -4,6 +4,7 @@ export type ShopVariant = {
     sku: string | null;
     size: string;
     color: string;
+    colorHex: string | null;
     priceCents: number;
     isActive: boolean;
     displayOrder: number;
@@ -13,6 +14,7 @@ export type ShopImage = {
     id: number;
     imageId: number;
     url: string;
+    color: string | null;
     isPrimary: boolean;
     displayOrder: number;
 };

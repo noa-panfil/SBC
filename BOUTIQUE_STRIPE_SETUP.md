@@ -107,7 +107,7 @@ Les envois utilisent une clé d'idempotence stable par commande et par type d'e-
 3. Démarrer l'application avec `npm run dev`.
 4. Se connecter avec un compte administrateur.
 5. Créer un produit inactif dans `/admin/boutique/produits`.
-6. Associer ou uploader une image, créer plusieurs variantes, puis activer le produit.
+6. Uploader une image, la recadrer dans l'outil obligatoire au format carré 1200 × 1200 px, créer plusieurs variantes, puis activer le produit.
 7. Vérifier le choix couleur/taille, le changement de prix et les quantités sur mobile et ordinateur.
 8. Ajouter au panier, vérifier les champs client et accepter les deux confirmations.
 9. Effectuer un paiement test.

@@ -1,0 +1,78 @@
+export type ShopVariant = {
+    id: number;
+    productId: number;
+    sku: string | null;
+    size: string;
+    color: string;
+    priceCents: number;
+    isActive: boolean;
+    displayOrder: number;
+};
+
+export type ShopImage = {
+    id: number;
+    imageId: number;
+    url: string;
+    isPrimary: boolean;
+    displayOrder: number;
+};
+
+export type ShopProduct = {
+    id: number;
+    name: string;
+    slug: string;
+    description: string;
+    isActive: boolean;
+    displayOrder: number;
+    images: ShopImage[];
+    variants: ShopVariant[];
+};
+
+export type CartLine = {
+    variantId: number;
+    productId: number;
+    productName: string;
+    imageUrl: string | null;
+    size: string;
+    color: string;
+    priceCents: number;
+    quantity: number;
+};
+
+export type ShopPaymentStatus = "pending" | "paid" | "failed" | "expired" | "refunded" | "partially_refunded";
+
+export type ShopOrderStatus =
+    | "pending_payment"
+    | "paid"
+    | "sent_to_supplier"
+    | "available_for_pickup"
+    | "picked_up"
+    | "cancelled"
+    | "refunded"
+    | "payment_failed"
+    | "expired";
+
+export type ShopBatchStatus = "draft" | "sent" | "received" | "available" | "cancelled";
+
+export type ShopOrderItem = {
+    id: number;
+    productName: string;
+    sku: string | null;
+    size: string;
+    color: string;
+    unitPriceCents: number;
+    quantity: number;
+    lineTotalCents: number;
+};
+
+export const SHOP_ORDER_STATUSES: ShopOrderStatus[] = [
+    "pending_payment",
+    "paid",
+    "sent_to_supplier",
+    "available_for_pickup",
+    "picked_up",
+    "cancelled",
+    "refunded",
+    "payment_failed",
+    "expired",
+];

@@ -32,6 +32,10 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# Schéma local de la deuxième base boutique (conservé hors Git)
+/database/boutique-stripe.sql
 
 # vercel
 .vercel

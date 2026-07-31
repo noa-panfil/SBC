@@ -15,6 +15,7 @@ const menuItems = [
     { name: "Anniversaires", icon: "fas fa-birthday-cake", href: "/admin#birthdays" },
     { name: "Apparence", icon: "fas fa-paint-brush", href: "/admin#appearance" },
     { name: "Médiathèque", icon: "fas fa-images", href: "/admin/images" },
+    { name: "Boutique", icon: "fas fa-shopping-basket", href: "/admin/boutique" },
 ];
 
 export default function AdminSidebar() {
@@ -75,7 +76,7 @@ export default function AdminSidebar() {
 
             {/* Mobile Bottom Navigation - Visible only on mobile */}
             <div className="md:hidden fixed bottom-4 left-4 right-4 bg-white/90 backdrop-blur-xl border border-white/20 px-6 py-4 z-[100] flex justify-between items-center shadow-2xl rounded-[2rem]">
-                {menuItems.slice(0, 5).map((item) => {
+                {menuItems.filter((item) => ["/admin", "/admin/players", "/admin/boutique", "/admin/images"].includes(item.href)).map((item) => {
                     const isActive = pathname === item.href;
                     return (
                         <Link

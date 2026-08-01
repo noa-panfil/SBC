@@ -23,13 +23,15 @@ export async function POST(request: Request) {
     if (!input) return NextResponse.json({ error: "Données produit invalides." }, { status: 400 });
     try {
         const [result] = await pool.query<ResultSetHeader>(
-            `INSERT INTO shop_products (name, slug, description, is_active, display_order) VALUES (?, ?, ?, ?, ?)`,
-            [input.name, input.slug, input.description, input.isActive ? 1 : 0, input.displayOrder]
+            `INSERT INTO shop_products (name, slug, description, is_active, display_order, collection_id) VALUES (?, ?, ?, ?, ?, ?)`,
+            [input.name, input.slug, input.description, input.isActive ? 1 : 0, input.displayOrder, input.collectionId]
         );
         return NextResponse.json({ id: result.insertId }, { status: 201 });
     } catch (error) {
-        if (error && typeof error === "object" && "code" in error && (error as { code?: string }).code === "ER_DUP_ENTRY") {
-            return NextResponse.json({ error: "Ce slug est déjà utilisé." }, { status: 409 });
+        if (error && typeof error === "object" && "code" in error) {
+            const code = (error as { code?: string }).code;
+            if (code === "ER_DUP_ENTRY") return NextResponse.json({ error: "Cet identifiant est déjà utilisé." }, { status: 409 });
+            if (code === "ER_NO_REFERENCED_ROW_2") return NextResponse.json({ error: "La collection sélectionnée n'existe plus." }, { status: 409 });
         }
         console.error("Admin shop product create error:", error);
         return NextResponse.json({ error: "Impossible de créer le produit." }, { status: 500 });

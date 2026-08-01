@@ -25,14 +25,16 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (!id || !input) return NextResponse.json({ error: "Données produit invalides." }, { status: 400 });
     try {
         const [result] = await pool.query<ResultSetHeader>(
-            `UPDATE shop_products SET name = ?, slug = ?, description = ?, is_active = ?, display_order = ? WHERE id = ?`,
-            [input.name, input.slug, input.description, input.isActive ? 1 : 0, input.displayOrder, id]
+            `UPDATE shop_products SET name = ?, slug = ?, description = ?, is_active = ?, display_order = ?, collection_id = ? WHERE id = ?`,
+            [input.name, input.slug, input.description, input.isActive ? 1 : 0, input.displayOrder, input.collectionId, id]
         );
         if (!result.affectedRows) return NextResponse.json({ error: "Produit introuvable." }, { status: 404 });
         return NextResponse.json({ success: true });
     } catch (error) {
-        if (error && typeof error === "object" && "code" in error && (error as { code?: string }).code === "ER_DUP_ENTRY") {
-            return NextResponse.json({ error: "Ce slug est déjà utilisé." }, { status: 409 });
+        if (error && typeof error === "object" && "code" in error) {
+            const code = (error as { code?: string }).code;
+            if (code === "ER_DUP_ENTRY") return NextResponse.json({ error: "Cet identifiant est déjà utilisé." }, { status: 409 });
+            if (code === "ER_NO_REFERENCED_ROW_2") return NextResponse.json({ error: "La collection sélectionnée n'existe plus." }, { status: 409 });
         }
         console.error("Admin shop product update error:", error);
         return NextResponse.json({ error: "Impossible de modifier le produit." }, { status: 500 });

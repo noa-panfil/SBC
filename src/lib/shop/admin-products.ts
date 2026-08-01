@@ -2,13 +2,24 @@ import pool from "@/lib/shop/db";
 import { RowDataPacket } from "mysql2";
 import { ShopProduct } from "@/types/shop";
 
-type ProductRow = RowDataPacket & { id: number; name: string; slug: string; description: string; is_active: number; display_order: number };
+type ProductRow = RowDataPacket & {
+    id: number; name: string; slug: string; description: string; is_active: number; display_order: number;
+    collection_id: number | null; collection_name: string | null; collection_slug: string | null;
+    collection_description: string | null; collection_banner_image_id: number | null;
+    collection_is_active: number | null; collection_display_order: number | null;
+};
 type ImageRow = RowDataPacket & { id: number; product_id: number; image_id: number; color: string | null; is_primary: number; display_order: number };
 type VariantRow = RowDataPacket & { id: number; product_id: number; sku: string | null; size: string; color: string; color_hex: string | null; price_cents: number; is_active: number; display_order: number };
 
 export async function getAdminProducts(): Promise<ShopProduct[]> {
     const [products] = await pool.query<ProductRow[]>(
-        "SELECT id, name, slug, description, is_active, display_order FROM shop_products ORDER BY display_order, id"
+        `SELECT p.id, p.name, p.slug, p.description, p.is_active, p.display_order, p.collection_id,
+                c.name AS collection_name, c.slug AS collection_slug, c.description AS collection_description,
+                c.banner_image_id AS collection_banner_image_id,
+                c.is_active AS collection_is_active, c.display_order AS collection_display_order
+         FROM shop_products p
+         LEFT JOIN shop_collections c ON c.id = p.collection_id
+         ORDER BY CASE WHEN c.id IS NULL THEN 1 ELSE 0 END, c.display_order, c.id, p.display_order, p.id`
     );
     if (!products.length) return [];
     const ids = products.map((product) => product.id);
@@ -24,6 +35,15 @@ export async function getAdminProducts(): Promise<ShopProduct[]> {
     return products.map((product) => ({
         id: Number(product.id), name: product.name, slug: product.slug, description: product.description,
         isActive: Boolean(product.is_active), displayOrder: product.display_order,
+        collectionId: product.collection_id == null ? null : Number(product.collection_id),
+        collection: product.collection_id == null ? null : {
+            id: Number(product.collection_id), name: product.collection_name!, slug: product.collection_slug!,
+            description: product.collection_description || "",
+            bannerImageId: product.collection_banner_image_id == null ? null : Number(product.collection_banner_image_id),
+            bannerImageUrl: product.collection_banner_image_id == null ? null : `/api/shop/images/${product.collection_banner_image_id}`,
+            isActive: Boolean(product.collection_is_active),
+            displayOrder: Number(product.collection_display_order || 0),
+        },
         images: images.filter((image) => image.product_id === product.id).map((image) => ({
             id: Number(image.id), imageId: Number(image.image_id), url: `/api/shop/images/${image.image_id}`,
             color: image.color, isPrimary: Boolean(image.is_primary), displayOrder: image.display_order,

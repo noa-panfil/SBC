@@ -61,8 +61,21 @@ export function cleanProductInput(value: unknown) {
     const slug = text(body.slug, 180)?.toLowerCase();
     const description = typeof body.description === "string" && body.description.length <= 10000 ? body.description.trim() : null;
     const displayOrder = typeof body.displayOrder === "number" && Number.isInteger(body.displayOrder) && Math.abs(body.displayOrder) <= 100000 ? body.displayOrder : null;
-    if (!name || !slug || description === null || displayOrder === null || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return null;
-    return { name, slug, description, isActive: body.isActive === true, displayOrder };
+    const collectionId = body.collectionId == null || body.collectionId === "" ? null : parsePositiveId(body.collectionId);
+    if (!name || !slug || description === null || displayOrder === null || (body.collectionId != null && body.collectionId !== "" && !collectionId) || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return null;
+    return { name, slug, description, isActive: body.isActive === true, displayOrder, collectionId };
+}
+
+export function cleanCollectionInput(value: unknown) {
+    if (!value || typeof value !== "object") return null;
+    const body = value as Record<string, unknown>;
+    const name = text(body.name, 160);
+    const slug = text(body.slug, 180)?.toLowerCase();
+    const description = typeof body.description === "string" && body.description.length <= 2000 ? body.description.trim() : null;
+    const bannerImageId = body.bannerImageId == null || body.bannerImageId === "" ? null : parsePositiveId(body.bannerImageId);
+    const displayOrder = typeof body.displayOrder === "number" && Number.isInteger(body.displayOrder) && Math.abs(body.displayOrder) <= 100000 ? body.displayOrder : null;
+    if (!name || !slug || description === null || displayOrder === null || (body.bannerImageId != null && body.bannerImageId !== "" && !bannerImageId) || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return null;
+    return { name, slug, description, bannerImageId, isActive: body.isActive === true, displayOrder };
 }
 
 export function cleanVariantInput(value: unknown) {

@@ -71,7 +71,6 @@ function ProductCard({ product, onOpen }: { product: ShopProduct; onOpen: (produ
                     <img key={`primary-${images[0].url}`} src={images[0].url} alt={`${product.name} - ${selectedColor}`} className={`absolute inset-0 h-full w-full object-cover opacity-100 transition-[opacity,transform] duration-500 ease-out group-hover/image:scale-[1.035] ${images[1] ? "group-hover/image:opacity-0" : ""}`} />
                     {images[1] && <img key={`secondary-${images[1].url}`} src={images[1].url} alt={`${product.name} - ${selectedColor}, seconde vue`} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-[opacity,transform] duration-500 ease-out group-hover/image:scale-[1.035] group-hover/image:opacity-100" />}
                 </> : <div className="flex h-full items-center justify-center text-6xl text-sbc/20"><i className="fas fa-tshirt" /></div>}
-                <span className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-sbc-dark shadow-sm backdrop-blur">Collection SBC</span>
                 {images.length > 1 && <span className="absolute bottom-4 right-4 flex h-9 min-w-9 items-center justify-center rounded-full bg-gray-950/80 px-2 text-xs font-black text-white backdrop-blur"><i className="far fa-images mr-1.5" />{images.length}</span>}
             </button>
 
@@ -214,6 +213,29 @@ export default function ShopCatalog() {
     const [setupRequired, setSetupRequired] = useState(false);
     const [selected, setSelected] = useState<{ product: ShopProduct; color: string } | null>(null);
     const { count } = useShopCart();
+    const collectionGroups = useMemo(() => {
+        const groups = new Map<string, { slug: string; name: string; description: string; bannerImageUrl: string | null; products: ShopProduct[] }>();
+        for (const product of products) {
+            const key = product.collection ? String(product.collection.id) : "unassigned";
+            if (!groups.has(key)) {
+                groups.set(key, product.collection ? {
+                    slug: product.collection.slug,
+                    name: product.collection.name,
+                    description: product.collection.description,
+                    bannerImageUrl: product.collection.bannerImageUrl,
+                    products: [],
+                } : {
+                    slug: "autres-produits",
+                    name: "Les essentiels du club",
+                    description: "Retrouvez ici les produits disponibles hors collection.",
+                    bannerImageUrl: null,
+                    products: [],
+                });
+            }
+            groups.get(key)!.products.push(product);
+        }
+        return Array.from(groups.values());
+    }, [products]);
 
     useEffect(() => {
         fetch("/api/shop/products", { cache: "no-store" }).then(async (response) => {
@@ -229,7 +251,7 @@ export default function ShopCatalog() {
         <section className="relative isolate overflow-hidden bg-[#082b1d] text-white">
             <div className="absolute inset-0 -z-10 opacity-70 [background:radial-gradient(circle_at_15%_10%,rgba(34,197,94,.28),transparent_30%),radial-gradient(circle_at_85%_80%,rgba(249,115,22,.18),transparent_30%)]" />
             <div className="container mx-auto px-4 py-16 md:py-24">
-                <div className="max-w-4xl"><div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-green-100 backdrop-blur"><span className="h-2 w-2 rounded-full bg-green-400" />Collection officielle SBC</div><h1 className="mt-6 max-w-3xl text-4xl font-black leading-[0.95] tracking-[-0.04em] sm:text-6xl md:text-7xl">Les couleurs du club, <span className="text-green-400">sur le terrain</span> comme en gradin.</h1><p className="mt-6 max-w-2xl text-base leading-7 text-green-50/75 md:text-lg">Découvrez les vêtements officiels du Seclin Basket Club, disponibles en plusieurs couleurs et tailles.</p><div className="mt-8 flex flex-wrap gap-3"><a href="#collection" className="rounded-full bg-white px-6 py-3.5 font-black text-gray-950 transition hover:bg-green-100">Découvrir la collection</a><Link href="/boutique/panier" className="inline-flex items-center gap-3 rounded-full border border-white/20 bg-white/10 px-6 py-3.5 font-black text-white backdrop-blur transition hover:bg-white/20"><i className="fas fa-shopping-bag" />Panier <span className="rounded-full bg-green-400 px-2.5 py-1 text-xs text-green-950">{count}</span></Link></div></div>
+                <div className="max-w-4xl"><h1 className="max-w-3xl text-4xl font-black leading-[0.95] tracking-[-0.04em] sm:text-6xl md:text-7xl">Les couleurs du club, <span className="text-green-400">sur le terrain</span> comme en gradin.</h1><p className="mt-6 max-w-2xl text-base leading-7 text-green-50/75 md:text-lg">Découvrez les vêtements officiels du Seclin Basket Club, disponibles en plusieurs couleurs et tailles.</p><div className="mt-8 flex flex-wrap gap-3"><a href="#collection" className="rounded-full bg-white px-6 py-3.5 font-black text-gray-950 transition hover:bg-green-100">Découvrir la collection</a><Link href="/boutique/panier" className="inline-flex items-center gap-3 rounded-full border border-white/20 bg-white/10 px-6 py-3.5 font-black text-white backdrop-blur transition hover:bg-white/20"><i className="fas fa-shopping-bag" />Panier <span className="rounded-full bg-green-400 px-2.5 py-1 text-xs text-green-950">{count}</span></Link></div></div>
             </div>
         </section>
 
@@ -237,12 +259,14 @@ export default function ShopCatalog() {
 
         <section id="collection" className="bg-[#f7f7f5] py-12 md:py-20">
             <div className="container mx-auto px-4">
-                <div className="mb-9 flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-black uppercase tracking-[0.22em] text-sbc">Vestiaire officiel</p><h2 className="mt-2 text-3xl font-black tracking-tight text-gray-950 md:text-4xl">La collection du club</h2><p className="mt-2 text-sm text-gray-500">Choisissez une couleur pour afficher le modèle correspondant.</p></div>{products.length > 0 && <p className="rounded-full bg-white px-4 py-2 text-sm font-bold text-gray-500 shadow-sm">{products.length} produit{products.length > 1 ? "s" : ""}</p>}</div>
+                <div className="mb-9 flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-black uppercase tracking-[0.22em] text-sbc">Vestiaire officiel</p><h2 className="mt-2 text-3xl font-black tracking-tight text-gray-950 md:text-4xl">Les collections du club</h2><p className="mt-2 text-sm text-gray-500">Choisissez une collection, puis une couleur pour afficher le modèle correspondant.</p></div>{products.length > 0 && <p className="rounded-full bg-white px-4 py-2 text-sm font-bold text-gray-500 shadow-sm">{products.length} produit{products.length > 1 ? "s" : ""}</p>}</div>
+
+                {!loading && !error && collectionGroups.length > 1 && <nav aria-label="Collections disponibles" className="mb-10 flex gap-2 overflow-x-auto pb-2">{collectionGroups.map((group) => <a key={group.slug} href={`#collection-${group.slug}`} className="shrink-0 rounded-full border border-gray-200 bg-white px-5 py-2.5 text-sm font-black text-gray-700 shadow-sm transition hover:border-sbc hover:text-sbc focus:outline-none focus:ring-4 focus:ring-sbc/20">{group.name}<span className="ml-2 text-xs font-semibold text-gray-400">{group.products.length}</span></a>)}</nav>}
 
                 {loading && <div role="status" className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{[1, 2, 3, 4].map((value) => <div key={value} className="overflow-hidden rounded-[1.75rem] border border-gray-200 bg-white"><div className="aspect-square animate-pulse bg-gray-200" /><div className="space-y-3 p-6"><div className="h-5 w-2/3 animate-pulse rounded bg-gray-100" /><div className="h-4 w-1/3 animate-pulse rounded bg-gray-100" /><div className="h-10 animate-pulse rounded bg-gray-100" /></div></div>)}</div>}
                 {error && <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-900"><p className="font-black">La boutique n'a pas pu être chargée.</p><p className="mt-1 text-sm">{error}</p><button onClick={() => location.reload()} className="mt-4 rounded-lg bg-red-700 px-4 py-2 font-bold text-white">Réessayer</button></div>}
                 {!loading && !error && products.length === 0 && <div className="rounded-3xl border-2 border-dashed border-gray-200 bg-white px-6 py-16 text-center"><div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-50 text-2xl text-sbc"><i className="fas fa-tshirt" /></div><h3 className="mt-5 text-2xl font-black text-gray-900">La collection arrive bientôt</h3><p className="mx-auto mt-2 max-w-lg text-gray-500">Aucun produit n'est disponible pour le moment.</p>{setupRequired && <p className="mt-4 text-xs text-gray-400">Configuration initiale en attente.</p>}</div>}
-                {!loading && !error && <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{products.map((product) => <ProductCard key={product.id} product={product} onOpen={(item, color) => setSelected({ product: item, color })} />)}</div>}
+                {!loading && !error && products.length > 0 && <div className="space-y-16">{collectionGroups.map((group) => <section key={group.slug} id={`collection-${group.slug}`} className="scroll-mt-28"><div className="mb-7">{group.bannerImageUrl ? <><h3 className="sr-only">{group.name}</h3><div className="relative aspect-[16/3] w-full overflow-hidden rounded-3xl bg-gray-200 shadow-sm"><img src={group.bannerImageUrl} alt={`Bannière de la collection ${group.name}`} className="h-full w-full object-cover object-center" /><span className="absolute bottom-3 right-3 rounded-full bg-black/65 px-3 py-1.5 text-xs font-black text-white backdrop-blur sm:bottom-4 sm:right-4">{group.products.length} produit{group.products.length > 1 ? "s" : ""}</span></div></> : <div className="relative flex aspect-[16/3] w-full items-center justify-center overflow-hidden rounded-3xl bg-gradient-to-br from-sbc to-sbc-dark px-6 text-center text-white shadow-sm"><div className="absolute inset-0 opacity-30 [background:radial-gradient(circle_at_20%_20%,rgba(255,255,255,.35),transparent_35%)]" /><h3 className="relative text-2xl font-black tracking-tight sm:text-3xl md:text-4xl">{group.name}</h3><span className="absolute bottom-3 right-3 rounded-full bg-black/25 px-3 py-1.5 text-xs font-black text-white backdrop-blur sm:bottom-4 sm:right-4">{group.products.length} produit{group.products.length > 1 ? "s" : ""}</span></div>}{group.description && <p className="mt-4 max-w-3xl text-sm leading-6 text-gray-500">{group.description}</p>}</div><div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{group.products.map((product) => <ProductCard key={product.id} product={product} onOpen={(item, color) => setSelected({ product: item, color })} />)}</div></section>)}</div>}
             </div>
         </section>
 

@@ -19,6 +19,17 @@ export type ShopImage = {
     displayOrder: number;
 };
 
+export type ShopCollection = {
+    id: number;
+    name: string;
+    slug: string;
+    description: string;
+    bannerImageId: number | null;
+    bannerImageUrl: string | null;
+    isActive: boolean;
+    displayOrder: number;
+};
+
 export type ShopProduct = {
     id: number;
     name: string;
@@ -26,6 +37,8 @@ export type ShopProduct = {
     description: string;
     isActive: boolean;
     displayOrder: number;
+    collectionId: number | null;
+    collection: ShopCollection | null;
     images: ShopImage[];
     variants: ShopVariant[];
 };

@@ -4,14 +4,14 @@ Ce document décrit l'installation manuelle et la mise en service de la boutique
 
 ## Fonctionnalités ajoutées
 
-- catalogue public responsive avec produits, images, couleurs, tailles et prix par variante ;
+- catalogue public responsive avec collections illustrées par des bannières, produits, images, couleurs, tailles et prix par variante ;
 - panier conservé dans `localStorage`, quantités limitées à 10 et contrôle serveur complet avant paiement ;
 - collecte des coordonnées sans adresse postale, retrait uniquement au club ;
 - Stripe Checkout hébergé en paiement unique EUR ;
 - commandes et lignes immuables enregistrées dans MySQL avant la redirection Stripe ;
 - webhook Stripe signé, idempotent et responsable de la confirmation du paiement ;
 - e-mails Resend client, bureau, suivi fournisseur et disponibilité au club ;
-- administration des produits, images, variantes, commandes et statuts ;
+- administration guidée des collections, produits, couleurs, tailles, images, commandes et statuts ;
 - deuxième base MySQL dédiée à la boutique, séparée des données générales du site ;
 - images produit enregistrées dans `shop_images` dans cette deuxième base ;
 - lots fournisseur mensuels et export Excel à deux feuilles ;
@@ -35,9 +35,9 @@ npm run build
 4. Si nécessaire, remplacer `sbc_boutique` par le nom autorisé par l'hébergeur.
 5. Exécuter le bloc principal de haut en bas, une seule fois.
 6. Ne pas décommenter le bloc de suppression placé à la fin.
-7. Vérifier que la base dédiée contient les neuf tables `shop_*`.
+7. Vérifier que la base dédiée contient les dix tables `shop_*`.
 
-Ordre de création : `shop_products`, `shop_images`, `shop_product_images`, `shop_product_variants`, `shop_supplier_batches`, `shop_orders`, `shop_order_items`, `shop_order_status_history`, `shop_stripe_events`.
+Ordre de création : `shop_images`, `shop_collections`, `shop_products`, `shop_product_images`, `shop_product_variants`, `shop_supplier_batches`, `shop_orders`, `shop_order_items`, `shop_order_status_history`, `shop_stripe_events`.
 
 `shop_product_images.image_id` possède désormais une clé étrangère vers `shop_images.id`. Les nouveaux uploads boutique ne sont donc plus enregistrés dans la table `images` de la base principale.
 
@@ -56,6 +56,61 @@ ALTER TABLE shop_product_images
 ```
 
 `color_hex` définit la couleur de la pastille affichée au client. `shop_product_images.color` permet de rattacher une photo à une couleur du vêtement ; une valeur `NULL` conserve une photo générale visible pour toutes les couleurs.
+
+### Base boutique déjà créée avant la gestion des collections
+
+Si la base existe déjà, exécuter manuellement une seule fois ce bloc avant de redémarrer l'application :
+
+```sql
+ALTER TABLE shop_images
+    ADD COLUMN purpose ENUM('product', 'collection_banner') NOT NULL DEFAULT 'product' AFTER byte_size;
+
+CREATE TABLE shop_collections (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    name VARCHAR(160) NOT NULL,
+    slug VARCHAR(180) NOT NULL,
+    description VARCHAR(2000) NOT NULL DEFAULT '',
+    banner_image_id BIGINT UNSIGNED NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    display_order INT NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_shop_collections_slug (slug),
+    KEY idx_shop_collections_banner (banner_image_id),
+    KEY idx_shop_collections_active_order (is_active, display_order, id),
+    CONSTRAINT fk_shop_collections_banner
+        FOREIGN KEY (banner_image_id) REFERENCES shop_images(id)
+        ON DELETE SET NULL ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE shop_products
+    ADD COLUMN collection_id BIGINT UNSIGNED NULL AFTER description,
+    ADD KEY idx_shop_products_collection_order (collection_id, display_order, id),
+    ADD CONSTRAINT fk_shop_products_collection
+        FOREIGN KEY (collection_id) REFERENCES shop_collections(id)
+        ON DELETE SET NULL ON UPDATE RESTRICT;
+```
+
+Les produits existants restent sans collection et continuent d'être affichés. Ils pourront ensuite être classés depuis l'administration.
+
+### Collections déjà créées avant les bannières
+
+Si la table `shop_collections` existe déjà mais ne possède pas encore de bannière, exécuter uniquement ce bloc :
+
+```sql
+ALTER TABLE shop_images
+    ADD COLUMN purpose ENUM('product', 'collection_banner') NOT NULL DEFAULT 'product' AFTER byte_size;
+
+ALTER TABLE shop_collections
+    ADD COLUMN banner_image_id BIGINT UNSIGNED NULL AFTER description,
+    ADD KEY idx_shop_collections_banner (banner_image_id),
+    ADD CONSTRAINT fk_shop_collections_banner
+        FOREIGN KEY (banner_image_id) REFERENCES shop_images(id)
+        ON DELETE SET NULL ON UPDATE RESTRICT;
+```
+
+Les bannières sont recadrées et validées au format fixe `1600 × 300 px`. Les photos produit restent au format `1200 × 1200 px`.
 
 ## 2. Variables d'environnement
 
@@ -120,7 +175,7 @@ Les envois utilisent une clé d'idempotence stable par commande et par type d'e-
 2. Configurer `SHOP_DB_NAME` et les autres variables de la deuxième connexion.
 3. Démarrer l'application avec `npm run dev`.
 4. Se connecter avec un compte administrateur.
-5. Créer un produit inactif dans `/admin/boutique/produits`.
+5. Créer une collection, lui associer une bannière 1600 × 300 px, puis créer un produit inactif dans `/admin/boutique/produits` et l'associer à cette collection.
 6. Créer les couleurs et leurs tailles, choisir la teinte de chaque pastille, puis uploader les images au format carré 1200 × 1200 px en les associant à la bonne couleur.
 7. Vérifier le choix couleur/taille, le changement de prix et les quantités sur mobile et ordinateur.
 8. Ajouter au panier, vérifier les champs client et accepter les deux confirmations.
@@ -147,7 +202,7 @@ Tester également : boutique vide, variante désactivée après ajout au panier,
 ## Checklist avant ouverture
 
 - [ ] sauvegarde de la base principale effectuée ;
-- [ ] deuxième base créée avec ses neuf tables ;
+- [ ] deuxième base créée avec ses dix tables ;
 - [ ] variables `SHOP_DB_*` configurées et droits MySQL vérifiés ;
 - [ ] nouvelle boutique volontairement vide ou données ajoutées depuis l'administration ;
 - [ ] aucune migration automatique ajoutée ;

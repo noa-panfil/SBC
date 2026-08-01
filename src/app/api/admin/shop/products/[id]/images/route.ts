@@ -39,6 +39,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             await connection.rollback();
             return NextResponse.json({ error: "Cette couleur n'existe pas sur le produit." }, { status: 400 });
         }
+        const [sourceImages] = await connection.query<RowDataPacket[]>(
+            "SELECT 1 FROM shop_images WHERE id = ? AND purpose = 'product' LIMIT 1",
+            [imageId]
+        );
+        if (!sourceImages.length) {
+            await connection.rollback();
+            return NextResponse.json({ error: "Cette image n'est pas une photo produit." }, { status: 400 });
+        }
         const [sameColorImages] = await connection.query<RowDataPacket[]>(
             "SELECT COUNT(*) AS count FROM shop_product_images WHERE product_id = ? AND color <=> ?",
             [productId, color]

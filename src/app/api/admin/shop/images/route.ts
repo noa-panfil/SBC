@@ -5,7 +5,10 @@ import { getAdminSession } from "@/lib/shop/auth";
 import { isMissingShopTable } from "@/lib/shop/errors";
 
 const maxImageSize = 10 * 1024 * 1024;
-const requiredImageSize = 1200;
+const imageFormats = {
+    product: { width: 1200, height: 1200 },
+    collection_banner: { width: 1600, height: 300 },
+} as const;
 
 function jpegDimensions(data: Buffer): { width: number; height: number } | null {
     if (data.length < 4 || data[0] !== 0xff || data[1] !== 0xd8) return null;
@@ -35,13 +38,14 @@ export async function GET() {
 
     try {
         const [rows] = await pool.query<RowDataPacket[]>(
-            `SELECT id, name, mime_type, byte_size, created_at
+            `SELECT id, name, mime_type, byte_size, purpose, created_at
              FROM shop_images ORDER BY id DESC`
         );
         return NextResponse.json(rows.map((row) => ({
             id: Number(row.id),
             name: row.name,
             mime_type: row.mime_type,
+            purpose: row.purpose,
             byteSize: Number(row.byte_size),
             createdAt: row.created_at,
         })));
@@ -58,6 +62,8 @@ export async function POST(request: Request) {
     try {
         const formData = await request.formData();
         const file = formData.get("file");
+        const purpose = formData.get("purpose") === "collection_banner" ? "collection_banner" : "product";
+        const requiredSize = imageFormats[purpose];
         if (!(file instanceof File)) {
             return NextResponse.json({ error: "Aucune image reçue." }, { status: 400 });
         }
@@ -70,13 +76,13 @@ export async function POST(request: Request) {
 
         const data = Buffer.from(await file.arrayBuffer());
         const dimensions = jpegDimensions(data);
-        if (!dimensions || dimensions.width !== requiredImageSize || dimensions.height !== requiredImageSize) {
-            return NextResponse.json({ error: `L'image finale doit mesurer exactement ${requiredImageSize} × ${requiredImageSize} px.` }, { status: 400 });
+        if (!dimensions || dimensions.width !== requiredSize.width || dimensions.height !== requiredSize.height) {
+            return NextResponse.json({ error: `L'image finale doit mesurer exactement ${requiredSize.width} × ${requiredSize.height} px.` }, { status: 400 });
         }
         const [result] = await pool.query<ResultSetHeader>(
-            `INSERT INTO shop_images (name, mime_type, byte_size, data)
-             VALUES (?, ?, ?, ?)`,
-            [file.name.slice(0, 255), file.type, file.size, data]
+            `INSERT INTO shop_images (name, mime_type, byte_size, purpose, data)
+             VALUES (?, ?, ?, ?, ?)`,
+            [file.name.slice(0, 255), file.type, file.size, purpose, data]
         );
         return NextResponse.json({ id: result.insertId }, { status: 201 });
     } catch (error) {

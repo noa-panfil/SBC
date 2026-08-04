@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { clearCart } from "@/lib/shop/cart";
 import { formatEuros } from "@/lib/shop/constants";
 
-type Confirmation = { number: string; firstName: string; totalCents: number; paymentStatus: string; orderStatus: string; items: Array<{ productName: string; size: string; color: string; quantity: number; lineTotalCents: number }> };
+type Confirmation = { number: string; firstName: string; totalCents: number; paymentStatus: string; orderStatus: string; items: Array<{ productName: string; size: string; color: string; quantity: number; lineTotalCents: number; personalizations: Array<{ type: "text" | "number"; placement: "front" | "back"; value: string }>; personalizationPriceCents: number }> };
 
 export default function ConfirmationClient() {
     const [order, setOrder] = useState<Confirmation | null>(null);
@@ -20,7 +20,17 @@ export default function ConfirmationClient() {
             try {
                 const response = await fetch(`/api/shop/orders/confirmation?session_id=${encodeURIComponent(sessionId)}&token=${encodeURIComponent(token)}`, { cache: "no-store" });
                 const data = await response.json(); if (!response.ok) throw new Error(data.error || "Confirmation indisponible.");
-                if (stopped) return; setOrder(data.order); attempts += 1;
+                if (stopped) return;
+                const normalizedOrder: Confirmation = {
+                    ...data.order,
+                    items: data.order.items.map((item: Confirmation["items"][number]) => ({
+                        ...item,
+                        color: item.personalizations.length
+                            ? `${item.color} · ${item.personalizations.map((personalization) => `${personalization.type === "text" ? "Texte" : "Numéro"} « ${personalization.value} » (${personalization.placement === "front" ? "devant" : "dos"})`).join(" · ")}`
+                            : item.color,
+                    })),
+                };
+                setOrder(normalizedOrder); attempts += 1;
                 if (data.order.paymentStatus === "paid") { clearCart(); stopped = true; return; }
                 if (attempts < 15) window.setTimeout(check, 2000);
             } catch (reason) { if (!stopped) setError(reason instanceof Error ? reason.message : "Confirmation indisponible."); }

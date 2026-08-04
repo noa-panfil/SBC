@@ -4,7 +4,7 @@ Ce document décrit l'installation manuelle et la mise en service de la boutique
 
 ## Fonctionnalités ajoutées
 
-- catalogue public responsive avec collections illustrées par des bannières, produits, images, couleurs, tailles et prix par variante ;
+- catalogue public responsive avec collections illustrées par des bannières, produits, images, couleurs, tailles, prix par variante et personnalisation facultative ;
 - panier conservé dans `localStorage`, quantités limitées à 10 et contrôle serveur complet avant paiement ;
 - collecte des coordonnées sans adresse postale, retrait uniquement au club ;
 - Stripe Checkout hébergé en paiement unique EUR ;
@@ -112,6 +112,66 @@ ALTER TABLE shop_collections
 
 Les bannières sont recadrées et validées au format fixe `1600 × 300 px`. Les photos produit restent au format `1200 × 1200 px`.
 
+### Base boutique déjà créée avant la personnalisation des vêtements
+
+Exécuter manuellement une seule fois ce bloc avant de redémarrer l'application :
+
+```sql
+ALTER TABLE shop_products
+    ADD COLUMN personalization_enabled TINYINT(1) NOT NULL DEFAULT 0 AFTER collection_id,
+    ADD COLUMN personalization_price_cents INT UNSIGNED NOT NULL DEFAULT 0 AFTER personalization_enabled,
+    ADD COLUMN personalization_text_enabled TINYINT(1) NOT NULL DEFAULT 1 AFTER personalization_price_cents,
+    ADD COLUMN personalization_number_enabled TINYINT(1) NOT NULL DEFAULT 1 AFTER personalization_text_enabled,
+    ADD COLUMN personalization_front_enabled TINYINT(1) NOT NULL DEFAULT 1 AFTER personalization_number_enabled,
+    ADD COLUMN personalization_back_enabled TINYINT(1) NOT NULL DEFAULT 1 AFTER personalization_front_enabled,
+    ADD COLUMN personalization_text_front_enabled TINYINT(1) NOT NULL DEFAULT 1 AFTER personalization_back_enabled,
+    ADD COLUMN personalization_text_back_enabled TINYINT(1) NOT NULL DEFAULT 1 AFTER personalization_text_front_enabled,
+    ADD COLUMN personalization_number_front_enabled TINYINT(1) NOT NULL DEFAULT 1 AFTER personalization_text_back_enabled,
+    ADD COLUMN personalization_number_back_enabled TINYINT(1) NOT NULL DEFAULT 1 AFTER personalization_number_front_enabled;
+
+ALTER TABLE shop_order_items
+    ADD COLUMN personalization_type ENUM('text', 'number') NULL AFTER line_total_cents,
+    ADD COLUMN personalization_placement ENUM('front', 'back') NULL AFTER personalization_type,
+    ADD COLUMN personalization_value VARCHAR(80) NULL AFTER personalization_placement,
+    ADD COLUMN personalization_price_cents INT UNSIGNED NOT NULL DEFAULT 0 AFTER personalization_value,
+    ADD COLUMN personalizations_json JSON NULL AFTER personalization_price_cents;
+
+ALTER TABLE shop_products
+    ADD CONSTRAINT chk_shop_products_personalization
+        CHECK (personalization_enabled = 0 OR (
+            personalization_price_cents > 0
+            AND (personalization_text_enabled = 1 OR personalization_number_enabled = 1)
+            AND (personalization_text_enabled = 0 OR personalization_text_front_enabled = 1 OR personalization_text_back_enabled = 1)
+            AND (personalization_number_enabled = 0 OR personalization_number_front_enabled = 1 OR personalization_number_back_enabled = 1)
+        ));
+
+ALTER TABLE shop_order_items
+    ADD CONSTRAINT chk_shop_order_items_personalization CHECK (
+        (personalization_type IS NULL AND personalization_placement IS NULL AND personalization_value IS NULL AND personalization_price_cents = 0)
+        OR
+        (personalization_type IS NOT NULL AND personalization_placement IS NOT NULL AND personalization_value IS NOT NULL AND personalization_price_cents > 0)
+    );
+```
+
+Le tarif, les types autorisés (`texte`/`numéro`) et leurs emplacements respectifs (`devant`/`dos`) sont définis sur le produit. Le client peut choisir le texte, le numéro ou les deux, dans la limite des emplacements autorisés pour chacun. Lors du paiement, le serveur vérifie ces autorisations, recalcule lui-même le supplément unique du vêtement et enregistre les choix dans `personalizations_json`.
+
+Si les colonnes générales de personnalisation existent déjà, ajouter les autorisations d'emplacement propres au texte et au numéro :
+
+```sql
+ALTER TABLE shop_products
+    ADD COLUMN personalization_text_front_enabled TINYINT(1) NOT NULL DEFAULT 1 AFTER personalization_back_enabled,
+    ADD COLUMN personalization_text_back_enabled TINYINT(1) NOT NULL DEFAULT 1 AFTER personalization_text_front_enabled,
+    ADD COLUMN personalization_number_front_enabled TINYINT(1) NOT NULL DEFAULT 1 AFTER personalization_text_back_enabled,
+    ADD COLUMN personalization_number_back_enabled TINYINT(1) NOT NULL DEFAULT 1 AFTER personalization_number_front_enabled;
+```
+
+Si les colonnes de personnalisation précédentes existent déjà, ajouter seulement la nouvelle colonne permettant de conserver les deux choix :
+
+```sql
+ALTER TABLE shop_order_items
+    ADD COLUMN personalizations_json JSON NULL AFTER personalization_price_cents;
+```
+
 ## 2. Variables d'environnement
 
 ```env
@@ -177,14 +237,14 @@ Les envois utilisent une clé d'idempotence stable par commande et par type d'e-
 4. Se connecter avec un compte administrateur.
 5. Créer une collection, lui associer une bannière 1600 × 300 px, puis créer un produit inactif dans `/admin/boutique/produits` et l'associer à cette collection.
 6. Créer les couleurs et leurs tailles, choisir la teinte de chaque pastille, puis uploader les images au format carré 1200 × 1200 px en les associant à la bonne couleur.
-7. Vérifier le choix couleur/taille, le changement de prix et les quantités sur mobile et ordinateur.
-8. Ajouter au panier, vérifier les champs client et accepter les deux confirmations.
+7. Activer la personnalisation sur un produit, définir son prix, puis vérifier le texte seul, le numéro seul et les deux simultanément, avec devant et dos sur mobile et ordinateur.
+8. Ajouter au panier une version simple et plusieurs versions personnalisées du même vêtement ; vérifier qu'elles restent sur des lignes distinctes et que le supplément est correct.
 9. Effectuer un paiement test.
 10. Vérifier les montants, le PaymentIntent, l'historique et les e-mails dans l'administration.
 11. Créer un lot mensuel, exporter le fichier XLSX et contrôler les feuilles `Synthèse fournisseur` et `Détail commandes`.
 12. Marquer le lot envoyé, reçu, puis disponible au club ; vérifier les trois notifications de suivi, puis marquer une commande retirée.
 
-Tester également : boutique vide, variante désactivée après ajout au panier, prix modifié après ajout, panier altéré dans le navigateur, quantité 0/11, e-mail invalide, double webhook, signature webhook invalide, paiement annulé, session expirée et panne temporaire Resend.
+Tester également : boutique vide, variante désactivée après ajout au panier, personnalisation désactivée après ajout, prix modifié après ajout, texte ou numéro invalide, panier altéré dans le navigateur, quantité 0/11, e-mail invalide, double webhook, signature webhook invalide, paiement annulé, session expirée et panne temporaire Resend.
 
 ## 6. Passage en production sur le VPS
 

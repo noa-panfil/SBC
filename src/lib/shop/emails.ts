@@ -3,6 +3,7 @@ import { getShopEnv } from "./env";
 import { Resend } from "resend";
 import { ResultSetHeader, RowDataPacket } from "mysql2";
 import { formatEuros } from "./constants";
+import { parseStoredPersonalizations, personalizationText } from "./personalizations";
 
 type OrderRow = RowDataPacket & {
     id: number;
@@ -17,6 +18,9 @@ type OrderRow = RowDataPacket & {
 type ItemRow = RowDataPacket & {
     product_name: string; sku: string | null; size: string; color: string;
     unit_price_cents: number; quantity: number; line_total_cents: number;
+    personalization_type: "text" | "number" | null; personalization_placement: "front" | "back" | null;
+    personalization_value: string | null; personalization_price_cents: number;
+    personalizations_json: unknown;
 };
 export type EmailKind = "customer" | "office" | "supplier_sent" | "supplier_received" | "pickup";
 
@@ -40,24 +44,34 @@ async function loadOrder(orderId: number) {
     );
     if (!orders[0]) throw new Error(`Commande boutique introuvable (${orderId}).`);
     const [items] = await pool.query<ItemRow[]>(
-        `SELECT product_name, sku, size, color, unit_price_cents, quantity, line_total_cents
+        `SELECT product_name, sku, size, color, unit_price_cents, quantity, line_total_cents,
+                personalization_type, personalization_placement, personalization_value, personalization_price_cents,
+                personalizations_json
          FROM shop_order_items WHERE order_id = ? ORDER BY id`, [orderId]
     );
     return { order: orders[0], items };
 }
 
 function itemText(items: ItemRow[]): string {
-    return items.map((item) =>
-        `- ${item.product_name} — ${item.color}, taille ${item.size}${item.sku ? `, réf. ${item.sku}` : ""} — ${item.quantity} × ${formatEuros(item.unit_price_cents)} = ${formatEuros(item.line_total_cents)}`
-    ).join("\n");
+    return items.map((item) => {
+        const personalizations = parseStoredPersonalizations(item.personalizations_json, {
+            type: item.personalization_type, placement: item.personalization_placement, value: item.personalization_value,
+        });
+        const details = personalizations.length
+            ? ` — ${personalizations.map(personalizationText).join(" — ")} (+${formatEuros(item.personalization_price_cents)})`
+            : "";
+        return `- ${item.product_name} — ${item.color}, taille ${item.size}${item.sku ? `, réf. ${item.sku}` : ""}${details} — ${item.quantity} × ${formatEuros(item.unit_price_cents)} = ${formatEuros(item.line_total_cents)}`;
+    }).join("\n");
 }
 
 function itemHtml(items: ItemRow[]): string {
-    return items.map((item) => `<tr>
-        <td style="padding:12px;border-bottom:1px solid #e5e7eb"><strong>${escapeHtml(item.product_name)}</strong><br><span style="color:#6b7280">${escapeHtml(item.color)} · Taille ${escapeHtml(item.size)}${item.sku ? ` · ${escapeHtml(item.sku)}` : ""}</span></td>
+    return items.map((item) => { const personalizations = parseStoredPersonalizations(item.personalizations_json, {
+        type: item.personalization_type, placement: item.personalization_placement, value: item.personalization_value,
+    }); return `<tr>
+        <td style="padding:12px;border-bottom:1px solid #e5e7eb"><strong>${escapeHtml(item.product_name)}</strong><br><span style="color:#6b7280">${escapeHtml(item.color)} · Taille ${escapeHtml(item.size)}${item.sku ? ` · ${escapeHtml(item.sku)}` : ""}</span>${personalizations.length ? `<br><span style="color:#14532d;font-weight:700">${personalizations.map((personalization) => escapeHtml(personalizationText(personalization))).join("<br>")}<br>Supplément : +${formatEuros(item.personalization_price_cents)}</span>` : ""}</td>
         <td style="padding:12px;border-bottom:1px solid #e5e7eb;text-align:center">${item.quantity}</td>
         <td style="padding:12px;border-bottom:1px solid #e5e7eb;text-align:right">${formatEuros(item.line_total_cents)}</td>
-    </tr>`).join("");
+    </tr>`; }).join("");
 }
 
 function frame(content: string): string {

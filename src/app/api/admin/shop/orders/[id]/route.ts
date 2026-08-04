@@ -4,6 +4,7 @@ import { getAdminSession } from "@/lib/shop/auth";
 import { parsePositiveId } from "@/lib/shop/validation";
 import { RowDataPacket } from "mysql2";
 import { ShopOrderStatus } from "@/types/shop";
+import { parseStoredPersonalizations } from "@/lib/shop/personalizations";
 
 const ADMIN_STATUSES: ShopOrderStatus[] = ["paid", "sent_to_supplier", "available_for_pickup", "picked_up", "cancelled"];
 
@@ -31,7 +32,11 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
             pickupEmailStatus: order.pickup_email_status,
             items: items.map((item) => ({ id: Number(item.id), productName: item.product_name, sku: item.sku,
                 size: item.size, color: item.color, unitPriceCents: item.unit_price_cents,
-                quantity: item.quantity, lineTotalCents: item.line_total_cents })),
+                quantity: item.quantity, lineTotalCents: item.line_total_cents,
+                personalizations: parseStoredPersonalizations(item.personalizations_json, {
+                    type: item.personalization_type, placement: item.personalization_placement, value: item.personalization_value,
+                }),
+                personalizationPriceCents: Number(item.personalization_price_cents) })),
             history: history.map((entry) => ({ id: Number(entry.id), oldStatus: entry.old_status,
                 newStatus: entry.new_status, changedBy: entry.changed_by, note: entry.note, createdAt: entry.created_at })),
         },

@@ -13,12 +13,12 @@ export function useShopCart() {
         const unsubscribe = subscribeCart(refresh);
         return () => { window.clearTimeout(timer); unsubscribe(); };
     }, [refresh]);
-    const updateQuantity = (variantId: number, quantity: number) => {
+    const updateQuantity = (lineId: string, quantity: number) => {
         if (!Number.isInteger(quantity)) return;
-        if (quantity <= 0) writeCart(lines.filter((line) => line.variantId !== variantId));
-        else writeCart(lines.map((line) => line.variantId === variantId ? { ...line, quantity: Math.min(SHOP_MAX_QUANTITY, quantity) } : line));
+        if (quantity <= 0) writeCart(lines.filter((line) => line.lineId !== lineId));
+        else writeCart(lines.map((line) => line.lineId === lineId ? { ...line, quantity: Math.min(SHOP_MAX_QUANTITY, quantity) } : line));
     };
-    const remove = (variantId: number) => writeCart(lines.filter((line) => line.variantId !== variantId));
+    const remove = (lineId: string) => writeCart(lines.filter((line) => line.lineId !== lineId));
     return { lines, updateQuantity, remove, count: lines.reduce((sum, line) => sum + line.quantity, 0),
         totalCents: lines.reduce((sum, line) => sum + line.priceCents * line.quantity, 0) };
 }

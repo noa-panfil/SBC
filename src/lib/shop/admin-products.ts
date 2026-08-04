@@ -4,6 +4,11 @@ import { ShopProduct } from "@/types/shop";
 
 type ProductRow = RowDataPacket & {
     id: number; name: string; slug: string; description: string; is_active: number; display_order: number;
+    personalization_enabled: number; personalization_price_cents: number;
+    personalization_text_enabled: number; personalization_number_enabled: number;
+    personalization_front_enabled: number; personalization_back_enabled: number;
+    personalization_text_front_enabled: number; personalization_text_back_enabled: number;
+    personalization_number_front_enabled: number; personalization_number_back_enabled: number;
     collection_id: number | null; collection_name: string | null; collection_slug: string | null;
     collection_description: string | null; collection_banner_image_id: number | null;
     collection_is_active: number | null; collection_display_order: number | null;
@@ -14,6 +19,10 @@ type VariantRow = RowDataPacket & { id: number; product_id: number; sku: string 
 export async function getAdminProducts(): Promise<ShopProduct[]> {
     const [products] = await pool.query<ProductRow[]>(
         `SELECT p.id, p.name, p.slug, p.description, p.is_active, p.display_order, p.collection_id,
+                p.personalization_enabled, p.personalization_price_cents, p.personalization_text_enabled,
+                p.personalization_number_enabled, p.personalization_front_enabled, p.personalization_back_enabled,
+                p.personalization_text_front_enabled, p.personalization_text_back_enabled,
+                p.personalization_number_front_enabled, p.personalization_number_back_enabled,
                 c.name AS collection_name, c.slug AS collection_slug, c.description AS collection_description,
                 c.banner_image_id AS collection_banner_image_id,
                 c.is_active AS collection_is_active, c.display_order AS collection_display_order
@@ -35,6 +44,16 @@ export async function getAdminProducts(): Promise<ShopProduct[]> {
     return products.map((product) => ({
         id: Number(product.id), name: product.name, slug: product.slug, description: product.description,
         isActive: Boolean(product.is_active), displayOrder: product.display_order,
+        personalizationEnabled: Boolean(product.personalization_enabled),
+        personalizationPriceCents: Number(product.personalization_price_cents),
+        personalizationTextEnabled: Boolean(product.personalization_text_enabled),
+        personalizationNumberEnabled: Boolean(product.personalization_number_enabled),
+        personalizationFrontEnabled: Boolean(product.personalization_front_enabled),
+        personalizationBackEnabled: Boolean(product.personalization_back_enabled),
+        personalizationTextFrontEnabled: Boolean(product.personalization_text_front_enabled),
+        personalizationTextBackEnabled: Boolean(product.personalization_text_back_enabled),
+        personalizationNumberFrontEnabled: Boolean(product.personalization_number_front_enabled),
+        personalizationNumberBackEnabled: Boolean(product.personalization_number_back_enabled),
         collectionId: product.collection_id == null ? null : Number(product.collection_id),
         collection: product.collection_id == null ? null : {
             id: Number(product.collection_id), name: product.collection_name!, slug: product.collection_slug!,

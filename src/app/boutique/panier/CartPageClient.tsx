@@ -110,7 +110,15 @@ export default function CartPageClient() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    items: lines.map((line) => ({ variantId: line.variantId, quantity: line.quantity })),
+                    items: lines.map((line) => ({
+                        variantId: line.variantId,
+                        quantity: line.quantity,
+                        personalizations: line.personalizations.map((personalization) => ({
+                            type: personalization.type,
+                            placement: personalization.placement,
+                            value: personalization.value,
+                        })),
+                    })),
                     customer: {
                         firstName: customer.firstName,
                         lastName: customer.lastName,
@@ -238,7 +246,7 @@ export default function CartPageClient() {
                                     </div>
                                     <ul className="divide-y divide-gray-100">
                                         {lines.map((line) => (
-                                            <li key={line.variantId} className="flex gap-4 p-5 sm:p-6">
+                                            <li key={line.lineId} className="flex gap-4 p-5 sm:p-6">
                                                 {line.imageUrl ? (
                                                     <img src={line.imageUrl} alt="" className="h-28 w-24 shrink-0 rounded-2xl bg-gray-50 object-cover sm:h-32 sm:w-28" />
                                                 ) : (
@@ -249,6 +257,7 @@ export default function CartPageClient() {
                                                         <div>
                                                             <h3 className="font-black text-gray-950">{line.productName}</h3>
                                                             <p className="mt-1 text-sm text-gray-500">{line.color} · Taille {line.size}</p>
+                                                            {line.personalizations.length > 0 && <div className="mt-1 space-y-0.5 text-sm font-semibold text-sbc-dark">{line.personalizations.map((personalization) => <p key={personalization.type}>{personalization.type === "text" ? "Texte" : "Numéro"} « {personalization.value} » · {personalization.placement === "front" ? "Devant" : "Dos"}</p>)}<p className="text-xs text-gray-500">Supplément : +{formatEuros(line.personalizationPriceCents)}</p></div>}
                                                             <p className="mt-1 text-xs text-gray-400">{formatEuros(line.priceCents)} l'unité</p>
                                                         </div>
                                                         <p className="whitespace-nowrap font-black">{formatEuros(line.priceCents * line.quantity)}</p>
@@ -256,11 +265,11 @@ export default function CartPageClient() {
                                                     <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
                                                         <label className="text-sm font-bold text-gray-700">
                                                             Quantité
-                                                            <select value={line.quantity} onChange={(event) => updateQuantity(line.variantId, Number(event.target.value))} className="ml-2 rounded-lg border border-gray-300 bg-white px-3 py-2 focus:border-sbc focus:outline-none focus:ring-4 focus:ring-sbc/15">
+                                                            <select value={line.quantity} onChange={(event) => updateQuantity(line.lineId, Number(event.target.value))} className="ml-2 rounded-lg border border-gray-300 bg-white px-3 py-2 focus:border-sbc focus:outline-none focus:ring-4 focus:ring-sbc/15">
                                                                 {Array.from({ length: SHOP_MAX_QUANTITY }, (_, index) => index + 1).map((value) => <option key={value}>{value}</option>)}
                                                             </select>
                                                         </label>
-                                                        <button type="button" onClick={() => remove(line.variantId)} className="rounded-lg px-3 py-2 text-sm font-bold text-red-700 hover:bg-red-50 focus:outline-none focus:ring-4 focus:ring-red-100" aria-label={`Supprimer ${line.productName} du panier`}>
+                                                        <button type="button" onClick={() => remove(line.lineId)} className="rounded-lg px-3 py-2 text-sm font-bold text-red-700 hover:bg-red-50 focus:outline-none focus:ring-4 focus:ring-red-100" aria-label={`Supprimer ${line.productName} du panier`}>
                                                             <i className="fas fa-trash-alt mr-2" />Supprimer
                                                         </button>
                                                     </div>
@@ -319,11 +328,12 @@ export default function CartPageClient() {
                                         </div>
                                         <ul className="divide-y divide-gray-100">
                                             {lines.map((line) => (
-                                                <li key={line.variantId} className="flex items-center gap-4 p-5 sm:px-6">
+                                                <li key={line.lineId} className="flex items-center gap-4 p-5 sm:px-6">
                                                     {line.imageUrl ? <img src={line.imageUrl} alt="" className="h-20 w-16 shrink-0 rounded-xl bg-gray-50 object-cover" /> : <div className="flex h-20 w-16 shrink-0 items-center justify-center rounded-xl bg-green-50 text-sbc/30"><i className="fas fa-tshirt" /></div>}
                                                     <div className="min-w-0 flex-1">
                                                         <h3 className="truncate font-black">{line.productName}</h3>
                                                         <p className="mt-1 text-sm text-gray-500">{line.color} · Taille {line.size} · Qté {line.quantity}</p>
+                                                        {line.personalizations.length > 0 && <div className="mt-1 text-xs font-semibold text-sbc-dark">{line.personalizations.map((personalization) => <p key={personalization.type}>{personalization.type === "text" ? "Texte" : "Numéro"} « {personalization.value} » · {personalization.placement === "front" ? "Devant" : "Dos"}</p>)}</div>}
                                                     </div>
                                                     <strong className="whitespace-nowrap">{formatEuros(line.priceCents * line.quantity)}</strong>
                                                 </li>

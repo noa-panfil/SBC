@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useShopCart } from "@/hooks/useShopCart";
-import { addCartLine } from "@/lib/shop/cart";
+import { addCartLine, cartLineId } from "@/lib/shop/cart";
 import { colorHex } from "@/lib/shop/colors";
 import { formatEuros, SHOP_MAX_QUANTITY } from "@/lib/shop/constants";
 import { ShopImage, ShopProduct, ShopVariant } from "@/types/shop";
@@ -35,6 +35,19 @@ function priceLabel(variants: ShopVariant[]): string {
     const min = Math.min(...prices);
     const max = Math.max(...prices);
     return min === max ? formatEuros(min) : `Dès ${formatEuros(min)}`;
+}
+
+function personalizationSummary(product: ShopProduct): string {
+    const details: string[] = [];
+    if (product.personalizationTextEnabled) {
+        const placements = [product.personalizationTextFrontEnabled ? "devant" : null, product.personalizationTextBackEnabled ? "dos" : null].filter(Boolean);
+        details.push(`Texte : ${placements.join(" ou ")}`);
+    }
+    if (product.personalizationNumberEnabled) {
+        const placements = [product.personalizationNumberFrontEnabled ? "devant" : null, product.personalizationNumberBackEnabled ? "dos" : null].filter(Boolean);
+        details.push(`Numéro : ${placements.join(" ou ")}`);
+    }
+    return details.join(" · ");
 }
 
 function ColorSwatch({ color, selected, onSelect, compact = false }: {
@@ -72,6 +85,7 @@ function ProductCard({ product, onOpen }: { product: ShopProduct; onOpen: (produ
                     {images[1] && <img key={`secondary-${images[1].url}`} src={images[1].url} alt={`${product.name} - ${selectedColor}, seconde vue`} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-[opacity,transform] duration-500 ease-out group-hover/image:scale-[1.035] group-hover/image:opacity-100" />}
                 </> : <div className="flex h-full items-center justify-center text-6xl text-sbc/20"><i className="fas fa-tshirt" /></div>}
                 {images.length > 1 && <span className="absolute bottom-4 right-4 flex h-9 min-w-9 items-center justify-center rounded-full bg-gray-950/80 px-2 text-xs font-black text-white backdrop-blur"><i className="far fa-images mr-1.5" />{images.length}</span>}
+                {product.personalizationEnabled && <span className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1.5 text-[11px] font-black text-sbc-dark shadow-sm backdrop-blur"><i className="fas fa-pen mr-1.5" />Personnalisable</span>}
             </button>
 
             <div className="p-5 md:p-6">
@@ -90,6 +104,8 @@ function ProductCard({ product, onOpen }: { product: ShopProduct; onOpen: (produ
                     <div className="mt-2 flex flex-wrap gap-1.5">{sizes.slice(0, 7).map((size) => <span key={size} className="rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-bold text-gray-700">{size}</span>)}{sizes.length > 7 && <span className="rounded-md bg-gray-900 px-2.5 py-1 text-xs font-bold text-white">+{sizes.length - 7}</span>}</div>
                 </div>
 
+                {product.personalizationEnabled && <div className="mt-5 rounded-xl border border-green-200 bg-green-50 px-3.5 py-3 text-xs text-green-950"><p className="font-black"><i className="fas fa-pen mr-2 text-sbc" />Personnalisation +{formatEuros(product.personalizationPriceCents)}</p><p className="mt-1 font-semibold text-green-800">{personalizationSummary(product)}</p></div>}
+
                 <button type="button" onClick={() => onOpen(product, selectedColor)} className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gray-950 px-4 py-3.5 text-sm font-black text-white transition hover:bg-sbc focus:outline-none focus:ring-4 focus:ring-sbc/25">Voir le produit <i className="fas fa-arrow-right text-xs" /></button>
             </div>
         </article>
@@ -101,13 +117,29 @@ function ProductDialog({ product, initialColor, onClose }: { product: ShopProduc
     const [selectedColor, setSelectedColor] = useState(initialColor || colors[0]?.name || "");
     const variants = variantsForColor(product, selectedColor);
     const images = imagesForColor(product, selectedColor);
+    const allowedPersonalizationTypes = (["text", "number"] as const).filter((type) =>
+        type === "text" ? product.personalizationTextEnabled : product.personalizationNumberEnabled
+    );
+    const allowedTextPlacements = (["front", "back"] as const).filter((placement) =>
+        placement === "front" ? product.personalizationTextFrontEnabled : product.personalizationTextBackEnabled
+    );
+    const allowedNumberPlacements = (["front", "back"] as const).filter((placement) =>
+        placement === "front" ? product.personalizationNumberFrontEnabled : product.personalizationNumberBackEnabled
+    );
     const [size, setSize] = useState(variants[0]?.size || "");
     const [quantity, setQuantity] = useState(1);
+    const [wantsPersonalization, setWantsPersonalization] = useState(false);
+    const [selectedPersonalizationTypes, setSelectedPersonalizationTypes] = useState<Array<"text" | "number">>(allowedPersonalizationTypes.length === 1 ? [allowedPersonalizationTypes[0]] : []);
+    const [textPlacement, setTextPlacement] = useState<"front" | "back" | null>(allowedTextPlacements.length === 1 ? allowedTextPlacements[0] : null);
+    const [numberPlacement, setNumberPlacement] = useState<"front" | "back" | null>(allowedNumberPlacements.length === 1 ? allowedNumberPlacements[0] : null);
+    const [textValue, setTextValue] = useState("");
+    const [numberValue, setNumberValue] = useState("");
     const [message, setMessage] = useState("");
     const [activeImage, setActiveImage] = useState(images[0]?.url || null);
     const [isZoomed, setIsZoomed] = useState(false);
     const closeRef = useRef<HTMLButtonElement>(null);
     const variant = variants.find((candidate) => candidate.size === size);
+    const displayedPrice = (variant?.priceCents || 0) + (wantsPersonalization ? product.personalizationPriceCents : 0);
     const activeImageIndex = Math.max(0, images.findIndex((image) => image.url === activeImage));
 
     useEffect(() => {
@@ -141,17 +173,52 @@ function ProductDialog({ product, initialColor, onClose }: { product: ShopProduc
         setActiveImage(images[nextIndex].url);
     };
 
+    const togglePersonalizationType = (type: "text" | "number") => {
+        setSelectedPersonalizationTypes((current) => current.includes(type)
+            ? current.filter((item) => item !== type)
+            : [...current, type]);
+        setMessage("");
+    };
+
     const add = () => {
         if (!variant) { setMessage("Choisissez une taille disponible."); return; }
+        const personalizations: Array<{ type: "text" | "number"; placement: "front" | "back"; value: string }> = [];
+        if (wantsPersonalization) {
+            const selectedTypes = allowedPersonalizationTypes.filter((type) => selectedPersonalizationTypes.includes(type));
+            if (!selectedTypes.length) {
+                setMessage("Choisissez au moins une personnalisation : texte, numéro ou les deux.");
+                return;
+            }
+            for (const type of selectedTypes) {
+                const placement = type === "text" ? textPlacement : numberPlacement;
+                const allowedPlacements = type === "text" ? allowedTextPlacements : allowedNumberPlacements;
+                if (!placement || !allowedPlacements.includes(placement)) {
+                    setMessage(`Choisissez l'emplacement du ${type === "text" ? "texte" : "numéro"}.`);
+                    return;
+                }
+                const value = type === "text" ? textValue.trim().toUpperCase() : numberValue.trim();
+                const valid = type === "number"
+                    ? /^\d{1,3}$/.test(value)
+                    : value.length >= 1 && value.length <= 30 && /^[\p{L}\p{N} .'-]+$/u.test(value);
+                if (!valid) {
+                    setMessage(type === "number" ? "Saisissez un numéro de 1 à 3 chiffres." : "Saisissez un texte valide de 1 à 30 caractères.");
+                    return;
+                }
+                personalizations.push({ type, placement, value });
+            }
+        }
         const result = addCartLine({
+            lineId: cartLineId(variant.id, personalizations),
             variantId: variant.id,
             productId: product.id,
             productName: product.name,
             imageUrl: activeImage || images[0]?.url || null,
             size: variant.size,
             color: variant.color,
-            priceCents: variant.priceCents,
+            priceCents: variant.priceCents + (personalizations.length ? product.personalizationPriceCents : 0),
             quantity,
+            personalizations,
+            personalizationPriceCents: personalizations.length ? product.personalizationPriceCents : 0,
         });
         setMessage(result.message);
     };
@@ -174,12 +241,26 @@ function ProductDialog({ product, initialColor, onClose }: { product: ShopProduc
                     </div>
 
                     <div className="flex flex-col p-6 sm:p-8 lg:p-10">
-                        <div><p className="text-xs font-black uppercase tracking-[0.24em] text-sbc">Boutique officielle</p><h2 id="product-dialog-title" className="mt-2 text-3xl font-black tracking-tight text-gray-950 sm:text-4xl">{product.name}</h2><p className="mt-3 text-2xl font-black text-sbc-dark">{variant ? formatEuros(variant.priceCents) : priceLabel(variants)}</p><p className="mt-5 whitespace-pre-line text-sm leading-7 text-gray-600">{product.description}</p></div>
+                        <div><p className="text-xs font-black uppercase tracking-[0.24em] text-sbc">Boutique officielle</p><h2 id="product-dialog-title" className="mt-2 text-3xl font-black tracking-tight text-gray-950 sm:text-4xl">{product.name}</h2><p className="mt-3 text-2xl font-black text-sbc-dark">{variant ? formatEuros(displayedPrice) : priceLabel(variants)}</p><p className="mt-5 whitespace-pre-line text-sm leading-7 text-gray-600">{product.description}</p></div>
 
                         <div className="mt-8 border-t border-gray-100 pt-7">
                             <fieldset><div className="flex items-center justify-between"><legend className="text-sm font-black text-gray-950">Couleur : <span className="font-semibold text-gray-500">{selectedColor}</span></legend><span className="text-xs text-gray-400">{colors.length} choix</span></div><div className="mt-3 flex flex-wrap gap-3">{colors.map((item) => <ColorSwatch key={item.name} color={item} selected={selectedColor === item.name} onSelect={() => chooseColor(item.name)} />)}</div></fieldset>
 
                             <fieldset className="mt-7"><div className="flex items-center justify-between"><legend className="text-sm font-black text-gray-950">Choisir la taille</legend><span className="text-xs text-gray-400">{variants.length} disponible{variants.length > 1 ? "s" : ""}</span></div><div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-5">{variants.map((item) => <button key={item.id} type="button" onClick={() => { setSize(item.size); setMessage(""); }} aria-pressed={size === item.size} className={`rounded-xl border px-3 py-3 text-sm font-black transition focus:outline-none focus:ring-4 focus:ring-sbc/20 ${size === item.size ? "border-gray-950 bg-gray-950 text-white" : "border-gray-200 bg-white text-gray-800 hover:border-gray-500"}`}>{item.size}</button>)}</div></fieldset>
+
+                            {product.personalizationEnabled && <div className={`mt-7 rounded-2xl border p-4 ${wantsPersonalization ? "border-sbc/30 bg-green-50" : "border-gray-200 bg-gray-50"}`}>
+                                <label className="flex cursor-pointer items-start gap-3"><input type="checkbox" checked={wantsPersonalization} onChange={(event) => { setWantsPersonalization(event.target.checked); setMessage(""); }} className="mt-0.5 h-5 w-5 accent-sbc" /><span><strong className="block text-sm text-gray-950">Je souhaite personnaliser ce vêtement</strong><span className="mt-1 block text-xs text-gray-600">+ {formatEuros(product.personalizationPriceCents)} par article</span></span></label>
+                                {wantsPersonalization && <div className="mt-4 space-y-4 border-t border-green-200 pt-4">
+                                    <fieldset>
+                                        <legend className="text-xs font-black uppercase tracking-wide text-gray-600">Choisissez une ou plusieurs options</legend>
+                                        {allowedPersonalizationTypes.length === 1
+                                            ? <p className="mt-2 rounded-xl border border-gray-950 bg-gray-950 px-3 py-2.5 text-center text-sm font-black text-white">{allowedPersonalizationTypes[0] === "text" ? "Texte" : "Numéro"}</p>
+                                            : <div className="mt-2 grid grid-cols-2 gap-2">{allowedPersonalizationTypes.map((type) => { const selected = selectedPersonalizationTypes.includes(type); return <button key={type} type="button" aria-pressed={selected} onClick={() => togglePersonalizationType(type)} className={`rounded-xl border px-3 py-2.5 text-sm font-black ${selected ? "border-gray-950 bg-gray-950 text-white" : "border-gray-200 bg-white text-gray-700"}`}><i className={`fas ${selected ? "fa-check-square" : "fa-square"} mr-2`} />{type === "text" ? "Ajouter un texte" : "Ajouter un numéro"}</button>; })}</div>}
+                                    </fieldset>
+                                    {selectedPersonalizationTypes.includes("text") && <section className="rounded-2xl border border-gray-200 bg-white p-4"><h3 className="text-sm font-black text-gray-950"><i className="fas fa-font mr-2 text-sbc" />Personnalisation texte</h3><label className="mt-3 block text-sm font-black text-gray-950">Votre texte<input autoComplete="off" maxLength={30} value={textValue} onChange={(event) => setTextValue(event.target.value.slice(0, 30))} placeholder="Ex. NOA" className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 font-normal uppercase focus:border-sbc focus:outline-none focus:ring-4 focus:ring-sbc/15" /><span className="mt-1 block text-right text-xs font-normal text-gray-500">{textValue.length}/30</span></label><fieldset className="mt-3"><legend className="text-xs font-black uppercase tracking-wide text-gray-600">Emplacement du texte</legend>{allowedTextPlacements.length === 1 ? <p className="mt-2 rounded-xl bg-sbc px-3 py-2.5 text-center text-sm font-black text-white">{allowedTextPlacements[0] === "front" ? "Devant" : "Dos"}</p> : <div className="mt-2 grid grid-cols-2 gap-2">{allowedTextPlacements.map((placement) => <button key={placement} type="button" aria-pressed={textPlacement === placement} onClick={() => { setTextPlacement(placement); setMessage(""); }} className={`rounded-xl border px-3 py-2.5 text-sm font-black ${textPlacement === placement ? "border-sbc bg-sbc text-white" : "border-gray-200 text-gray-700"}`}>{placement === "front" ? "Devant" : "Dos"}</button>)}</div>}</fieldset></section>}
+                                    {selectedPersonalizationTypes.includes("number") && <section className="rounded-2xl border border-gray-200 bg-white p-4"><h3 className="text-sm font-black text-gray-950"><i className="fas fa-hashtag mr-2 text-sbc" />Personnalisation numéro</h3><label className="mt-3 block text-sm font-black text-gray-950">Votre numéro<input autoComplete="off" inputMode="numeric" maxLength={3} value={numberValue} onChange={(event) => setNumberValue(event.target.value.replace(/\D/g, "").slice(0, 3))} placeholder="Ex. 10" className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 font-normal focus:border-sbc focus:outline-none focus:ring-4 focus:ring-sbc/15" /><span className="mt-1 block text-right text-xs font-normal text-gray-500">{numberValue.length}/3</span></label><fieldset className="mt-3"><legend className="text-xs font-black uppercase tracking-wide text-gray-600">Emplacement du numéro</legend>{allowedNumberPlacements.length === 1 ? <p className="mt-2 rounded-xl bg-sbc px-3 py-2.5 text-center text-sm font-black text-white">{allowedNumberPlacements[0] === "front" ? "Devant" : "Dos"}</p> : <div className="mt-2 grid grid-cols-2 gap-2">{allowedNumberPlacements.map((placement) => <button key={placement} type="button" aria-pressed={numberPlacement === placement} onClick={() => { setNumberPlacement(placement); setMessage(""); }} className={`rounded-xl border px-3 py-2.5 text-sm font-black ${numberPlacement === placement ? "border-sbc bg-sbc text-white" : "border-gray-200 text-gray-700"}`}>{placement === "front" ? "Devant" : "Dos"}</button>)}</div>}</fieldset></section>}
+                                </div>}
+                            </div>}
 
                             <div className="mt-7 flex items-end gap-4"><label className="text-sm font-black text-gray-950">Quantité<select value={quantity} onChange={(event) => setQuantity(Number(event.target.value))} className="mt-2 block rounded-xl border border-gray-300 bg-white px-4 py-3 font-semibold focus:border-sbc focus:outline-none focus:ring-4 focus:ring-sbc/15">{Array.from({ length: SHOP_MAX_QUANTITY }, (_, index) => index + 1).map((value) => <option key={value}>{value}</option>)}</select></label><p className="ml-auto pb-3 text-sm font-semibold text-gray-500">Retrait au club uniquement</p></div>
 

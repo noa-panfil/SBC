@@ -39,11 +39,28 @@ export type ShopProduct = {
     displayOrder: number;
     collectionId: number | null;
     collection: ShopCollection | null;
+    personalizationEnabled: boolean;
+    personalizationPriceCents: number;
+    personalizationTextEnabled: boolean;
+    personalizationNumberEnabled: boolean;
+    personalizationFrontEnabled: boolean;
+    personalizationBackEnabled: boolean;
+    personalizationTextFrontEnabled: boolean;
+    personalizationTextBackEnabled: boolean;
+    personalizationNumberFrontEnabled: boolean;
+    personalizationNumberBackEnabled: boolean;
     images: ShopImage[];
     variants: ShopVariant[];
 };
 
+export type ShopPersonalization = {
+    type: "text" | "number";
+    placement: "front" | "back";
+    value: string;
+};
+
 export type CartLine = {
+    lineId: string;
     variantId: number;
     productId: number;
     productName: string;
@@ -52,6 +69,8 @@ export type CartLine = {
     color: string;
     priceCents: number;
     quantity: number;
+    personalizations: ShopPersonalization[];
+    personalizationPriceCents: number;
 };
 
 export type ShopPaymentStatus = "pending" | "paid" | "failed" | "expired" | "refunded" | "partially_refunded";
@@ -78,6 +97,8 @@ export type ShopOrderItem = {
     unitPriceCents: number;
     quantity: number;
     lineTotalCents: number;
+    personalizations: ShopPersonalization[];
+    personalizationPriceCents: number;
 };
 
 export const SHOP_ORDER_STATUSES: ShopOrderStatus[] = [

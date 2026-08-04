@@ -12,6 +12,11 @@ import Stripe from "stripe";
 type VariantRow = RowDataPacket & {
     id: number; product_id: number; product_name: string; sku: string | null;
     size: string; color: string; price_cents: number;
+    personalization_enabled: number; personalization_price_cents: number;
+    personalization_text_enabled: number; personalization_number_enabled: number;
+    personalization_front_enabled: number; personalization_back_enabled: number;
+    personalization_text_front_enabled: number; personalization_text_back_enabled: number;
+    personalization_number_front_enabled: number; personalization_number_back_enabled: number;
 };
 
 export async function POST(request: Request) {
@@ -38,10 +43,14 @@ export async function POST(request: Request) {
     try {
         connection = await pool.getConnection();
         await connection.beginTransaction();
-        const ids = payload.items.map((item) => item.variantId);
+        const ids = Array.from(new Set(payload.items.map((item) => item.variantId)));
         const placeholders = ids.map(() => "?").join(",");
         const [rows] = await connection.query<VariantRow[]>(
-            `SELECT v.id, v.product_id, p.name AS product_name, v.sku, v.size, v.color, v.price_cents
+            `SELECT v.id, v.product_id, p.name AS product_name, v.sku, v.size, v.color, v.price_cents,
+                    p.personalization_enabled, p.personalization_price_cents, p.personalization_text_enabled,
+                    p.personalization_number_enabled, p.personalization_front_enabled, p.personalization_back_enabled,
+                    p.personalization_text_front_enabled, p.personalization_text_back_enabled,
+                    p.personalization_number_front_enabled, p.personalization_number_back_enabled
              FROM shop_product_variants v
              INNER JOIN shop_products p ON p.id = v.product_id
              WHERE v.id IN (${placeholders}) AND v.is_active = 1 AND p.is_active = 1
@@ -52,8 +61,33 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Un article n'est plus disponible. Actualisez votre panier." }, { status: 409 });
         }
 
-        const quantityById = new Map(payload.items.map((item) => [item.variantId, item.quantity]));
-        const totalCents = rows.reduce((sum, row) => sum + row.price_cents * (quantityById.get(Number(row.id)) || 0), 0);
+        const rowById = new Map(rows.map((row) => [Number(row.id), row]));
+        const configuredLines = payload.items.map((item) => {
+            const row = rowById.get(item.variantId)!;
+            if (item.personalizations.length && !row.personalization_enabled) return null;
+            for (const personalization of item.personalizations) {
+                if (personalization.type === "text" && !row.personalization_text_enabled) return null;
+                if (personalization.type === "number" && !row.personalization_number_enabled) return null;
+                if (personalization.type === "text" && personalization.placement === "front" && !row.personalization_text_front_enabled) return null;
+                if (personalization.type === "text" && personalization.placement === "back" && !row.personalization_text_back_enabled) return null;
+                if (personalization.type === "number" && personalization.placement === "front" && !row.personalization_number_front_enabled) return null;
+                if (personalization.type === "number" && personalization.placement === "back" && !row.personalization_number_back_enabled) return null;
+            }
+            const personalizationPriceCents = item.personalizations.length ? Number(row.personalization_price_cents) : 0;
+            return {
+                row,
+                quantity: item.quantity,
+                personalizations: item.personalizations,
+                personalizationPriceCents,
+                unitPriceCents: Number(row.price_cents) + personalizationPriceCents,
+            };
+        });
+        if (configuredLines.some((line) => line === null)) {
+            await connection.rollback();
+            return NextResponse.json({ error: "La personnalisation n'est plus disponible pour l'un des articles." }, { status: 409 });
+        }
+        const lines = configuredLines.filter((line): line is NonNullable<typeof line> => line !== null);
+        const totalCents = lines.reduce((sum, line) => sum + line.unitPriceCents * line.quantity, 0);
         if (!Number.isSafeInteger(totalCents) || totalCents < 1) throw new Error("Invalid checkout total");
 
         const token = randomBytes(32).toString("hex");
@@ -71,15 +105,20 @@ export async function POST(request: Request) {
         const orderNumber = `SBC-${new Date().getFullYear()}-${String(orderId).padStart(6, "0")}`;
         await connection.query("UPDATE shop_orders SET order_number = ? WHERE id = ?", [orderNumber, orderId]);
 
-        for (const row of rows) {
-            const quantity = quantityById.get(Number(row.id))!;
+        for (const line of lines) {
+            const { row, quantity, personalizations, personalizationPriceCents, unitPriceCents } = line;
+            const firstPersonalization = personalizations[0] || null;
             await connection.query(
                 `INSERT INTO shop_order_items (
                     order_id, product_id, variant_id, product_name, sku, size, color,
-                    unit_price_cents, quantity, line_total_cents
-                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    unit_price_cents, quantity, line_total_cents, personalization_type,
+                    personalization_placement, personalization_value, personalization_price_cents,
+                    personalizations_json
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [orderId, row.product_id, row.id, row.product_name, row.sku, row.size, row.color,
-                    row.price_cents, quantity, row.price_cents * quantity]
+                    unitPriceCents, quantity, unitPriceCents * quantity, firstPersonalization?.type || null,
+                    firstPersonalization?.placement || null, firstPersonalization?.value || null, personalizationPriceCents,
+                    personalizations.length ? JSON.stringify(personalizations) : null]
             );
         }
 
@@ -89,14 +128,14 @@ export async function POST(request: Request) {
             client_reference_id: orderNumber,
             metadata: { order_id: String(orderId), order_number: orderNumber },
             payment_intent_data: { metadata: { order_id: String(orderId), order_number: orderNumber } },
-            line_items: rows.map((row) => ({
-                quantity: quantityById.get(Number(row.id))!,
+            line_items: lines.map(({ row, quantity, personalizations, unitPriceCents }) => ({
+                quantity,
                 price_data: {
                     currency: SHOP_CURRENCY.toLowerCase(),
-                    unit_amount: row.price_cents,
+                    unit_amount: unitPriceCents,
                     product_data: {
                         name: row.product_name,
-                        description: `${row.color} · Taille ${row.size}`,
+                        description: `${row.color} · Taille ${row.size}${personalizations.map((personalization) => ` · ${personalization.type === "text" ? "Texte" : "Numéro"} « ${personalization.value} » (${personalization.placement === "front" ? "devant" : "dos"})`).join("")}`,
                         metadata: { product_id: String(row.product_id), variant_id: String(row.id) },
                     },
                 },

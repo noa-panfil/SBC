@@ -16,6 +16,16 @@ type ProductForm = {
     collectionId: number | null;
     isActive: boolean;
     displayOrder: number;
+    personalizationEnabled: boolean;
+    personalizationPrice: string;
+    personalizationTextEnabled: boolean;
+    personalizationNumberEnabled: boolean;
+    personalizationFrontEnabled: boolean;
+    personalizationBackEnabled: boolean;
+    personalizationTextFrontEnabled: boolean;
+    personalizationTextBackEnabled: boolean;
+    personalizationNumberFrontEnabled: boolean;
+    personalizationNumberBackEnabled: boolean;
 };
 type NewVariantForm = {
     sizes: string[];
@@ -27,7 +37,7 @@ type NewVariantForm = {
     displayOrder: number;
 };
 
-const emptyProduct: ProductForm = { name: "", slug: "", description: "", collectionId: null, isActive: false, displayOrder: 0 };
+const emptyProduct: ProductForm = { name: "", slug: "", description: "", collectionId: null, isActive: false, displayOrder: 0, personalizationEnabled: false, personalizationPrice: "", personalizationTextEnabled: true, personalizationNumberEnabled: true, personalizationFrontEnabled: true, personalizationBackEnabled: true, personalizationTextFrontEnabled: true, personalizationTextBackEnabled: true, personalizationNumberFrontEnabled: true, personalizationNumberBackEnabled: true };
 const emptyCollection = { name: "", slug: "", description: "", bannerImageId: null as number | null, bannerImageUrl: null as string | null, isActive: true, displayOrder: 0 };
 const emptyVariant: NewVariantForm = {
     sizes: [], customSizes: "", color: "", colorHex: "#111111",
@@ -181,6 +191,16 @@ export default function ProductsManager() {
         setForm(selected ? {
             name: selected.name, slug: selected.slug, description: selected.description,
             collectionId: selected.collectionId, isActive: selected.isActive, displayOrder: selected.displayOrder,
+            personalizationEnabled: selected.personalizationEnabled,
+            personalizationPrice: selected.personalizationPriceCents ? (selected.personalizationPriceCents / 100).toFixed(2) : "",
+            personalizationTextEnabled: selected.personalizationTextEnabled,
+            personalizationNumberEnabled: selected.personalizationNumberEnabled,
+            personalizationFrontEnabled: selected.personalizationFrontEnabled,
+            personalizationBackEnabled: selected.personalizationBackEnabled,
+            personalizationTextFrontEnabled: selected.personalizationTextFrontEnabled,
+            personalizationTextBackEnabled: selected.personalizationTextBackEnabled,
+            personalizationNumberFrontEnabled: selected.personalizationNumberFrontEnabled,
+            personalizationNumberBackEnabled: selected.personalizationNumberBackEnabled,
         } : emptyProduct);
         setImageColor("");
     }, [selected]);
@@ -202,10 +222,35 @@ export default function ProductsManager() {
 
     const saveProduct = async (event: FormEvent) => {
         event.preventDefault();
+        const personalizationPrice = Number(form.personalizationPrice.replace(",", "."));
+        if (form.personalizationEnabled && (!Number.isFinite(personalizationPrice) || personalizationPrice <= 0)) {
+            setMessage("Renseignez un prix de personnalisation supérieur à 0 €.");
+            return;
+        }
+        if (form.personalizationEnabled && (!form.personalizationTextEnabled && !form.personalizationNumberEnabled)) {
+            setMessage("Cochez au moins un type de personnalisation : texte ou numéro.");
+            return;
+        }
+        if (form.personalizationEnabled && form.personalizationTextEnabled && !form.personalizationTextFrontEnabled && !form.personalizationTextBackEnabled) {
+            setMessage("Cochez au moins un emplacement autorisé pour le texte.");
+            return;
+        }
+        if (form.personalizationEnabled && form.personalizationNumberEnabled && !form.personalizationNumberFrontEnabled && !form.personalizationNumberBackEnabled) {
+            setMessage("Cochez au moins un emplacement autorisé pour le numéro.");
+            return;
+        }
         setMessage(""); setSaving(true);
         try {
             const data = await jsonRequest(selected ? `/api/admin/shop/products/${selected.id}` : "/api/admin/shop/products", {
-                method: selected ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form),
+                method: selected ? "PATCH" : "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    ...form,
+                    personalizationFrontEnabled: form.personalizationTextFrontEnabled || form.personalizationNumberFrontEnabled,
+                    personalizationBackEnabled: form.personalizationTextBackEnabled || form.personalizationNumberBackEnabled,
+                    personalizationPriceCents: form.personalizationEnabled
+                        ? Math.round(Number(form.personalizationPrice.replace(",", ".")) * 100)
+                        : 0,
+                }),
             });
             setMessage(selected ? "Produit enregistré." : "Produit créé. Ajoutez maintenant ses couleurs et ses tailles.");
             if (!selected) { setSelectedId(data.id); setActiveTab("variants"); }
@@ -369,6 +414,8 @@ export default function ProductsManager() {
                         {selected && activeTab === "variants" && <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm md:p-7"><div><p className="text-xs font-black uppercase tracking-[0.18em] text-sbc">Étape 2</p><h2 className="mt-1 text-2xl font-black">Couleurs et tailles</h2><p className="mt-1 text-sm text-gray-500">Créez une couleur une seule fois, puis cochez toutes les tailles disponibles.</p></div><form onSubmit={addVariant} className="mt-7 grid gap-4 rounded-3xl border border-green-200 bg-green-50 p-4 lg:grid-cols-3 lg:p-5"><label className="text-sm font-black">1. Nom de la couleur<input required placeholder="Ex. Bleu marine" value={variant.color} onChange={(event) => setVariant({ ...variant, color: event.target.value })} className="mt-2 w-full rounded-xl border px-3 py-2.5 font-normal" /></label><label className="text-sm font-black">Couleur de la pastille<div className="mt-2 flex h-[42px] items-center gap-3 rounded-xl border bg-white px-2"><input type="color" value={variant.colorHex} onChange={(event) => setVariant({ ...variant, colorHex: event.target.value })} className="h-8 w-12 cursor-pointer border-0 bg-transparent" /><span className="text-sm font-mono font-normal text-gray-500">{variant.colorHex}</span></div></label><label className="text-sm font-black">Prix commun €<input required placeholder="Ex. 25,00" inputMode="decimal" value={variant.price} onChange={(event) => setVariant({ ...variant, price: event.target.value })} className="mt-2 w-full rounded-xl border px-3 py-2.5 font-normal" /></label><SizePicker value={variant.sizes} customSizes={variant.customSizes} onChange={(sizes) => setVariant({ ...variant, sizes })} onCustomSizesChange={(customSizes) => setVariant({ ...variant, customSizes })} /><div className="flex flex-col justify-end gap-2"><p className="text-xs leading-5 text-green-900">Une variante sera créée automatiquement pour chaque taille choisie.</p><button className="rounded-xl bg-sbc px-4 py-3 font-black text-white shadow-md"><i className="fas fa-plus mr-2" />Ajouter cette couleur</button></div></form><div className="mt-8 space-y-5">{colorGroups.map((group) => <ColorGroup key={group[0].color} variants={group} reload={load} />)}{!colorGroups.length && <div className="rounded-3xl border-2 border-dashed border-gray-200 p-10 text-center"><i className="fas fa-palette text-4xl text-sbc/25" /><h3 className="mt-4 font-black">Aucune couleur configurée</h3><p className="mt-1 text-sm text-gray-500">Utilisez le formulaire ci-dessus pour créer la première.</p></div>}</div></section>}
 
                         {selected && activeTab === "images" && <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm md:p-7"><div><p className="text-xs font-black uppercase tracking-[0.18em] text-sbc">Étape 3</p><h2 className="mt-1 text-2xl font-black">Photos par couleur</h2><p className="mt-1 text-sm text-gray-500">Choisissez d'abord la couleur, puis importez ses photos. La première devient automatiquement principale.</p></div>{!productColors.length ? <div className="mt-6 rounded-2xl border border-orange-200 bg-orange-50 p-5 text-sm text-orange-950"><i className="fas fa-arrow-left mr-2" />Créez au moins une couleur à l'étape précédente avant d'ajouter des photos.</div> : <div className="mt-7 grid gap-4 rounded-3xl border border-green-200 bg-green-50 p-5 md:grid-cols-[1fr_auto] md:items-end"><label className="text-sm font-black">Ces photos correspondent à<select value={imageColor} onChange={(event) => setImageColor(event.target.value)} className="mt-2 w-full rounded-xl border bg-white px-4 py-3 font-normal"><option value="">Toutes les couleurs (photo générale)</option>{productColors.map(([color]) => <option key={color} value={color}>{color}</option>)}</select></label><label className="cursor-pointer rounded-xl bg-sbc px-5 py-3 text-center font-black text-white shadow-md"><i className="fas fa-upload mr-2" />Importer et recadrer<input type="file" accept="image/jpeg,image/png,image/webp" onChange={selectImageToCrop} className="sr-only" /></label><p className="text-xs text-green-900 md:col-span-2"><i className="fas fa-crop-alt mr-2" />Chaque image sera obligatoirement recadrée au format carré 1200 × 1200 px.</p></div>}<div className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{selected.images.map((image) => <article key={image.id} className="overflow-hidden rounded-2xl border bg-gray-50"><div className="relative aspect-square bg-white"><img src={image.url} alt="" className="h-full w-full object-cover" />{image.isPrimary && <span className="absolute left-3 top-3 rounded-full bg-sbc px-3 py-1 text-[10px] font-black uppercase text-white shadow">Principale</span>}</div><div className="space-y-3 p-4"><label className="block text-xs font-black text-gray-700">Affichée pour<select value={image.color || ""} onChange={(event) => updateImage(image.id, event.target.value || null, image.displayOrder, image.isPrimary)} className="mt-1 w-full rounded-xl border bg-white p-2.5 font-normal"><option value="">Toutes les couleurs</option>{productColors.map(([color]) => <option key={color} value={color}>{color}</option>)}</select></label><div className="flex gap-2"><button type="button" disabled={image.isPrimary} onClick={() => updateImage(image.id, image.color, image.displayOrder, true)} className="flex-1 rounded-xl border border-sbc px-3 py-2 text-xs font-black text-sbc disabled:border-gray-200 disabled:text-gray-400"><i className="fas fa-star mr-1" />{image.isPrimary ? "Photo principale" : "Définir principale"}</button><button type="button" onClick={() => removeImage(image.id)} className="rounded-xl bg-red-50 px-3 py-2 text-red-700" aria-label="Retirer l'image"><i className="fas fa-trash" /></button></div></div></article>)}</div>{!selected.images.length && <div className="mt-7 rounded-3xl border-2 border-dashed border-gray-200 p-10 text-center"><i className="far fa-images text-4xl text-sbc/25" /><h3 className="mt-4 font-black">Aucune photo</h3><p className="mt-1 text-sm text-gray-500">Importez la première photo de ce produit.</p></div>}<details className="mt-6 rounded-2xl border border-gray-200 bg-gray-50 p-4"><summary className="cursor-pointer text-sm font-black text-gray-700">Associer une image déjà importée</summary><div className="mt-4 grid gap-3 md:grid-cols-[1fr_1fr_auto]"><select value={mediaId} onChange={(event) => setMediaId(event.target.value)} className="rounded-xl border bg-white px-3 py-2.5 text-sm"><option value="">Choisir une image boutique</option>{media.filter((image) => image.purpose === "product" && !selected.images.some((assigned) => assigned.imageId === image.id)).map((image) => <option key={image.id} value={image.id}>Image boutique #{image.id}</option>)}</select><select value={imageColor} onChange={(event) => setImageColor(event.target.value)} className="rounded-xl border bg-white px-3 py-2.5 text-sm"><option value="">Toutes les couleurs</option>{productColors.map(([color]) => <option key={color} value={color}>{color}</option>)}</select><button type="button" disabled={!mediaId} onClick={addImage} className="rounded-xl bg-gray-950 px-4 py-2.5 font-black text-white disabled:opacity-40">Associer</button></div></details></section>}
+                        {activeTab === "details" && <section className={`mt-4 rounded-3xl border p-5 shadow-sm md:p-7 ${form.personalizationEnabled ? "border-sbc/30 bg-green-50" : "border-gray-200 bg-white"}`}><label className="flex cursor-pointer items-start gap-3"><input type="checkbox" checked={form.personalizationEnabled} onChange={(event) => setForm({ ...form, personalizationEnabled: event.target.checked })} className="mt-1 h-5 w-5 accent-sbc" /><span><strong className="block text-base text-gray-950">Ce vêtement est personnalisable</strong><span className="mt-1 block text-sm font-normal leading-6 text-gray-600">Le client pourra ajouter un texte ou un numéro, devant ou dans le dos.</span></span></label>{form.personalizationEnabled && <label className="mt-5 block max-w-xs text-sm font-black">Prix de la personnalisation (€)<input min="0.01" step="0.01" inputMode="decimal" value={form.personalizationPrice} onChange={(event) => setForm({ ...form, personalizationPrice: event.target.value })} placeholder="Ex. 5,00" className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 font-normal focus:border-sbc focus:outline-none focus:ring-4 focus:ring-sbc/15" /><span className="mt-1 block text-xs font-normal text-gray-500">Supplément ajouté à chaque vêtement personnalisé.</span></label>}</section>}
+                        {activeTab === "details" && form.personalizationEnabled && <section className="mt-4 rounded-3xl border border-gray-200 bg-white p-5 shadow-sm md:p-7"><div><h2 className="text-lg font-black text-gray-950">Options proposées au client</h2><p className="mt-1 text-sm text-gray-500">Activez chaque type puis choisissez précisément où il peut être placé.</p></div><div className="mt-5 grid gap-4 sm:grid-cols-2"><fieldset className={`rounded-2xl border p-4 ${form.personalizationTextEnabled ? "border-green-200 bg-green-50" : "border-gray-200 bg-gray-50"}`}><legend className="px-1 text-sm font-black text-gray-950"><label className="flex cursor-pointer items-center gap-2"><input type="checkbox" checked={form.personalizationTextEnabled} onChange={(event) => setForm({ ...form, personalizationTextEnabled: event.target.checked })} className="h-4 w-4 accent-sbc" /><i className="fas fa-font text-sbc" />Texte</label></legend>{form.personalizationTextEnabled ? <div className="mt-3"><p className="text-xs font-black uppercase tracking-wide text-gray-600">Le texte peut être placé</p><div className="mt-2 grid grid-cols-2 gap-2"><label className={`cursor-pointer rounded-xl border p-3 text-center text-sm font-bold ${form.personalizationTextFrontEnabled ? "border-sbc bg-sbc text-white" : "border-gray-200 bg-white text-gray-600"}`}><input type="checkbox" checked={form.personalizationTextFrontEnabled} onChange={(event) => setForm({ ...form, personalizationTextFrontEnabled: event.target.checked })} className="sr-only" />Devant</label><label className={`cursor-pointer rounded-xl border p-3 text-center text-sm font-bold ${form.personalizationTextBackEnabled ? "border-sbc bg-sbc text-white" : "border-gray-200 bg-white text-gray-600"}`}><input type="checkbox" checked={form.personalizationTextBackEnabled} onChange={(event) => setForm({ ...form, personalizationTextBackEnabled: event.target.checked })} className="sr-only" />Dos</label></div></div> : <p className="mt-3 text-xs text-gray-500">Le texte ne sera pas proposé.</p>}</fieldset><fieldset className={`rounded-2xl border p-4 ${form.personalizationNumberEnabled ? "border-green-200 bg-green-50" : "border-gray-200 bg-gray-50"}`}><legend className="px-1 text-sm font-black text-gray-950"><label className="flex cursor-pointer items-center gap-2"><input type="checkbox" checked={form.personalizationNumberEnabled} onChange={(event) => setForm({ ...form, personalizationNumberEnabled: event.target.checked })} className="h-4 w-4 accent-sbc" /><i className="fas fa-hashtag text-sbc" />Numéro</label></legend>{form.personalizationNumberEnabled ? <div className="mt-3"><p className="text-xs font-black uppercase tracking-wide text-gray-600">Le numéro peut être placé</p><div className="mt-2 grid grid-cols-2 gap-2"><label className={`cursor-pointer rounded-xl border p-3 text-center text-sm font-bold ${form.personalizationNumberFrontEnabled ? "border-sbc bg-sbc text-white" : "border-gray-200 bg-white text-gray-600"}`}><input type="checkbox" checked={form.personalizationNumberFrontEnabled} onChange={(event) => setForm({ ...form, personalizationNumberFrontEnabled: event.target.checked })} className="sr-only" />Devant</label><label className={`cursor-pointer rounded-xl border p-3 text-center text-sm font-bold ${form.personalizationNumberBackEnabled ? "border-sbc bg-sbc text-white" : "border-gray-200 bg-white text-gray-600"}`}><input type="checkbox" checked={form.personalizationNumberBackEnabled} onChange={(event) => setForm({ ...form, personalizationNumberBackEnabled: event.target.checked })} className="sr-only" />Dos</label></div></div> : <p className="mt-3 text-xs text-gray-500">Le numéro ne sera pas proposé.</p>}</fieldset></div></section>}
                     </div>
                 </div>
             </div>

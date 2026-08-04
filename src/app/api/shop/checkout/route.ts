@@ -8,6 +8,7 @@ import { randomBytes } from "crypto";
 import { ResultSetHeader, RowDataPacket } from "mysql2";
 import type { PoolConnection } from "mysql2/promise";
 import Stripe from "stripe";
+import { consumeCheckoutRateLimit } from "@/lib/shop/rate-limit";
 
 type VariantRow = RowDataPacket & {
     id: number; product_id: number; product_name: string; sku: string | null;
@@ -20,6 +21,32 @@ type VariantRow = RowDataPacket & {
 };
 
 export async function POST(request: Request) {
+    let env: ReturnType<typeof getCheckoutEnv>;
+    try {
+        env = getCheckoutEnv();
+    } catch (error) {
+        console.error("Shop checkout configuration error:", error);
+        return NextResponse.json({ error: "Le paiement est temporairement indisponible." }, { status: 503 });
+    }
+
+    try {
+        const rateLimit = await consumeCheckoutRateLimit(request, env.stripeSecretKey);
+        if (!rateLimit.allowed) {
+            return NextResponse.json(
+                { error: "Trop de tentatives de paiement. Patientez quelques minutes avant de réessayer." },
+                { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } }
+            );
+        }
+    } catch (error) {
+        console.error("Shop checkout rate limit error:", error);
+        return NextResponse.json({ error: "Le paiement est temporairement indisponible." }, { status: 503 });
+    }
+
+    const contentLength = Number(request.headers.get("content-length") || "0");
+    if (Number.isFinite(contentLength) && contentLength > 32 * 1024) {
+        return NextResponse.json({ error: "Requête trop volumineuse." }, { status: 413 });
+    }
+
     let body: unknown;
     try {
         body = await request.json();
@@ -28,14 +55,6 @@ export async function POST(request: Request) {
     }
     const payload = parseCheckoutPayload(body);
     if (!payload) return NextResponse.json({ error: "Les informations du panier sont invalides." }, { status: 400 });
-
-    let env: ReturnType<typeof getCheckoutEnv>;
-    try {
-        env = getCheckoutEnv();
-    } catch (error) {
-        console.error("Shop checkout configuration error:", error);
-        return NextResponse.json({ error: "Le paiement est temporairement indisponible." }, { status: 503 });
-    }
 
     const stripe = getStripe(env.stripeSecretKey);
     let connection: PoolConnection | null = null;

@@ -5,7 +5,7 @@ Ce document décrit l'installation manuelle et la mise en service de la boutique
 ## Fonctionnalités ajoutées
 
 - catalogue public responsive avec collections illustrées par des bannières, produits, images, couleurs, tailles, prix par variante et personnalisation facultative ;
-- panier conservé dans `localStorage`, quantités limitées à 10 et contrôle serveur complet avant paiement ;
+- panier conservé dans `localStorage`, quantités limitées à 10, contrôle serveur complet et limitation des tentatives de paiement ;
 - collecte des coordonnées sans adresse postale, retrait uniquement au club ;
 - Stripe Checkout hébergé en paiement unique EUR ;
 - commandes et lignes immuables enregistrées dans MySQL avant la redirection Stripe ;
@@ -35,9 +35,9 @@ npm run build
 4. Si nécessaire, remplacer `sbc_boutique` par le nom autorisé par l'hébergeur.
 5. Exécuter le bloc principal de haut en bas, une seule fois.
 6. Ne pas décommenter le bloc de suppression placé à la fin.
-7. Vérifier que la base dédiée contient les dix tables `shop_*`.
+7. Vérifier que la base dédiée contient les onze tables `shop_*`.
 
-Ordre de création : `shop_images`, `shop_collections`, `shop_products`, `shop_product_images`, `shop_product_variants`, `shop_supplier_batches`, `shop_orders`, `shop_order_items`, `shop_order_status_history`, `shop_stripe_events`.
+Ordre de création : `shop_images`, `shop_collections`, `shop_products`, `shop_product_images`, `shop_product_variants`, `shop_supplier_batches`, `shop_orders`, `shop_order_items`, `shop_order_status_history`, `shop_stripe_events`, `shop_checkout_rate_limits`.
 
 `shop_product_images.image_id` possède désormais une clé étrangère vers `shop_images.id`. Les nouveaux uploads boutique ne sont donc plus enregistrés dans la table `images` de la base principale.
 
@@ -172,6 +172,24 @@ ALTER TABLE shop_order_items
     ADD COLUMN personalizations_json JSON NULL AFTER personalization_price_cents;
 ```
 
+### Base boutique déjà créée avant la limitation des checkouts
+
+Exécuter manuellement une seule fois ce bloc avant de déployer cette version. Sans cette table, la route de paiement se ferme volontairement avec une erreur temporaire afin de ne pas fonctionner sans protection :
+
+```sql
+CREATE TABLE shop_checkout_rate_limits (
+    key_hash BINARY(32) NOT NULL,
+    window_started_at DATETIME NOT NULL,
+    request_count SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (key_hash),
+    KEY idx_shop_checkout_rate_limits_updated (updated_at),
+    CONSTRAINT chk_shop_checkout_rate_limits_count CHECK (request_count >= 1)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+La limite applicative est de huit tentatives de checkout par adresse IP sur dix minutes. L'adresse n'est jamais enregistrée en clair : seule une empreinte HMAC est conservée.
+
 ## 2. Variables d'environnement
 
 ```env
@@ -189,6 +207,7 @@ SHOP_DB_USER=
 SHOP_DB_PASSWORD=
 SHOP_DB_NAME=sbc_boutique
 
+NEXTAUTH_SECRET=
 NEXT_PUBLIC_APP_URL=https://seclinbasketclub.fr
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
@@ -201,6 +220,8 @@ SHOP_NOTIFICATION_EMAIL=seclinbc@gmail.com
 Si les deux bases utilisent le même serveur et le même compte MySQL, `SHOP_DB_HOST`, `SHOP_DB_PORT`, `SHOP_DB_USER` et `SHOP_DB_PASSWORD` peuvent être omis : l'application réutilise alors les valeurs `DB_*`. `SHOP_DB_NAME` doit identifier la deuxième base et vaut `sbc_boutique` par défaut.
 
 Le compte MySQL doit avoir les droits nécessaires sur les deux bases. Ne jamais mettre de secret dans Git. En local, placer les valeurs de test dans `.env.local`. Sur le VPS, les placer dans le fichier d'environnement privé utilisé par le processus Node, avec des permissions restreintes. La redirection vers l'URL Checkout ne nécessite aucune clé Stripe publique.
+
+`NEXTAUTH_SECRET` est obligatoire, doit être unique et contenir au moins 32 caractères aléatoires. Générer une nouvelle valeur avec `openssl rand -base64 32`. Les anciennes valeurs d'exemple ou déjà exposées ne doivent jamais être réutilisées. L'application refuse désormais de démarrer si la valeur est absente, trop courte ou connue comme non sûre.
 
 ## 3. Configurer Stripe en test
 
@@ -251,19 +272,22 @@ Tester également : boutique vide, variante désactivée après ajout au panier,
 1. Faire valider les conditions de vente, les délais, le lieu/horaire de retrait, la politique de remboursement et l'information RGPD par le bureau.
 2. Sauvegarder la base principale puis créer la deuxième base avec le script complet.
 3. Configurer les variables `SHOP_DB_*` dans l'environnement privé du VPS.
-4. Renseigner les clés Stripe **live** et la clé Resend dans ce même environnement privé.
-5. Vérifier `NEXT_PUBLIC_APP_URL=https://seclinbasketclub.fr`.
-6. Installer et compiler sans afficher le contenu des fichiers d'environnement : `npm ci`, puis `npm run build`.
-7. Créer le webhook live avec l'URL et les événements listés plus haut.
-8. Redémarrer uniquement le processus de l'application via le gestionnaire déjà utilisé sur le VPS (par exemple `pm2 restart <nom-app> --update-env`), sans passer les secrets sur la ligne de commande et sans les afficher dans les logs.
-9. Consulter les logs techniques, sans copier de secret ou de donnée client dans un ticket public.
-10. Créer un produit pilote et réaliser une petite commande réelle contrôlée avant l'ouverture générale.
+4. Générer un nouveau `NEXTAUTH_SECRET` aléatoire et le placer uniquement dans cet environnement.
+5. Renseigner les clés Stripe **live** et la clé Resend dans ce même environnement privé.
+6. Vérifier `NEXT_PUBLIC_APP_URL=https://seclinbasketclub.fr`.
+7. Dans Nginx, transmettre une adresse client fiable avec `proxy_set_header X-Real-IP $remote_addr;` et remplacer toute valeur fournie directement par le client.
+8. Installer et compiler sans afficher le contenu des fichiers d'environnement : `npm ci`, puis `npm run build`.
+9. Créer le webhook live avec l'URL et les événements listés plus haut.
+10. Redémarrer uniquement le processus de l'application via le gestionnaire déjà utilisé sur le VPS (par exemple `pm2 restart <nom-app> --update-env`), sans passer les secrets sur la ligne de commande et sans les afficher dans les logs.
+11. Consulter les logs techniques, sans copier de secret ou de donnée client dans un ticket public.
+12. Créer un produit pilote et réaliser une petite commande réelle contrôlée avant l'ouverture générale.
 
 ## Checklist avant ouverture
 
 - [ ] sauvegarde de la base principale effectuée ;
-- [ ] deuxième base créée avec ses dix tables ;
+- [ ] deuxième base créée avec ses onze tables ;
 - [ ] variables `SHOP_DB_*` configurées et droits MySQL vérifiés ;
+- [ ] `NEXTAUTH_SECRET` aléatoire, unique et d'au moins 32 caractères configuré ;
 - [ ] nouvelle boutique volontairement vide ou données ajoutées depuis l'administration ;
 - [ ] aucune migration automatique ajoutée ;
 - [ ] CGV validées et publiées ;
@@ -274,6 +298,7 @@ Tester également : boutique vide, variante désactivée après ajout au panier,
 - [ ] clé Resend limitée et expéditeur vérifié ;
 - [ ] e-mails client, bureau, lot envoyé, lot reçu et disponibilité testés ;
 - [ ] recalcul serveur testé après changement de prix ;
+- [ ] neuvième tentative de checkout sur dix minutes refusée avec HTTP 429 ;
 - [ ] administration accessible uniquement au rôle `admin` ;
 - [ ] export Excel vérifié par le responsable fournisseur ;
 - [ ] test mobile, tablette, clavier et contrastes effectué ;

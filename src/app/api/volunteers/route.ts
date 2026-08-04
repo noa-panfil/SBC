@@ -5,17 +5,34 @@ import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
+type VolunteerRow = RowDataPacket & {
+    id: number;
+    name: string;
+    birth_date: string;
+    image: string | null;
+    image_id: number | null;
+    role: string;
+    sexe: string;
+    display?: number;
+};
+
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const all = searchParams.get('all') === 'true';
+        if (all) {
+            const session = await getServerSession(authOptions);
+            if (session?.user?.role !== 'admin') {
+                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+            }
+        }
         
         const query = all 
             ? "SELECT id, name, DATE_FORMAT(birth_date, '%d/%m/%Y') as birth_date, image, image_id, role, sexe, display FROM volunteers WHERE birth_date IS NOT NULL ORDER BY name ASC"
             : "SELECT id, name, DATE_FORMAT(birth_date, '%d/%m/%Y') as birth_date, image, image_id, role, sexe FROM volunteers WHERE display = 1 AND birth_date IS NOT NULL ORDER BY name ASC";
 
-        const [rows] = await pool.query<RowDataPacket[]>(query);
-        const volunteers = rows.map((v: any) => ({
+        const [rows] = await pool.query<VolunteerRow[]>(query);
+        const volunteers = rows.map((v) => ({
             id: v.id,
             name: v.name,
             birth_date: v.birth_date, // Already formatted
@@ -34,7 +51,10 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     try {
-        const session: any = await getServerSession(authOptions);
+        const session = await getServerSession(authOptions);
+        if (!session?.user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
         const isAdmin = session?.user?.role === 'admin';
 
         const body = await request.json();

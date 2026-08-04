@@ -4,6 +4,15 @@ import pool from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { RowDataPacket } from "mysql2";
 
+function requireNextAuthSecret(): string {
+    const secret = process.env.NEXTAUTH_SECRET?.trim();
+    const normalized = secret?.toLowerCase().replace(/[^a-z]/g, "") || "";
+    if (!secret || secret.length < 32 || normalized.includes("changeme")) {
+        throw new Error("NEXTAUTH_SECRET doit contenir un secret aléatoire d'au moins 32 caractères.");
+    }
+    return secret;
+}
+
 export const authOptions: NextAuthOptions = {
     providers: [
         CredentialsProvider({
@@ -79,7 +88,7 @@ export const authOptions: NextAuthOptions = {
         })
     ],
     callbacks: {
-        async jwt({ token, user }: any) {
+        async jwt({ token, user }) {
             if (user) {
                 token.role = user.role;
                 token.id = user.id;
@@ -88,10 +97,10 @@ export const authOptions: NextAuthOptions = {
             }
             return token;
         },
-        async session({ session, token }: any) {
+        async session({ session, token }) {
             if (session.user) {
-                session.user.role = token.role;
-                session.user.id = token.id;
+                if (token.role) session.user.role = token.role;
+                if (token.id) session.user.id = token.id;
                 session.user.personId = token.personId;
                 session.user.volunteerId = token.volunteerId;
             }
@@ -101,5 +110,5 @@ export const authOptions: NextAuthOptions = {
     pages: {
         signIn: '/login',
     },
-    secret: process.env.NEXTAUTH_SECRET || "sbc-secret-key-change-me",
+    secret: requireNextAuthSecret(),
 };

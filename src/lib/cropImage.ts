@@ -32,7 +32,8 @@ export default async function getCroppedImg(
     imageSrc: string,
     pixelCrop: { x: number; y: number; width: number; height: number },
     rotation = 0,
-    flip = { horizontal: false, vertical: false }
+    flip = { horizontal: false, vertical: false },
+    output = { width: pixelCrop.width, height: pixelCrop.height, mimeType: "image/jpeg", quality: 0.95 }
 ): Promise<Blob> {
     const image = await createImage(imageSrc);
     const canvas = document.createElement("canvas");
@@ -64,25 +65,28 @@ export default async function getCroppedImg(
     // draw image
     ctx.drawImage(image, 0, 0);
 
-    const data = ctx.getImageData(
+    const outputCanvas = document.createElement("canvas");
+    const outputContext = outputCanvas.getContext("2d");
+    if (!outputContext) throw new Error("No output 2d context");
+    outputCanvas.width = output.width;
+    outputCanvas.height = output.height;
+    outputContext.drawImage(
+        canvas,
         pixelCrop.x,
         pixelCrop.y,
         pixelCrop.width,
-        pixelCrop.height
+        pixelCrop.height,
+        0,
+        0,
+        output.width,
+        output.height
     );
-
-    // set canvas width to final desired crop size - this will clear existing context
-    canvas.width = pixelCrop.width;
-    canvas.height = pixelCrop.height;
-
-    // paste generated rotate image at the top left corner
-    ctx.putImageData(data, 0, 0);
 
     // As Blob
     return new Promise((resolve, reject) => {
-        canvas.toBlob((file) => {
+        outputCanvas.toBlob((file) => {
             if (file) resolve(file);
             else reject(new Error("Canvas is empty"));
-        }, "image/jpeg", 0.95);
+        }, output.mimeType, output.quality);
     });
 }

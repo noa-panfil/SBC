@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { RowDataPacket } from 'mysql2';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 export async function GET() {
     try {
@@ -21,6 +23,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+    const session = await getServerSession(authOptions);
+    if (session?.user?.role !== 'admin') {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     try {
         const body = await request.json();
 

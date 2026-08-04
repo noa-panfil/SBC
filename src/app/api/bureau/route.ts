@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import { RowDataPacket } from 'mysql2';
+import { ResultSetHeader, RowDataPacket } from 'mysql2';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 export async function GET() {
     try {
@@ -22,6 +24,10 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+    const session = await getServerSession(authOptions);
+    if (session?.user?.role !== 'admin') {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     try {
         const body = await req.json();
         const { id, role } = body;
@@ -40,7 +46,7 @@ export async function POST(req: Request) {
             person_id = id;
         }
 
-        const [result]: any = await pool.query(
+        const [result] = await pool.query<ResultSetHeader>(
             "INSERT INTO bureau_members (person_id, volunteer_id, role) VALUES (?, ?, ?)",
             [person_id, volunteer_id, role]
         );

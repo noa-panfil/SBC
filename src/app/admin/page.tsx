@@ -18,6 +18,19 @@ import BureauManager from "@/components/admin/BureauManager";
 import { authOptions } from "@/lib/auth";
 import InstallPWA from "@/components/InstallPWA";
 import AdminCoachPlanningManager from "./AdminCoachPlanningManager";
+import AdminMaintenanceManager from "./AdminMaintenanceManager";
+
+async function getMaintenanceMode() {
+    try {
+        const [rows] = await pool.query<RowDataPacket[]>(
+            "SELECT value FROM settings WHERE key_name = 'maintenance_mode' LIMIT 1"
+        );
+        return rows[0]?.value === 'true';
+    } catch (e) {
+        console.error("Error fetching maintenance mode", e);
+        return false;
+    }
+}
 
 async function getStats() {
     try {
@@ -318,6 +331,7 @@ export default async function AdminDashboard() {
     const volunteerLogins = await getVolunteerLogins();
     const otmMatches = await getOtmMatches();
     const rawOfficials = await getAllPersons();
+    const maintenanceEnabled = await getMaintenanceMode();
 
     // Use officials directly without disambiguation (UI shows team and photo separately)
     const officials = rawOfficials;
@@ -334,11 +348,13 @@ export default async function AdminDashboard() {
                     <Link href="/" className="flex-1 md:flex-none justify-center px-4 py-2.5 text-xs font-black text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition flex items-center gap-2 uppercase tracking-wider">
                         <i className="fas fa-external-link-alt text-[10px]"></i> Site public
                     </Link>
-                    <div className="px-3 py-2 bg-sbc/10 text-sbc text-[10px] font-black rounded-xl uppercase tracking-widest border border-sbc/20">
-                        Status: Live
+                    <div className={`px-3 py-2 text-[10px] font-black rounded-xl uppercase tracking-widest border ${maintenanceEnabled ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-sbc/10 text-sbc border-sbc/20'}`}>
+                        Statut : {maintenanceEnabled ? 'Maintenance' : 'En ligne'}
                     </div>
                 </div>
             </header>
+
+            <AdminMaintenanceManager initialEnabled={maintenanceEnabled} />
 
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
                 {[

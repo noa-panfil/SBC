@@ -78,7 +78,7 @@ function ProductCard({ product, onOpen }: { product: ShopProduct; onOpen: (produ
     const sizes = variants.map((variant) => variant.size);
 
     return (
-        <article className="overflow-hidden rounded-[1.75rem] border border-gray-200/80 bg-white shadow-[0_8px_35px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_55px_rgba(15,23,42,0.12)]">
+        <article className="flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-gray-200/80 bg-white shadow-[0_8px_35px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_55px_rgba(15,23,42,0.12)]">
             <button type="button" onClick={() => onOpen(product, selectedColor)} className="group/image relative block aspect-square w-full overflow-hidden bg-[#f4f5f3] text-left focus:outline-none focus:ring-4 focus:ring-inset focus:ring-sbc/25" aria-label={`Découvrir ${product.name}`}>
                 {images[0] ? <>
                     <img key={`primary-${images[0].url}`} src={images[0].url} alt={`${product.name} - ${selectedColor}`} className={`absolute inset-0 h-full w-full object-cover opacity-100 transition-[opacity,transform] duration-500 ease-out group-hover/image:scale-[1.035] ${images[1] ? "group-hover/image:opacity-0" : ""}`} />
@@ -88,7 +88,7 @@ function ProductCard({ product, onOpen }: { product: ShopProduct; onOpen: (produ
                 {product.personalizationEnabled && <span className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1.5 text-[11px] font-black text-sbc-dark shadow-sm backdrop-blur"><i className="fas fa-pen mr-1.5" />Personnalisable</span>}
             </button>
 
-            <div className="p-5 md:p-6">
+            <div className="flex flex-1 flex-col p-5 md:p-6">
                 <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0"><h3 className="truncate text-xl font-black tracking-tight text-gray-950">{product.name}</h3><p className="mt-1 text-sm font-medium text-gray-500">{selectedColor}</p></div>
                     <p className="shrink-0 text-lg font-black text-sbc-dark">{priceLabel(variants)}</p>
@@ -106,7 +106,7 @@ function ProductCard({ product, onOpen }: { product: ShopProduct; onOpen: (produ
 
                 {product.personalizationEnabled && <div className="mt-5 rounded-xl border border-green-200 bg-green-50 px-3.5 py-3 text-xs text-green-950"><p className="font-black"><i className="fas fa-pen mr-2 text-sbc" />Personnalisation +{formatEuros(product.personalizationPriceCents)}</p><p className="mt-1 font-semibold text-green-800">{personalizationSummary(product)}</p></div>}
 
-                <button type="button" onClick={() => onOpen(product, selectedColor)} className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gray-950 px-4 py-3.5 text-sm font-black text-white transition hover:bg-sbc focus:outline-none focus:ring-4 focus:ring-sbc/25">Voir le produit <i className="fas fa-arrow-right text-xs" /></button>
+                <div className="mt-auto pt-6"><button type="button" onClick={() => onOpen(product, selectedColor)} className="flex w-full items-center justify-center gap-2 rounded-xl bg-gray-950 px-4 py-3.5 text-sm font-black text-white transition hover:bg-sbc focus:outline-none focus:ring-4 focus:ring-sbc/25">Voir le produit <i className="fas fa-arrow-right text-xs" /></button></div>
             </div>
         </article>
     );

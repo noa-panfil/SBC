@@ -24,13 +24,15 @@ export async function POST(request: Request) {
     try {
         const [result] = await pool.query<ResultSetHeader>(
             `INSERT INTO shop_products (name, slug, description, is_active, display_order, collection_id,
-                personalization_enabled, personalization_price_cents, personalization_text_enabled,
+                personalization_enabled, personalization_price_cents,
+                personalization_text_price_cents, personalization_number_price_cents, personalization_text_enabled,
                 personalization_number_enabled, personalization_front_enabled, personalization_back_enabled,
                 personalization_text_front_enabled, personalization_text_back_enabled,
                 personalization_number_front_enabled, personalization_number_back_enabled)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [input.name, input.slug, input.description, input.isActive ? 1 : 0, input.displayOrder, input.collectionId,
                 input.personalizationEnabled ? 1 : 0, input.personalizationPriceCents,
+                input.personalizationTextPriceCents, input.personalizationNumberPriceCents,
                 input.personalizationTextEnabled ? 1 : 0, input.personalizationNumberEnabled ? 1 : 0,
                 input.personalizationFrontEnabled ? 1 : 0, input.personalizationBackEnabled ? 1 : 0,
                 input.personalizationTextFrontEnabled ? 1 : 0, input.personalizationTextBackEnabled ? 1 : 0,

@@ -53,7 +53,7 @@ export default function Footer() {
                 </div>
             </div>
             <div className="text-center border-t border-gray-800 pt-6 text-gray-500 text-sm">
-                &copy; 2025 Seclin Basket Club. Tous droits réservés. - <Link href="/mentions-legales" className="hover:text-gray-300">Mentions Légales</Link> - <Link href="/login" className="hover:text-gray-300">Connexion</Link>
+                &copy; 2026 Seclin Basket Club. Tous droits réservés. - <Link href="/mentions-legales" className="hover:text-gray-300">Mentions légales</Link> - <Link href="/boutique/conditions-de-vente" className="hover:text-gray-300">CGV</Link> - <Link href="/login" className="hover:text-gray-300">Connexion</Link>
             </div>
         </footer>
     );

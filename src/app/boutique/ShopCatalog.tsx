@@ -37,15 +37,23 @@ function priceLabel(variants: ShopVariant[]): string {
     return min === max ? formatEuros(min) : `Dès ${formatEuros(min)}`;
 }
 
+function personalizationPrice(product: ShopProduct, type: "text" | "number"): number {
+    return type === "text" ? product.personalizationTextPriceCents : product.personalizationNumberPriceCents;
+}
+
+function personalizationPriceLabel(priceCents: number): string {
+    return priceCents === 0 ? "Gratuit" : `+${formatEuros(priceCents)}`;
+}
+
 function personalizationSummary(product: ShopProduct): string {
     const details: string[] = [];
     if (product.personalizationTextEnabled) {
         const placements = [product.personalizationTextFrontEnabled ? "devant" : null, product.personalizationTextBackEnabled ? "dos" : null].filter(Boolean);
-        details.push(`Texte : ${placements.join(" ou ")}`);
+        details.push(`Texte (${personalizationPriceLabel(product.personalizationTextPriceCents)}) : ${placements.join(" ou ")}`);
     }
     if (product.personalizationNumberEnabled) {
         const placements = [product.personalizationNumberFrontEnabled ? "devant" : null, product.personalizationNumberBackEnabled ? "dos" : null].filter(Boolean);
-        details.push(`Numéro : ${placements.join(" ou ")}`);
+        details.push(`Numéro (${personalizationPriceLabel(product.personalizationNumberPriceCents)}) : ${placements.join(" ou ")}`);
     }
     return details.join(" · ");
 }
@@ -104,7 +112,7 @@ function ProductCard({ product, onOpen }: { product: ShopProduct; onOpen: (produ
                     <div className="mt-2 flex flex-wrap gap-1.5">{sizes.slice(0, 7).map((size) => <span key={size} className="rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-bold text-gray-700">{size}</span>)}{sizes.length > 7 && <span className="rounded-md bg-gray-900 px-2.5 py-1 text-xs font-bold text-white">+{sizes.length - 7}</span>}</div>
                 </div>
 
-                {product.personalizationEnabled && <div className="mt-5 rounded-xl border border-green-200 bg-green-50 px-3.5 py-3 text-xs text-green-950"><p className="font-black"><i className="fas fa-pen mr-2 text-sbc" />Personnalisation +{formatEuros(product.personalizationPriceCents)}</p><p className="mt-1 font-semibold text-green-800">{personalizationSummary(product)}</p></div>}
+                {product.personalizationEnabled && <div className="mt-5 rounded-xl border border-green-200 bg-green-50 px-3.5 py-3 text-xs text-green-950"><p className="font-black"><i className="fas fa-pen mr-2 text-sbc" />Options de personnalisation</p><p className="mt-1 font-semibold text-green-800">{personalizationSummary(product)}</p></div>}
 
                 <div className="mt-auto pt-6"><button type="button" onClick={() => onOpen(product, selectedColor)} className="flex w-full items-center justify-center gap-2 rounded-xl bg-gray-950 px-4 py-3.5 text-sm font-black text-white transition hover:bg-sbc focus:outline-none focus:ring-4 focus:ring-sbc/25">Voir le produit <i className="fas fa-arrow-right text-xs" /></button></div>
             </div>
@@ -139,7 +147,10 @@ function ProductDialog({ product, initialColor, onClose }: { product: ShopProduc
     const [isZoomed, setIsZoomed] = useState(false);
     const closeRef = useRef<HTMLButtonElement>(null);
     const variant = variants.find((candidate) => candidate.size === size);
-    const displayedPrice = (variant?.priceCents || 0) + (wantsPersonalization ? product.personalizationPriceCents : 0);
+    const selectedPersonalizationPriceCents = wantsPersonalization
+        ? selectedPersonalizationTypes.reduce((sum, type) => sum + personalizationPrice(product, type), 0)
+        : 0;
+    const displayedPrice = (variant?.priceCents || 0) + selectedPersonalizationPriceCents;
     const activeImageIndex = Math.max(0, images.findIndex((image) => image.url === activeImage));
 
     useEffect(() => {
@@ -207,6 +218,7 @@ function ProductDialog({ product, initialColor, onClose }: { product: ShopProduc
                 personalizations.push({ type, placement, value });
             }
         }
+        const personalizationPriceCents = personalizations.reduce((sum, personalization) => sum + personalizationPrice(product, personalization.type), 0);
         const result = addCartLine({
             lineId: cartLineId(variant.id, personalizations),
             variantId: variant.id,
@@ -215,10 +227,10 @@ function ProductDialog({ product, initialColor, onClose }: { product: ShopProduc
             imageUrl: activeImage || images[0]?.url || null,
             size: variant.size,
             color: variant.color,
-            priceCents: variant.priceCents + (personalizations.length ? product.personalizationPriceCents : 0),
+            priceCents: variant.priceCents + personalizationPriceCents,
             quantity,
             personalizations,
-            personalizationPriceCents: personalizations.length ? product.personalizationPriceCents : 0,
+            personalizationPriceCents,
         });
         setMessage(result.message);
     };
@@ -249,16 +261,16 @@ function ProductDialog({ product, initialColor, onClose }: { product: ShopProduc
                             <fieldset className="mt-7"><div className="flex items-center justify-between"><legend className="text-sm font-black text-gray-950">Choisir la taille</legend><span className="text-xs text-gray-400">{variants.length} disponible{variants.length > 1 ? "s" : ""}</span></div><div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-5">{variants.map((item) => <button key={item.id} type="button" onClick={() => { setSize(item.size); setMessage(""); }} aria-pressed={size === item.size} className={`rounded-xl border px-3 py-3 text-sm font-black transition focus:outline-none focus:ring-4 focus:ring-sbc/20 ${size === item.size ? "border-gray-950 bg-gray-950 text-white" : "border-gray-200 bg-white text-gray-800 hover:border-gray-500"}`}>{item.size}</button>)}</div></fieldset>
 
                             {product.personalizationEnabled && <div className={`mt-7 rounded-2xl border p-4 ${wantsPersonalization ? "border-sbc/30 bg-green-50" : "border-gray-200 bg-gray-50"}`}>
-                                <label className="flex cursor-pointer items-start gap-3"><input type="checkbox" checked={wantsPersonalization} onChange={(event) => { setWantsPersonalization(event.target.checked); setMessage(""); }} className="mt-0.5 h-5 w-5 accent-sbc" /><span><strong className="block text-sm text-gray-950">Je souhaite personnaliser ce vêtement</strong><span className="mt-1 block text-xs text-gray-600">+ {formatEuros(product.personalizationPriceCents)} par article</span></span></label>
+                                <label className="flex cursor-pointer items-start gap-3"><input type="checkbox" checked={wantsPersonalization} onChange={(event) => { setWantsPersonalization(event.target.checked); setMessage(""); }} className="mt-0.5 h-5 w-5 accent-sbc" /><span><strong className="block text-sm text-gray-950">Je souhaite personnaliser ce vêtement</strong><span className="mt-1 block text-xs text-gray-600">Chaque option a son propre tarif, gratuit ou payant.</span></span></label>
                                 {wantsPersonalization && <div className="mt-4 space-y-4 border-t border-green-200 pt-4">
                                     <fieldset>
                                         <legend className="text-xs font-black uppercase tracking-wide text-gray-600">Choisissez une ou plusieurs options</legend>
                                         {allowedPersonalizationTypes.length === 1
-                                            ? <p className="mt-2 rounded-xl border border-gray-950 bg-gray-950 px-3 py-2.5 text-center text-sm font-black text-white">{allowedPersonalizationTypes[0] === "text" ? "Texte" : "Numéro"}</p>
-                                            : <div className="mt-2 grid grid-cols-2 gap-2">{allowedPersonalizationTypes.map((type) => { const selected = selectedPersonalizationTypes.includes(type); return <button key={type} type="button" aria-pressed={selected} onClick={() => togglePersonalizationType(type)} className={`rounded-xl border px-3 py-2.5 text-sm font-black ${selected ? "border-gray-950 bg-gray-950 text-white" : "border-gray-200 bg-white text-gray-700"}`}><i className={`fas ${selected ? "fa-check-square" : "fa-square"} mr-2`} />{type === "text" ? "Ajouter un texte" : "Ajouter un numéro"}</button>; })}</div>}
+                                            ? <p className="mt-2 rounded-xl border border-gray-950 bg-gray-950 px-3 py-2.5 text-center text-sm font-black text-white">{allowedPersonalizationTypes[0] === "text" ? "Texte" : "Numéro"} · {personalizationPriceLabel(personalizationPrice(product, allowedPersonalizationTypes[0]))}</p>
+                                            : <div className="mt-2 grid grid-cols-2 gap-2">{allowedPersonalizationTypes.map((type) => { const selected = selectedPersonalizationTypes.includes(type); return <button key={type} type="button" aria-pressed={selected} onClick={() => togglePersonalizationType(type)} className={`rounded-xl border px-3 py-2.5 text-sm font-black ${selected ? "border-gray-950 bg-gray-950 text-white" : "border-gray-200 bg-white text-gray-700"}`}><i className={`fas ${selected ? "fa-check-square" : "fa-square"} mr-2`} />{type === "text" ? "Texte" : "Numéro"} · {personalizationPriceLabel(personalizationPrice(product, type))}</button>; })}</div>}
                                     </fieldset>
-                                    {selectedPersonalizationTypes.includes("text") && <section className="rounded-2xl border border-gray-200 bg-white p-4"><h3 className="text-sm font-black text-gray-950"><i className="fas fa-font mr-2 text-sbc" />Personnalisation texte</h3><label className="mt-3 block text-sm font-black text-gray-950">Votre texte<input autoComplete="off" maxLength={30} value={textValue} onChange={(event) => setTextValue(event.target.value.slice(0, 30))} placeholder="Ex. NOA" className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 font-normal uppercase focus:border-sbc focus:outline-none focus:ring-4 focus:ring-sbc/15" /><span className="mt-1 block text-right text-xs font-normal text-gray-500">{textValue.length}/30</span></label><fieldset className="mt-3"><legend className="text-xs font-black uppercase tracking-wide text-gray-600">Emplacement du texte</legend>{allowedTextPlacements.length === 1 ? <p className="mt-2 rounded-xl bg-sbc px-3 py-2.5 text-center text-sm font-black text-white">{allowedTextPlacements[0] === "front" ? "Devant" : "Dos"}</p> : <div className="mt-2 grid grid-cols-2 gap-2">{allowedTextPlacements.map((placement) => <button key={placement} type="button" aria-pressed={textPlacement === placement} onClick={() => { setTextPlacement(placement); setMessage(""); }} className={`rounded-xl border px-3 py-2.5 text-sm font-black ${textPlacement === placement ? "border-sbc bg-sbc text-white" : "border-gray-200 text-gray-700"}`}>{placement === "front" ? "Devant" : "Dos"}</button>)}</div>}</fieldset></section>}
-                                    {selectedPersonalizationTypes.includes("number") && <section className="rounded-2xl border border-gray-200 bg-white p-4"><h3 className="text-sm font-black text-gray-950"><i className="fas fa-hashtag mr-2 text-sbc" />Personnalisation numéro</h3><label className="mt-3 block text-sm font-black text-gray-950">Votre numéro<input autoComplete="off" inputMode="numeric" maxLength={3} value={numberValue} onChange={(event) => setNumberValue(event.target.value.replace(/\D/g, "").slice(0, 3))} placeholder="Ex. 10" className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 font-normal focus:border-sbc focus:outline-none focus:ring-4 focus:ring-sbc/15" /><span className="mt-1 block text-right text-xs font-normal text-gray-500">{numberValue.length}/3</span></label><fieldset className="mt-3"><legend className="text-xs font-black uppercase tracking-wide text-gray-600">Emplacement du numéro</legend>{allowedNumberPlacements.length === 1 ? <p className="mt-2 rounded-xl bg-sbc px-3 py-2.5 text-center text-sm font-black text-white">{allowedNumberPlacements[0] === "front" ? "Devant" : "Dos"}</p> : <div className="mt-2 grid grid-cols-2 gap-2">{allowedNumberPlacements.map((placement) => <button key={placement} type="button" aria-pressed={numberPlacement === placement} onClick={() => { setNumberPlacement(placement); setMessage(""); }} className={`rounded-xl border px-3 py-2.5 text-sm font-black ${numberPlacement === placement ? "border-sbc bg-sbc text-white" : "border-gray-200 text-gray-700"}`}>{placement === "front" ? "Devant" : "Dos"}</button>)}</div>}</fieldset></section>}
+                                    {selectedPersonalizationTypes.includes("text") && <section className="rounded-2xl border border-gray-200 bg-white p-4"><div className="flex items-center justify-between gap-3"><h3 className="text-sm font-black text-gray-950"><i className="fas fa-font mr-2 text-sbc" />Personnalisation texte</h3><span className="rounded-full bg-green-100 px-2.5 py-1 text-xs font-black text-green-900">{personalizationPriceLabel(product.personalizationTextPriceCents)}</span></div><label className="mt-3 block text-sm font-black text-gray-950">Votre texte<input autoComplete="off" maxLength={30} value={textValue} onChange={(event) => setTextValue(event.target.value.slice(0, 30))} placeholder="Ex. NOA" className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 font-normal uppercase focus:border-sbc focus:outline-none focus:ring-4 focus:ring-sbc/15" /><span className="mt-1 block text-right text-xs font-normal text-gray-500">{textValue.length}/30</span></label><fieldset className="mt-3"><legend className="text-xs font-black uppercase tracking-wide text-gray-600">Emplacement du texte</legend>{allowedTextPlacements.length === 1 ? <p className="mt-2 rounded-xl bg-sbc px-3 py-2.5 text-center text-sm font-black text-white">{allowedTextPlacements[0] === "front" ? "Devant" : "Dos"}</p> : <div className="mt-2 grid grid-cols-2 gap-2">{allowedTextPlacements.map((placement) => <button key={placement} type="button" aria-pressed={textPlacement === placement} onClick={() => { setTextPlacement(placement); setMessage(""); }} className={`rounded-xl border px-3 py-2.5 text-sm font-black ${textPlacement === placement ? "border-sbc bg-sbc text-white" : "border-gray-200 text-gray-700"}`}>{placement === "front" ? "Devant" : "Dos"}</button>)}</div>}</fieldset></section>}
+                                    {selectedPersonalizationTypes.includes("number") && <section className="rounded-2xl border border-gray-200 bg-white p-4"><div className="flex items-center justify-between gap-3"><h3 className="text-sm font-black text-gray-950"><i className="fas fa-hashtag mr-2 text-sbc" />Personnalisation numéro</h3><span className="rounded-full bg-green-100 px-2.5 py-1 text-xs font-black text-green-900">{personalizationPriceLabel(product.personalizationNumberPriceCents)}</span></div><label className="mt-3 block text-sm font-black text-gray-950">Votre numéro<input autoComplete="off" inputMode="numeric" maxLength={3} value={numberValue} onChange={(event) => setNumberValue(event.target.value.replace(/\D/g, "").slice(0, 3))} placeholder="Ex. 10" className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 font-normal focus:border-sbc focus:outline-none focus:ring-4 focus:ring-sbc/15" /><span className="mt-1 block text-right text-xs font-normal text-gray-500">{numberValue.length}/3</span></label><fieldset className="mt-3"><legend className="text-xs font-black uppercase tracking-wide text-gray-600">Emplacement du numéro</legend>{allowedNumberPlacements.length === 1 ? <p className="mt-2 rounded-xl bg-sbc px-3 py-2.5 text-center text-sm font-black text-white">{allowedNumberPlacements[0] === "front" ? "Devant" : "Dos"}</p> : <div className="mt-2 grid grid-cols-2 gap-2">{allowedNumberPlacements.map((placement) => <button key={placement} type="button" aria-pressed={numberPlacement === placement} onClick={() => { setNumberPlacement(placement); setMessage(""); }} className={`rounded-xl border px-3 py-2.5 text-sm font-black ${numberPlacement === placement ? "border-sbc bg-sbc text-white" : "border-gray-200 text-gray-700"}`}>{placement === "front" ? "Devant" : "Dos"}</button>)}</div>}</fieldset></section>}
                                 </div>}
                             </div>}
 
@@ -331,8 +343,8 @@ export default function ShopCatalog() {
     return <>
         <section className="relative isolate overflow-hidden bg-[#082b1d] text-white">
             <div className="absolute inset-0 -z-10 opacity-70 [background:radial-gradient(circle_at_15%_10%,rgba(34,197,94,.28),transparent_30%),radial-gradient(circle_at_85%_80%,rgba(249,115,22,.18),transparent_30%)]" />
-            <div className="container mx-auto px-4 py-16 md:py-24">
-                <div className="max-w-4xl"><h1 className="max-w-3xl text-4xl font-black leading-[0.95] tracking-[-0.04em] sm:text-6xl md:text-7xl">Les couleurs du club, <span className="text-green-400">sur le terrain</span> comme en gradin.</h1><p className="mt-6 max-w-2xl text-base leading-7 text-green-50/75 md:text-lg">Découvrez les vêtements officiels du Seclin Basket Club, disponibles en plusieurs couleurs et tailles.</p><div className="mt-8 flex flex-wrap gap-3"><a href="#collection" className="rounded-full bg-white px-6 py-3.5 font-black text-gray-950 transition hover:bg-green-100">Découvrir la collection</a><Link href="/boutique/panier" className="inline-flex items-center gap-3 rounded-full border border-white/20 bg-white/10 px-6 py-3.5 font-black text-white backdrop-blur transition hover:bg-white/20"><i className="fas fa-shopping-bag" />Panier <span className="rounded-full bg-green-400 px-2.5 py-1 text-xs text-green-950">{count}</span></Link></div></div>
+            <div className="container mx-auto px-4 py-12 md:py-16">
+                <div className="w-full"><h1 className="w-full text-4xl font-black leading-[0.95] tracking-[-0.04em] sm:text-5xl md:text-6xl">Les couleurs du club, <span className="text-green-400">sur le terrain</span> comme en gradin.</h1><p className="mt-5 max-w-3xl text-base leading-7 text-green-50/75 md:text-lg">Découvrez les vêtements officiels du Seclin Basket Club, disponibles en plusieurs couleurs et tailles.</p><div className="mt-7 flex flex-wrap gap-3"><a href="#collection" className="rounded-full bg-white px-6 py-3.5 font-black text-gray-950 transition hover:bg-green-100">Découvrir la collection</a><Link href="/boutique/panier" className="inline-flex items-center gap-3 rounded-full border border-white/20 bg-white/10 px-6 py-3.5 font-black text-white backdrop-blur transition hover:bg-white/20"><i className="fas fa-shopping-bag" />Panier <span className="rounded-full bg-green-400 px-2.5 py-1 text-xs text-green-950">{count}</span></Link></div></div>
             </div>
         </section>
 

@@ -5,6 +5,7 @@ import { ShopImage, ShopProduct, ShopVariant } from "@/types/shop";
 type ProductRow = RowDataPacket & {
     id: number; name: string; slug: string; description: string; is_active: number; display_order: number;
     personalization_enabled: number; personalization_price_cents: number;
+    personalization_text_price_cents: number; personalization_number_price_cents: number;
     personalization_text_enabled: number; personalization_number_enabled: number;
     personalization_front_enabled: number; personalization_back_enabled: number;
     personalization_text_front_enabled: number; personalization_text_back_enabled: number;
@@ -23,7 +24,9 @@ type VariantRow = RowDataPacket & {
 export async function getPublicProducts(): Promise<ShopProduct[]> {
     const [productRows] = await pool.query<ProductRow[]>(
         `SELECT p.id, p.name, p.slug, p.description, p.is_active, p.display_order, p.collection_id,
-                p.personalization_enabled, p.personalization_price_cents, p.personalization_text_enabled,
+                p.personalization_enabled, p.personalization_price_cents,
+                p.personalization_text_price_cents, p.personalization_number_price_cents,
+                p.personalization_text_enabled,
                 p.personalization_number_enabled, p.personalization_front_enabled, p.personalization_back_enabled,
                 p.personalization_text_front_enabled, p.personalization_text_back_enabled,
                 p.personalization_number_front_enabled, p.personalization_number_back_enabled,
@@ -62,6 +65,8 @@ export async function getPublicProducts(): Promise<ShopProduct[]> {
         displayOrder: row.display_order,
         personalizationEnabled: Boolean(row.personalization_enabled),
         personalizationPriceCents: Number(row.personalization_price_cents),
+        personalizationTextPriceCents: Number(row.personalization_text_price_cents),
+        personalizationNumberPriceCents: Number(row.personalization_number_price_cents),
         personalizationTextEnabled: Boolean(row.personalization_text_enabled),
         personalizationNumberEnabled: Boolean(row.personalization_number_enabled),
         personalizationFrontEnabled: Boolean(row.personalization_front_enabled),

@@ -11,6 +11,21 @@ import { ShopImage, ShopProduct, ShopVariant } from "@/types/shop";
 
 type ProductColor = { name: string; hex: string };
 
+function normalizeSearch(value: string): string {
+    return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+
+function productMatchesSearch(product: ShopProduct, query: string): boolean {
+    if (!query) return true;
+    const searchableValues = [
+        product.name,
+        product.description,
+        product.collection?.name || "",
+        ...product.variants.flatMap((variant) => [variant.color, variant.size, variant.sku || ""]),
+    ];
+    return searchableValues.some((value) => normalizeSearch(value).includes(query));
+}
+
 function colorsOf(product: ShopProduct): ProductColor[] {
     const colors = new Map<string, string>();
     for (const variant of product.variants) {
@@ -301,6 +316,7 @@ function ProductDialog({ product, initialColor, onClose }: { product: ShopProduc
 
 export default function ShopCatalog() {
     const [products, setProducts] = useState<ShopProduct[]>([]);
+    const [searchQuery, setSearchQuery] = useState("");
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [setupRequired, setSetupRequired] = useState(false);
@@ -329,6 +345,14 @@ export default function ShopCatalog() {
         }
         return Array.from(groups.values());
     }, [products]);
+    const filteredCollectionGroups = useMemo(() => {
+        const query = normalizeSearch(searchQuery);
+        return collectionGroups.map((group) => ({
+            ...group,
+            products: group.products.filter((product) => productMatchesSearch(product, query)),
+        })).filter((group) => group.products.length > 0);
+    }, [collectionGroups, searchQuery]);
+    const filteredProductCount = filteredCollectionGroups.reduce((sum, group) => sum + group.products.length, 0);
 
     useEffect(() => {
         fetch("/api/shop/products", { cache: "no-store" }).then(async (response) => {
@@ -352,12 +376,24 @@ export default function ShopCatalog() {
 
         <section id="collection" className="bg-[#f7f7f5] py-12 md:py-20">
             <div className="container mx-auto px-4">
-                <div className="mb-9 flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-black uppercase tracking-[0.22em] text-sbc">Vestiaire officiel</p><h2 className="mt-2 text-3xl font-black tracking-tight text-gray-950 md:text-4xl">Les collections du club</h2></div>{products.length > 0 && <p className="rounded-full bg-white px-4 py-2 text-sm font-bold text-gray-500 shadow-sm">{products.length} produit{products.length > 1 ? "s" : ""}</p>}</div>
+                <div className="mb-9 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(360px,560px)] lg:items-end">
+                    <div><p className="text-xs font-black uppercase tracking-[0.22em] text-sbc">Vestiaire officiel</p><h2 className="mt-2 text-3xl font-black tracking-tight text-gray-950 md:text-4xl">Les collections du club</h2></div>
+                    {!loading && !error && products.length > 0 && <div className="w-full">
+                        <div className="mb-2 flex items-center justify-between gap-3"><label htmlFor="shop-search" className="text-sm font-black text-gray-950">Rechercher un article</label><span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-gray-500 shadow-sm">{searchQuery.trim() ? `${filteredProductCount} résultat${filteredProductCount > 1 ? "s" : ""}` : `${products.length} produit${products.length > 1 ? "s" : ""}`}</span></div>
+                        <div className="relative">
+                            <i className="fas fa-search pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input id="shop-search" type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Nom, collection, couleur ou taille…" autoComplete="off" className="w-full rounded-2xl border border-gray-200 bg-white py-4 pl-11 pr-12 text-gray-950 shadow-sm outline-none transition placeholder:text-gray-400 focus:border-sbc focus:ring-4 focus:ring-sbc/15" />
+                            {searchQuery && <button type="button" onClick={() => setSearchQuery("")} aria-label="Effacer la recherche" className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus:ring-4 focus:ring-sbc/15"><i className="fas fa-times" /></button>}
+                        </div>
+                    </div>}
+                </div>
 
                 {loading && <div role="status" className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{[1, 2, 3, 4].map((value) => <div key={value} className="overflow-hidden rounded-[1.75rem] border border-gray-200 bg-white"><div className="aspect-square animate-pulse bg-gray-200" /><div className="space-y-3 p-6"><div className="h-5 w-2/3 animate-pulse rounded bg-gray-100" /><div className="h-4 w-1/3 animate-pulse rounded bg-gray-100" /><div className="h-10 animate-pulse rounded bg-gray-100" /></div></div>)}</div>}
                 {error && <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-900"><p className="font-black">La boutique n'a pas pu être chargée.</p><p className="mt-1 text-sm">{error}</p><button onClick={() => location.reload()} className="mt-4 rounded-lg bg-red-700 px-4 py-2 font-bold text-white">Réessayer</button></div>}
                 {!loading && !error && products.length === 0 && <div className="rounded-3xl border-2 border-dashed border-gray-200 bg-white px-6 py-16 text-center"><div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-50 text-2xl text-sbc"><i className="fas fa-tshirt" /></div><h3 className="mt-5 text-2xl font-black text-gray-900">La collection arrive bientôt</h3><p className="mx-auto mt-2 max-w-lg text-gray-500">Aucun produit n'est disponible pour le moment.</p>{setupRequired && <p className="mt-4 text-xs text-gray-400">Configuration initiale en attente.</p>}</div>}
-                {!loading && !error && products.length > 0 && <div className="space-y-16">{collectionGroups.map((group) => <section key={group.slug} id={`collection-${group.slug}`} className="scroll-mt-28"><div className="mb-7">{group.bannerImageUrl ? <><h3 className="sr-only">{group.name}</h3><div className="relative aspect-[16/3] w-full overflow-hidden rounded-3xl bg-gray-200 shadow-sm"><img src={group.bannerImageUrl} alt={`Bannière de la collection ${group.name}`} className="h-full w-full object-cover object-center" /><span className="absolute bottom-3 right-3 rounded-full bg-black/65 px-3 py-1.5 text-xs font-black text-white backdrop-blur sm:bottom-4 sm:right-4">{group.products.length} produit{group.products.length > 1 ? "s" : ""}</span></div></> : <div className="relative flex aspect-[16/3] w-full items-center justify-center overflow-hidden rounded-3xl bg-gradient-to-br from-sbc to-sbc-dark px-6 text-center text-white shadow-sm"><div className="absolute inset-0 opacity-30 [background:radial-gradient(circle_at_20%_20%,rgba(255,255,255,.35),transparent_35%)]" /><h3 className="relative text-2xl font-black tracking-tight sm:text-3xl md:text-4xl">{group.name}</h3><span className="absolute bottom-3 right-3 rounded-full bg-black/25 px-3 py-1.5 text-xs font-black text-white backdrop-blur sm:bottom-4 sm:right-4">{group.products.length} produit{group.products.length > 1 ? "s" : ""}</span></div>}{group.description && <p className="mt-4 max-w-3xl text-sm leading-6 text-gray-500">{group.description}</p>}</div><div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{group.products.map((product) => <ProductCard key={product.id} product={product} onOpen={(item, color) => setSelected({ product: item, color })} />)}</div></section>)}</div>}
+                {!loading && !error && products.length > 0 && (filteredCollectionGroups.length > 0
+                    ? <div className="space-y-16">{filteredCollectionGroups.map((group) => <section key={group.slug} id={`collection-${group.slug}`} className="scroll-mt-28"><div className="mb-7">{group.bannerImageUrl ? <><h3 className="sr-only">{group.name}</h3><div className="relative aspect-[16/3] w-full overflow-hidden rounded-3xl bg-gray-200 shadow-sm"><img src={group.bannerImageUrl} alt={`Bannière de la collection ${group.name}`} className="h-full w-full object-cover object-center" /><span className="absolute bottom-3 right-3 rounded-full bg-black/65 px-3 py-1.5 text-xs font-black text-white backdrop-blur sm:bottom-4 sm:right-4">{group.products.length} produit{group.products.length > 1 ? "s" : ""}</span></div></> : <div className="relative flex aspect-[16/3] w-full items-center justify-center overflow-hidden rounded-3xl bg-gradient-to-br from-sbc to-sbc-dark px-6 text-center text-white shadow-sm"><div className="absolute inset-0 opacity-30 [background:radial-gradient(circle_at_20%_20%,rgba(255,255,255,.35),transparent_35%)]" /><h3 className="relative text-2xl font-black tracking-tight sm:text-3xl md:text-4xl">{group.name}</h3><span className="absolute bottom-3 right-3 rounded-full bg-black/25 px-3 py-1.5 text-xs font-black text-white backdrop-blur sm:bottom-4 sm:right-4">{group.products.length} produit{group.products.length > 1 ? "s" : ""}</span></div>}{group.description && <p className="mt-4 max-w-3xl text-sm leading-6 text-gray-500">{group.description}</p>}</div><div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{group.products.map((product) => <ProductCard key={product.id} product={product} onOpen={(item, color) => setSelected({ product: item, color })} />)}</div></section>)}</div>
+                    : <div className="rounded-3xl border-2 border-dashed border-gray-200 bg-white px-6 py-14 text-center"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 text-xl text-gray-400"><i className="fas fa-search" /></div><h3 className="mt-4 text-xl font-black text-gray-950">Aucun article trouvé</h3><p className="mt-2 text-sm text-gray-500">Essayez un autre nom, une couleur ou une taille.</p><button type="button" onClick={() => setSearchQuery("")} className="mt-5 rounded-xl bg-gray-950 px-5 py-3 text-sm font-black text-white transition hover:bg-sbc">Effacer la recherche</button></div>)}
             </div>
         </section>
 

@@ -41,6 +41,8 @@ export type ShopProduct = {
     collection: ShopCollection | null;
     personalizationEnabled: boolean;
     personalizationPriceCents: number;
+    personalizationTextPriceCents: number;
+    personalizationNumberPriceCents: number;
     personalizationTextEnabled: boolean;
     personalizationNumberEnabled: boolean;
     personalizationFrontEnabled: boolean;

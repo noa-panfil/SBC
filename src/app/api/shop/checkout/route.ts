@@ -14,6 +14,7 @@ type VariantRow = RowDataPacket & {
     id: number; product_id: number; product_name: string; sku: string | null;
     size: string; color: string; price_cents: number;
     personalization_enabled: number; personalization_price_cents: number;
+    personalization_text_price_cents: number; personalization_number_price_cents: number;
     personalization_text_enabled: number; personalization_number_enabled: number;
     personalization_front_enabled: number; personalization_back_enabled: number;
     personalization_text_front_enabled: number; personalization_text_back_enabled: number;
@@ -66,7 +67,9 @@ export async function POST(request: Request) {
         const placeholders = ids.map(() => "?").join(",");
         const [rows] = await connection.query<VariantRow[]>(
             `SELECT v.id, v.product_id, p.name AS product_name, v.sku, v.size, v.color, v.price_cents,
-                    p.personalization_enabled, p.personalization_price_cents, p.personalization_text_enabled,
+                    p.personalization_enabled, p.personalization_price_cents,
+                    p.personalization_text_price_cents, p.personalization_number_price_cents,
+                    p.personalization_text_enabled,
                     p.personalization_number_enabled, p.personalization_front_enabled, p.personalization_back_enabled,
                     p.personalization_text_front_enabled, p.personalization_text_back_enabled,
                     p.personalization_number_front_enabled, p.personalization_number_back_enabled
@@ -92,7 +95,9 @@ export async function POST(request: Request) {
                 if (personalization.type === "number" && personalization.placement === "front" && !row.personalization_number_front_enabled) return null;
                 if (personalization.type === "number" && personalization.placement === "back" && !row.personalization_number_back_enabled) return null;
             }
-            const personalizationPriceCents = item.personalizations.length ? Number(row.personalization_price_cents) : 0;
+            const personalizationPriceCents = item.personalizations.reduce((sum, personalization) => sum + Number(
+                personalization.type === "text" ? row.personalization_text_price_cents : row.personalization_number_price_cents
+            ), 0);
             return {
                 row,
                 quantity: item.quantity,

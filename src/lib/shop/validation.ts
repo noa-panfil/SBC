@@ -82,7 +82,9 @@ export function cleanProductInput(value: unknown) {
     const displayOrder = typeof body.displayOrder === "number" && Number.isInteger(body.displayOrder) && Math.abs(body.displayOrder) <= 100000 ? body.displayOrder : null;
     const collectionId = body.collectionId == null || body.collectionId === "" ? null : parsePositiveId(body.collectionId);
     const personalizationEnabled = body.personalizationEnabled === true;
-    const personalizationPriceCents = body.personalizationPriceCents;
+    const legacyPersonalizationPriceCents = body.personalizationPriceCents;
+    const personalizationTextPriceCents = body.personalizationTextPriceCents ?? (personalizationEnabled ? legacyPersonalizationPriceCents : 0);
+    const personalizationNumberPriceCents = body.personalizationNumberPriceCents ?? (personalizationEnabled ? legacyPersonalizationPriceCents : 0);
     const personalizationTextEnabled = body.personalizationTextEnabled === true;
     const personalizationNumberEnabled = body.personalizationNumberEnabled === true;
     const personalizationFrontEnabled = body.personalizationFrontEnabled === true;
@@ -92,12 +94,16 @@ export function cleanProductInput(value: unknown) {
     const personalizationNumberFrontEnabled = body.personalizationNumberFrontEnabled === true;
     const personalizationNumberBackEnabled = body.personalizationNumberBackEnabled === true;
     if (!name || !slug || description === null || displayOrder === null || (body.collectionId != null && body.collectionId !== "" && !collectionId) || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return null;
-    if (typeof personalizationPriceCents !== "number" || !Number.isInteger(personalizationPriceCents) || personalizationPriceCents < 0 || personalizationPriceCents > 10_000_000 || (personalizationEnabled && personalizationPriceCents < 1)) return null;
+    if (typeof personalizationTextPriceCents !== "number" || !Number.isInteger(personalizationTextPriceCents) || personalizationTextPriceCents < 0 || personalizationTextPriceCents > 10_000_000) return null;
+    if (typeof personalizationNumberPriceCents !== "number" || !Number.isInteger(personalizationNumberPriceCents) || personalizationNumberPriceCents < 0 || personalizationNumberPriceCents > 10_000_000) return null;
     if (personalizationEnabled && (!personalizationTextEnabled && !personalizationNumberEnabled)) return null;
     if (personalizationEnabled && personalizationTextEnabled && !personalizationTextFrontEnabled && !personalizationTextBackEnabled) return null;
     if (personalizationEnabled && personalizationNumberEnabled && !personalizationNumberFrontEnabled && !personalizationNumberBackEnabled) return null;
+    const personalizationPriceCents = personalizationEnabled
+        ? Math.max(personalizationTextEnabled ? personalizationTextPriceCents : 0, personalizationNumberEnabled ? personalizationNumberPriceCents : 0)
+        : 0;
     return { name, slug, description, isActive: body.isActive === true, displayOrder, collectionId,
-        personalizationEnabled, personalizationPriceCents, personalizationTextEnabled,
+        personalizationEnabled, personalizationPriceCents, personalizationTextPriceCents, personalizationNumberPriceCents, personalizationTextEnabled,
         personalizationNumberEnabled, personalizationFrontEnabled, personalizationBackEnabled,
         personalizationTextFrontEnabled, personalizationTextBackEnabled,
         personalizationNumberFrontEnabled, personalizationNumberBackEnabled };

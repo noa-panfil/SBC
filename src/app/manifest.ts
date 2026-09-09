@@ -10,7 +10,7 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
             "SELECT value FROM settings WHERE key_name = 'site_logo_id'"
         );
         if (rows.length > 0) {
-            logoUrl = `/api/image/${rows[0].value}`;
+            logoUrl = `/api/image/${rows[0].value}?scope=setting`;
         }
     } catch (e) {
         console.error("Error fetching manifest logo:", e);

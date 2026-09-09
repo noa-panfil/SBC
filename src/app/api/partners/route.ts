@@ -5,13 +5,13 @@ import { RowDataPacket } from 'mysql2';
 export async function GET() {
     try {
         const [rows] = await pool.query<RowDataPacket[]>(
-            "SELECT id, name, image_id FROM partners ORDER BY display_order ASC, id ASC"
+            "SELECT id, name, image_id FROM partners WHERE active = 1 ORDER BY display_order ASC, id ASC"
         );
 
         const partners = rows.map(p => ({
             id: p.id,
             name: p.name,
-            img: p.image_id ? `/api/image/${p.image_id}` : null
+            img: p.image_id ? `/api/image/${p.image_id}?scope=partner` : null
         }));
 
         return NextResponse.json(partners);

@@ -12,7 +12,7 @@ export default function Footer() {
             .then(data => {
                 /*
                 if (data.site_logo_id) {
-                    setLogoUrl(`/api/image/${data.site_logo_id}`);
+                    setLogoUrl(`/api/image/${data.site_logo_id}?scope=setting`);
                 }
                 */
             })

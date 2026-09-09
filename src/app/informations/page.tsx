@@ -7,30 +7,20 @@ export const metadata: Metadata = {
     description: "Tarifs des licences, organigramme, salle Jesse Owens... Retrouvez toutes les infos pratiques du SBC.",
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function Informations() {
-    // Fetch gym image from settings
-    let gymImageUrl = "/img/salle/arena.webp";
-    try {
-        const [rows] = await pool.query<RowDataPacket[]>(
-            "SELECT value FROM settings WHERE key_name = 'gym_image_id'"
-        );
-        if (rows.length > 0) {
-            gymImageUrl = `/api/image/${rows[0].value}`;
-        }
-    } catch (e) {
-        console.error("Error fetching gym image:", e);
-    }
+    const gymImageUrl = "/img/salle/arena.webp";
 
     let bureauMembers: any[] = [];
     try {
         const [rows] = await pool.query<RowDataPacket[]>(
             `SELECT 
-                b.role,
-                COALESCE(p.image_id, v.image_id, NULL) as image_id,
-                COALESCE(NULLIF(TRIM(CONCAT(p.lastname, ' ', p.firstname)), ''), v.name) as fullname
+                b.title AS role,
+                p.image_id,
+                TRIM(CONCAT(p.lastname, ' ', p.firstname)) AS fullname
              FROM bureau_members b
-             LEFT JOIN persons p ON b.person_id = p.id
-             LEFT JOIN volunteers v ON b.volunteer_id = v.id`
+             JOIN persons p ON b.person_id = p.id`
         );
         bureauMembers = rows;
     } catch (e) {
@@ -155,7 +145,7 @@ export default async function Informations() {
                         <div className="relative z-10 bg-white border-2 border-gray-900 p-4 w-72 shadow-lg flex items-center gap-4 hover:scale-105 transition duration-300">
                             <div className="w-16 h-16 rounded-full bg-sbc overflow-hidden border-2 border-white shadow-sm flex items-center justify-center text-2xl text-white flex-shrink-0">
                                 {president?.image_id ? (
-                                    <img src={`/api/image/${president.image_id}`} alt="Président" className="w-full h-full object-cover" />
+                                    <img src={`/api/image/${president.image_id}?scope=person`} alt="Président" className="w-full h-full object-cover" />
                                 ) : (
                                     <i className="fas fa-user-tie"></i>
                                 )}
@@ -172,7 +162,7 @@ export default async function Informations() {
                         <div className="relative z-10 bg-white border-2 border-gray-900 p-4 w-72 shadow-lg flex items-center gap-4 hover:scale-105 transition duration-300">
                             <div className="w-16 h-16 rounded-full bg-sbc overflow-hidden border-2 border-white shadow-sm flex items-center justify-center text-2xl text-white flex-shrink-0">
                                 {vicePresident?.image_id ? (
-                                    <img src={`/api/image/${vicePresident.image_id}`} alt="Vice-Président" className="w-full h-full object-cover" />
+                                    <img src={`/api/image/${vicePresident.image_id}?scope=person`} alt="Vice-Président" className="w-full h-full object-cover" />
                                 ) : (
                                     <i className="fas fa-user-tie"></i>
                                 )}
@@ -194,7 +184,7 @@ export default async function Informations() {
                             <div className="bg-white border-2 border-gray-900 p-4 w-72 shadow-lg flex items-center gap-4 hover:scale-105 transition duration-300">
                                 <div className="w-16 h-16 rounded-full bg-sbc overflow-hidden border-2 border-white shadow-sm flex items-center justify-center text-2xl text-white flex-shrink-0">
                                     {secretaire?.image_id ? (
-                                        <img src={`/api/image/${secretaire.image_id}`} alt="Secrétaire" className="w-full h-full object-cover" />
+                                        <img src={`/api/image/${secretaire.image_id}?scope=person`} alt="Secrétaire" className="w-full h-full object-cover" />
                                     ) : (
                                         <i className="fas fa-pen-fancy"></i>
                                     )}
@@ -211,7 +201,7 @@ export default async function Informations() {
                             <div className="bg-white border-2 border-gray-900 p-4 w-72 shadow-lg flex items-center gap-4 hover:scale-105 transition duration-300">
                                 <div className="w-16 h-16 rounded-full bg-sbc overflow-hidden border-2 border-white shadow-sm flex items-center justify-center text-2xl text-white flex-shrink-0">
                                     {tresorier?.image_id ? (
-                                        <img src={`/api/image/${tresorier.image_id}`} alt="Trésorière" className="w-full h-full object-cover" />
+                                        <img src={`/api/image/${tresorier.image_id}?scope=person`} alt="Trésorière" className="w-full h-full object-cover" />
                                     ) : (
                                         <i className="fas fa-coins"></i>
                                     )}

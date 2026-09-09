@@ -6,14 +6,25 @@ export async function GET() {
     try {
         // 1. Fetch Teams
         const [teamRows] = await pool.query<RowDataPacket[]>(
-            'SELECT id, name, category, schedule, widget_id, image_id FROM teams'
+            `SELECT t.id, t.name, t.category, t.widget_id, t.image_id
+             FROM teams t JOIN seasons s ON s.id = t.season_id
+             WHERE t.active = 1 AND s.is_current = 1`
         );
 
         // 2. Fetch All Members
         const [memberRows] = await pool.query<RowDataPacket[]>(
-            `SELECT tm.team_id, tm.role, tm.number, p.firstname, p.lastname, p.birthdate, p.gender, p.image_id
-       FROM team_members tm
-       JOIN persons p ON tm.person_id = p.id`
+            `SELECT tm.team_id, tm.membership_role, tm.jersey_number, p.firstname,
+                    DATE_FORMAT(p.birthdate, '%d/%m') AS birthday, p.gender, p.image_id
+       FROM team_memberships tm
+       JOIN persons p ON tm.person_id = p.id
+       JOIN teams t ON t.id = tm.team_id
+       JOIN seasons s ON s.id = t.season_id
+       WHERE p.active = 1 AND t.active = 1 AND s.is_current = 1`
+        );
+        const [trainingSlotRows] = await pool.query<RowDataPacket[]>(
+            `SELECT team_id, schedule_text
+             FROM team_training_slots
+             ORDER BY team_id, display_order, id`
         );
 
         // 3. Reconstruct JSON Structure
@@ -21,31 +32,27 @@ export async function GET() {
 
         for (const team of teamRows) {
             // Resolve Image URL
-            const imageUrl = team.image_id ? `/api/image/${team.image_id}` : '/img/default-team.png';
+            const imageUrl = team.image_id ? `/api/image/${team.image_id}?scope=team` : '/img/default-team.png';
 
             const members = memberRows.filter((m: any) => m.team_id === team.id);
 
             const coaches = members
-                .filter((m: any) => m.role.toLowerCase().includes('coach'))
+                .filter((m: any) => m.membership_role !== 'player')
                 .map((m: any) => ({
-                    person_id: m.person_id, // Added ID for editing
                     name: m.firstname,
-                    lastname: m.lastname,
-                    role: m.role,
-                    img: m.image_id ? `/api/image/${m.image_id}` : null,
-                    birth: m.birthdate ? new Date(m.birthdate).toLocaleDateString('fr-FR') : null,
+                    role: m.membership_role,
+                    img: m.image_id ? `/api/image/${m.image_id}?scope=person` : null,
+                    birth: m.birthday || null,
                     sexe: m.gender
                 }));
 
             const players = members
-                .filter((m: any) => !m.role.toLowerCase().includes('coach'))
+                .filter((m: any) => m.membership_role === 'player')
                 .map((m: any) => ({
-                    person_id: m.person_id, // Added ID for editing
                     name: m.firstname,
-                    lastname: m.lastname,
-                    num: m.number,
-                    img: m.image_id ? `/api/image/${m.image_id}` : null,
-                    birth: m.birthdate ? new Date(m.birthdate).toLocaleDateString('fr-FR') : null,
+                    num: m.jersey_number,
+                    img: m.image_id ? `/api/image/${m.image_id}?scope=person` : null,
+                    birth: m.birthday || null,
                     sexe: m.gender
                 }));
 
@@ -53,7 +60,9 @@ export async function GET() {
                 name: team.name,
                 category: team.category,
                 image: imageUrl,
-                schedule: team.schedule,
+                trainingSlots: trainingSlotRows
+                    .filter((slot: any) => Number(slot.team_id) === Number(team.id))
+                    .map((slot: any) => String(slot.schedule_text)),
                 widgetId: team.widget_id,
                 coaches,
                 players

@@ -24,7 +24,7 @@ export default function Partenaires() {
             .then(res => res.json())
             .then(data => {
                 if (data.site_logo_id) {
-                    setLogoUrl(`/api/image/${data.site_logo_id}`);
+                    setLogoUrl(`/api/image/${data.site_logo_id}?scope=setting`);
                 }
             })
             .catch(console.error);

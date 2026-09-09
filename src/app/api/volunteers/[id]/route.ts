@@ -1,78 +1,35 @@
-import { NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { RowDataPacket } from "mysql2";
+import pool from "@/lib/db";
 import { authOptions } from "@/lib/auth";
 
-function positiveId(value: string): number | null {
-    const id = Number(value);
-    return Number.isSafeInteger(id) && id > 0 ? id : null;
+async function admin() { return (await getServerSession(authOptions))?.user?.role === "admin"; }
+
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    if (!await admin()) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const id = Number((await params).id); const body = await request.json().catch(() => null);
+    const [rows] = await pool.query<RowDataPacket[]>("SELECT person_id FROM volunteers WHERE id = ?", [id]);
+    if (!rows.length) return NextResponse.json({ error: "Bénévole introuvable." }, { status: 404 });
+    const personId = rows[0].person_id;
+    if (body.name !== undefined) { const parts = String(body.name).trim().split(/\s+/); const firstname = parts.shift() || ""; await pool.query("UPDATE persons SET firstname = ?, lastname = ? WHERE id = ?", [firstname, parts.join(" "), personId]); }
+    if (body.birth_date !== undefined) await pool.query("UPDATE persons SET birthdate = STR_TO_DATE(NULLIF(?, ''), '%d/%m/%Y') WHERE id = ?", [body.birth_date, personId]);
+    if (body.sexe !== undefined) await pool.query("UPDATE persons SET gender = ? WHERE id = ?", [body.sexe || null, personId]);
+    if (body.image_id !== undefined) await pool.query("UPDATE persons SET image_id = ? WHERE id = ?", [body.image_id || null, personId]);
+    if (body.role !== undefined) await pool.query("UPDATE volunteers SET title = ? WHERE id = ?", [body.role, id]);
+    if (body.display !== undefined) await pool.query("UPDATE volunteers SET display = ? WHERE id = ?", [body.display ? 1 : 0, id]);
+    return NextResponse.json({ success: true });
 }
 
-export async function PATCH(
-    request: Request,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    const session = await getServerSession(authOptions);
-    if (session?.user?.role !== "admin") {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+export const PATCH = PUT;
 
-    const id = positiveId((await params).id);
-    const body = await request.json().catch(() => null) as Record<string, unknown> | null;
-    if (!id || !body) return NextResponse.json({ error: "Invalid request" }, { status: 400 });
-
-    const updates: string[] = [];
-    const values: Array<number | null | string> = [];
-    if (body.image_id !== undefined) {
-        const imageId = body.image_id === null ? null : Number(body.image_id);
-        if (imageId !== null && (!Number.isSafeInteger(imageId) || imageId < 1)) {
-            return NextResponse.json({ error: "Invalid image" }, { status: 400 });
-        }
-        updates.push("image_id = ?");
-        values.push(imageId);
-    }
-    if (body.sexe !== undefined) {
-        if (body.sexe !== "M" && body.sexe !== "F") {
-            return NextResponse.json({ error: "Invalid gender" }, { status: 400 });
-        }
-        updates.push("sexe = ?");
-        values.push(body.sexe);
-    }
-    if (body.display !== undefined) {
-        if (body.display !== true && body.display !== false && body.display !== 0 && body.display !== 1) {
-            return NextResponse.json({ error: "Invalid visibility" }, { status: 400 });
-        }
-        updates.push("display = ?");
-        values.push(body.display === true || body.display === 1 ? 1 : 0);
-    }
-    if (!updates.length) return NextResponse.json({ error: "No fields to update" }, { status: 400 });
-
-    try {
-        values.push(id);
-        await pool.query(`UPDATE volunteers SET ${updates.join(", ")} WHERE id = ?`, values);
-        return NextResponse.json({ success: true });
-    } catch (error) {
-        console.error("Volunteer update error:", error);
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
-    }
-}
-
-export async function DELETE(
-    _request: Request,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    const session = await getServerSession(authOptions);
-    if (session?.user?.role !== "admin") {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const id = positiveId((await params).id);
-    if (!id) return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
-    try {
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    if (!await admin()) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const id = Number((await params).id);
+    const [rows] = await pool.query<RowDataPacket[]>("SELECT person_id FROM volunteers WHERE id = ?", [id]);
+    if (rows.length) {
+        await pool.query("DELETE pr FROM person_roles pr JOIN roles r ON r.id = pr.role_id WHERE pr.person_id = ? AND r.code = 'volunteer'", [rows[0].person_id]);
         await pool.query("DELETE FROM volunteers WHERE id = ?", [id]);
-        return NextResponse.json({ success: true });
-    } catch (error) {
-        console.error("Volunteer delete error:", error);
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
+    return NextResponse.json({ success: true });
 }

@@ -4,10 +4,23 @@ import { RowDataPacket } from 'mysql2';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
+const publicSettingKeys = [
+    'site_logo_id',
+    'hero_image_type',
+    'hero_image_id',
+] as const;
+
+const editableSettingKeys = new Set<string>([
+    ...publicSettingKeys,
+    'maintenance_mode',
+]);
+
 export async function GET() {
     try {
         const [rows] = await pool.query<RowDataPacket[]>(
-            "SELECT key_name, value FROM settings"
+            `SELECT key_name, value FROM settings
+             WHERE key_name IN (${publicSettingKeys.map(() => '?').join(', ')})`,
+            [...publicSettingKeys]
         );
 
         const settings: Record<string, string> = {};
@@ -33,6 +46,9 @@ export async function POST(request: Request) {
         const keys = Object.keys(body);
         if (keys.length === 0) {
             return NextResponse.json({ error: "No settings provided" }, { status: 400 });
+        }
+        if (keys.some((key) => !editableSettingKeys.has(key))) {
+            return NextResponse.json({ error: "Unknown or protected setting" }, { status: 400 });
         }
 
         const connection = await pool.getConnection();

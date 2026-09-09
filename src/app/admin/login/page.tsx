@@ -1,6 +1,6 @@
 "use client";
 
-import { signIn, getSession } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -22,12 +22,7 @@ export default function LoginPage() {
         if (res?.error) {
             setError("Email ou mot de passe incorrect");
         } else {
-            const session: any = await getSession();
-            if (session?.user?.role === 'coach') {
-                router.push("/coach");
-            } else {
-                router.push("/admin");
-            }
+            router.push("/admin");
         }
     };
 

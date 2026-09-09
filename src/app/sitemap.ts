@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next'
 import pool from '@/lib/db'
 import { RowDataPacket } from 'mysql2'
+import { getTeamPath } from '@/lib/teamUrl'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = 'https://seclinbasketclub.fr'
@@ -28,9 +29,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // 2. Dynamic Routes: Teams
     let teamRoutes: MetadataRoute.Sitemap = []
     try {
-        const [rows] = await pool.query<RowDataPacket[]>('SELECT id FROM teams')
+        const [rows] = await pool.query<RowDataPacket[]>('SELECT id, name FROM teams')
         teamRoutes = rows.map((row) => ({
-            url: `${baseUrl}/equipe/${encodeURIComponent(row.id)}`,
+            url: `${baseUrl}${getTeamPath(row.name)}`,
             lastModified: new Date(),
             changeFrequency: 'weekly' as const,
             priority: 0.7,

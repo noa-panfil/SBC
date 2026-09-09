@@ -3,6 +3,9 @@ import pool from '@/lib/db';
 import { ResultSetHeader } from 'mysql2';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { convertImageToWebp, ImageConversionError } from "@/lib/convertImageToWebp";
+
+export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
     const session = await getServerSession(authOptions);
@@ -12,30 +15,35 @@ export async function POST(request: Request) {
     try {
         const formData = await request.formData();
         const file = formData.get('file') as File;
+        const scope = String(formData.get('scope') || 'person');
+        const tables: Record<string, string> = {
+            person: 'image_persons',
+            team: 'image_teams',
+            event: 'image_events',
+            setting: 'image_settings',
+            partner: 'image_partners',
+            palmares: 'image_palmares',
+        };
+        const table = tables[scope];
 
-        if (!file) {
+        if (!file || !table) {
             return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
         }
 
-        const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
-        if (!allowedTypes.has(file.type)) {
-            return NextResponse.json({ error: 'Format d’image non autorisé (JPEG, PNG, WebP ou GIF).' }, { status: 400 });
-        }
-        if (file.size < 1 || file.size > 10 * 1024 * 1024) {
-            return NextResponse.json({ error: 'L’image doit peser moins de 10 Mo.' }, { status: 400 });
-        }
-
-        const buffer = Buffer.from(await file.arrayBuffer());
+        const converted = await convertImageToWebp(file);
 
         const [result] = await pool.query<ResultSetHeader>(
-            'INSERT INTO images (name, mime_type, data) VALUES (?, ?, ?)',
-            [file.name, file.type, buffer]
+            `INSERT INTO ${table} (name, mime_type, data) VALUES (?, ?, ?)`,
+            [converted.name, converted.mimeType, converted.data]
         );
 
-        return NextResponse.json({ id: result.insertId });
+        return NextResponse.json({ id: result.insertId, scope, url: `/api/image/${result.insertId}?scope=${scope}`, mimeType: converted.mimeType, byteSize: converted.byteSize });
 
     } catch (error) {
+        if (error instanceof ImageConversionError) {
+            return NextResponse.json({ error: error.message }, { status: 400 });
+        }
         console.error('Upload Error:', error);
-        return NextResponse.json({ error: 'Failed to upload image' }, { status: 500 });
+        return NextResponse.json({ error: 'Erreur serveur pendant l’import de l’image.' }, { status: 500 });
     }
 }

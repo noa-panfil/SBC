@@ -1,8 +1,12 @@
-import Link from "next/link";
 import pool from "@/lib/db";
 import { RowDataPacket } from "mysql2";
 import PlanningList from "./PlanningList";
 import { Metadata } from 'next';
+
+type CalendarMatchRow = RowDataPacket & {
+    id: number; match_date: Date; match_time: string; category: string; opponent: string;
+    is_featured: number; match_type: string; location: string | null; home_away: string;
+};
 
 export const metadata: Metadata = {
     title: 'Planning | Seclin Basket Club',
@@ -13,59 +17,29 @@ export const dynamic = 'force-dynamic';
 
 async function getMatches() {
     try {
-        // Fetch Home Matches
-        const [homeMatches] = await pool.query<RowDataPacket[]>(`
-            SELECT 
-                id, 
-                match_date, 
-                match_time, 
-                category, 
-                opponent, 
-                is_white_jersey, 
-                is_featured,
-                match_type,
-                NULL as location
-            FROM otm_matches 
-            WHERE match_date >= CURDATE() AND opponent NOT LIKE '%Exempt%'
+        const [rows] = await pool.query<CalendarMatchRow[]>(`
+            SELECT m.id, m.match_date,
+                   COALESCE(TIME_FORMAT(m.match_time, '%H:%i'), '') AS match_time,
+                   COALESCE(t.name, t.category, 'Equipe SBC') AS category,
+                   m.opponent, m.is_featured,
+                   m.competition AS match_type, m.venue AS location,
+                   m.home_away
+            FROM matches m
+            LEFT JOIN teams t ON t.id = m.team_id
+            WHERE m.match_date >= CURDATE()
+              AND m.status = 'scheduled'
+              AND m.opponent NOT LIKE '%Exempt%'
+            ORDER BY m.match_date, m.match_time, m.id
         `);
 
-        // Fetch Away Matches
-        const [awayMatches] = await pool.query<RowDataPacket[]>(`
-            SELECT 
-                id, 
-                match_date, 
-                match_time, 
-                category, 
-                opponent, 
-                NULL as is_white_jersey, 
-                NULL as is_featured,
-                match_type,
-                location
-            FROM external_matches 
-            WHERE match_date >= CURDATE() AND opponent NOT LIKE '%Exempt%'
-        `);
-
-        // Combine and format
-        const combined = [
-            ...(homeMatches as any[]).map(r => ({ ...r, is_home: true })),
-            ...(awayMatches as any[]).map(r => ({ ...r, is_home: false }))
-        ];
-
-        // Sort by date then time
-        combined.sort((a, b) => {
-            const dateA = new Date(a.match_date).getTime();
-            const dateB = new Date(b.match_date).getTime();
-            if (dateA !== dateB) return dateA - dateB;
-            return a.match_time.localeCompare(b.match_time);
-        });
-
-        return combined.map(r => ({
-            ...r,
+        return rows.map(r => ({
+            id: Number(r.id), match_time: String(r.match_time || ""), category: String(r.category),
+            designation: "", match_type: String(r.match_type), opponent: String(r.opponent),
             match_date: r.match_date instanceof Date ? r.match_date.toISOString() : new Date(r.match_date).toISOString(),
-            is_home: r.is_home,
+            is_home: r.home_away === 'home',
             is_featured: !!r.is_featured,
-            is_white_jersey: !!r.is_white_jersey,
-            location: r.location || null
+            is_white_jersey: false,
+            location: r.location || undefined
         }));
 
     } catch (e) {
@@ -88,7 +62,7 @@ export default async function PlanningPage() {
             </header>
 
             <main className="container mx-auto px-4 py-12 min-h-[60vh]">
-                <PlanningList matches={matches as any} />
+                <PlanningList matches={matches} />
             </main>
         </>
     );

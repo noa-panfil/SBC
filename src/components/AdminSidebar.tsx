@@ -8,13 +8,12 @@ import { signOut } from "next-auth/react";
 const menuItems = [
     { name: "Vue d'ensemble", icon: "fas fa-chart-line", href: "/admin" },
     { name: "Équipes", icon: "fas fa-users", href: "/admin#teams" },
-    { name: "Joueurs", icon: "fas fa-user-friends", href: "/admin/players" },
-    { name: "OTM", icon: "fas fa-table", href: "/admin#otm" },
+    { name: "Personnes", icon: "fas fa-user-friends", href: "/admin/players" },
+    { name: "Matchs", icon: "fas fa-calendar-check", href: "/admin#matches" },
     { name: "Événements", icon: "fas fa-calendar-alt", href: "/admin#events" },
     { name: "Stories", icon: "fas fa-mobile-alt", href: "/admin#stories" },
     { name: "Anniversaires", icon: "fas fa-birthday-cake", href: "/admin#birthdays" },
     { name: "Apparence", icon: "fas fa-paint-brush", href: "/admin#appearance" },
-    { name: "Médiathèque", icon: "fas fa-images", href: "/admin/images" },
     { name: "Boutique", icon: "fas fa-shopping-basket", href: "/admin/boutique" },
 ];
 
@@ -76,7 +75,7 @@ export default function AdminSidebar() {
 
             {/* Mobile Bottom Navigation - Visible only on mobile */}
             <div className="md:hidden fixed bottom-4 left-4 right-4 bg-white/90 backdrop-blur-xl border border-white/20 px-6 py-4 z-[100] flex justify-between items-center shadow-2xl rounded-[2rem]">
-                {menuItems.filter((item) => ["/admin", "/admin/players", "/admin/boutique", "/admin/images"].includes(item.href)).map((item) => {
+                {menuItems.filter((item) => ["/admin", "/admin/players", "/admin/boutique"].includes(item.href)).map((item) => {
                     const isActive = pathname === item.href;
                     return (
                         <Link

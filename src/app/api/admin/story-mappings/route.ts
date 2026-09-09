@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import { RowDataPacket, ResultSetHeader } from 'mysql2';
+import { RowDataPacket } from 'mysql2';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
@@ -10,7 +10,7 @@ export async function GET() {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     try {
-        const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM division_mappings');
+        const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM team_aliases');
         return NextResponse.json(rows);
     } catch (error) {
         return NextResponse.json({ error: 'Failed to fetch mappings' }, { status: 500 });
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
         const { division_excel, team_name_excel, team_id } = await request.json();
 
         await pool.query(
-            `INSERT INTO division_mappings (division_excel, team_name_excel, team_id) 
+            `INSERT INTO team_aliases (division_excel, team_name_excel, team_id) 
              VALUES (?, ?, ?) 
              ON DUPLICATE KEY UPDATE team_id = VALUES(team_id)`,
             [division_excel, team_name_excel, team_id]
@@ -50,7 +50,7 @@ export async function DELETE(request: Request) {
 
         if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
-        await pool.query('DELETE FROM division_mappings WHERE id = ?', [id]);
+        await pool.query('DELETE FROM team_aliases WHERE id = ?', [id]);
 
         return NextResponse.json({ success: true });
     } catch (error) {

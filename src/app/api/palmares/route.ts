@@ -16,7 +16,7 @@ export async function GET() {
             title: row.title,
             description: row.description,
             category: row.category,
-            image: row.image_id ? `/api/image/${row.image_id}` : null,
+            image: row.image_id ? `/api/image/${row.image_id}?scope=palmares` : null,
             is_highlight: Boolean(row.is_highlight)
         }));
 

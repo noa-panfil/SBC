@@ -1,93 +1,64 @@
-
-import { NextResponse } from 'next/server';
-import pool from '@/lib/db';
-import { RowDataPacket, ResultSetHeader } from 'mysql2';
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { ResultSetHeader, RowDataPacket } from "mysql2";
+import pool from "@/lib/db";
 import { authOptions } from "@/lib/auth";
 
-type VolunteerRow = RowDataPacket & {
-    id: number;
-    name: string;
-    birth_date: string;
-    image: string | null;
-    image_id: number | null;
-    role: string;
-    sexe: string;
-    display?: number;
-};
-
-export async function GET(request: Request) {
-    try {
-        const { searchParams } = new URL(request.url);
-        const all = searchParams.get('all') === 'true';
-        if (all) {
-            const session = await getServerSession(authOptions);
-            if (session?.user?.role !== 'admin') {
-                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-            }
+export async function GET(request: NextRequest) {
+    const includeHidden = request.nextUrl.searchParams.get("all") === "true";
+    if (includeHidden) {
+        const session = await getServerSession(authOptions);
+        if (session?.user?.role !== "admin") {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
-        
-        const query = all 
-            ? "SELECT id, name, DATE_FORMAT(birth_date, '%d/%m/%Y') as birth_date, image, image_id, role, sexe, display FROM volunteers WHERE birth_date IS NOT NULL ORDER BY name ASC"
-            : "SELECT id, name, DATE_FORMAT(birth_date, '%d/%m/%Y') as birth_date, image, image_id, role, sexe FROM volunteers WHERE display = 1 AND birth_date IS NOT NULL ORDER BY name ASC";
 
-        const [rows] = await pool.query<VolunteerRow[]>(query);
-        const volunteers = rows.map((v) => ({
-            id: v.id,
-            name: v.name,
-            birth_date: v.birth_date, // Already formatted
-            image: v.image_id ? `/api/image/${v.image_id}` : v.image,
-            image_id: v.image_id,
-            role: v.role,
-            sexe: v.sexe,
-            display: v.display
-        }));
-        return NextResponse.json(volunteers);
-    } catch (error) {
-        console.error('Database error:', error);
-        return NextResponse.json({ error: 'Database error' }, { status: 500 });
+        const [rows] = await pool.query<RowDataPacket[]>(`
+            SELECT v.id, v.person_id, CONCAT(p.firstname, ' ', p.lastname) AS name,
+                   DATE_FORMAT(p.birthdate, '%d/%m/%Y') AS birth_date,
+                   p.image_id, v.title AS role, p.gender AS sexe, v.display
+            FROM volunteers v JOIN persons p ON p.id = v.person_id
+            ORDER BY v.display_order, p.lastname, p.firstname
+        `);
+        return NextResponse.json(rows.map((row) => ({
+            ...row,
+            image: row.image_id ? `/api/image/${row.image_id}?scope=person` : null,
+        })));
     }
+
+    const [rows] = await pool.query<RowDataPacket[]>(`
+        SELECT p.firstname, DATE_FORMAT(p.birthdate, '%d/%m') AS birth_date,
+               p.image_id, v.title AS role, p.gender AS sexe
+        FROM volunteers v JOIN persons p ON p.id = v.person_id
+        WHERE v.display = 1 AND p.active = 1
+        ORDER BY v.display_order, p.firstname
+    `);
+    return NextResponse.json(rows.map((row) => ({
+        name: row.firstname,
+        birth_date: row.birth_date,
+        image: row.image_id ? `/api/image/${row.image_id}?scope=person` : null,
+        role: row.role,
+        sexe: row.sexe,
+    })));
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+    const session = await getServerSession(authOptions);
+    if (session?.user?.role !== "admin") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const body = await request.json().catch(() => null);
+    const name = String(body?.name || "").trim();
+    if (!name) return NextResponse.json({ error: "Nom requis." }, { status: 400 });
+    const parts = name.split(/\s+/); const firstname = parts.shift() || name; const lastname = parts.join(" ");
+    const connection = await pool.getConnection();
     try {
-        const session = await getServerSession(authOptions);
-        if (!session?.user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
-        const isAdmin = session?.user?.role === 'admin';
-
-        const body = await request.json();
-        const { name, birth_date, image, image_id, role, sexe } = body;
-
-        if (!name) {
-            return NextResponse.json({ error: 'Name is required' }, { status: 400 });
-        }
-
-        // Check if name already exists in volunteers (case insensitive)
-        const [existing] = await pool.query<RowDataPacket[]>(
-            "SELECT id FROM volunteers WHERE LOWER(name) = LOWER(?)",
-            [name.trim()]
-        );
-
-        if (existing.length > 0) {
-            return NextResponse.json({ success: true, id: existing[0].id, alreadyExists: true });
-        }
-
-        const display = isAdmin ? 1 : 0;
-
-        const [result] = await pool.query<ResultSetHeader>(
-            "INSERT INTO volunteers (name, birth_date, image, image_id, role, sexe, display) VALUES (?, STR_TO_DATE(?, '%d/%m/%Y'), ?, ?, ?, ?, ?)",
-            [name.trim(), birth_date, image_id ? null : image, image_id || null, role || 'Bénévole', sexe || 'M', display]
-        );
-
-        return NextResponse.json({ 
-            success: true, 
-            id: result.insertId,
-            display: display
-        });
+        await connection.beginTransaction();
+        const [person] = await connection.query<ResultSetHeader>("INSERT INTO persons (firstname, lastname, birthdate, gender, image_id) VALUES (?, ?, STR_TO_DATE(NULLIF(?, ''), '%d/%m/%Y'), ?, ?)", [firstname, lastname, body.birth_date || null, body.sexe || null, body.image_id || null]);
+        const [role] = await connection.query<RowDataPacket[]>("SELECT id FROM roles WHERE code = 'volunteer'");
+        await connection.query("INSERT INTO person_roles (person_id, role_id) VALUES (?, ?)", [person.insertId, role[0].id]);
+        const [volunteer] = await connection.query<ResultSetHeader>("INSERT INTO volunteers (person_id, title, display) VALUES (?, ?, ?)", [person.insertId, body.role || "Bénévole", body.display === 0 ? 0 : 1]);
+        await connection.commit();
+        return NextResponse.json({ id: volunteer.insertId }, { status: 201 });
     } catch (error) {
-        console.error('Database error:', error);
-        return NextResponse.json({ error: 'Database error' }, { status: 500 });
-    }
+        await connection.rollback(); console.error("Volunteer create error:", error);
+        return NextResponse.json({ error: "Création impossible." }, { status: 500 });
+    } finally { connection.release(); }
 }

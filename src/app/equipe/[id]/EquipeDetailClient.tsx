@@ -3,13 +3,14 @@
 import Link from "next/link";
 
 interface Team {
+    id: number;
     name: string;
     category: string;
     image: string;
-    schedule: string;
+    trainingSlots: string[];
     widgetId: string;
-    coaches: { name: string; role: string; img: string | null; firstname: string; lastname: string }[];
-    players: { name: string; num: number; img: string | null; firstname: string; lastname: string }[];
+    coaches: { name: string; role: string; img: string | null; firstname: string }[];
+    players: { name: string; num: number; img: string | null; firstname: string }[];
 }
 
 interface EquipeDetailClientProps {
@@ -42,7 +43,12 @@ export default function EquipeDetailClient({ team, logoUrl }: EquipeDetailClient
                     <div className="bg-white p-6 rounded-xl shadow border-l-4 border-sbc">
                         <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><i className="far fa-clock text-sbc"></i>
                             Horaires d'entraînement</h3>
-                        <p className="text-gray-700 font-medium">{team.schedule}</p>
+                        {team.trainingSlots.length > 0 ? <ul className="space-y-3">
+                            {team.trainingSlots.map((slot, index) => <li key={index} className="flex items-start gap-3 text-gray-700 font-medium">
+                                <i className="fas fa-calendar-day mt-1 text-sbc" />
+                                <span>{slot}</span>
+                            </li>)}
+                        </ul> : <p className="text-gray-500">Horaires non communiqués.</p>}
                     </div>
                     <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
                         <h3 className="text-xl font-bold mb-6 text-sbc-dark flex items-center gap-2">
@@ -61,7 +67,7 @@ export default function EquipeDetailClient({ team, logoUrl }: EquipeDetailClient
 
                                     <div className="relative z-10 flex-grow">
                                         <h4 className="font-bold text-lg leading-tight tracking-wide group-hover:text-sbc-light transition-colors">
-                                            {(c.firstname || c.lastname) ? `${c.firstname || ''} ${c.lastname || ''}`.toUpperCase().trim() : 'INCONNU'}
+                                            {c.firstname || 'INCONNU'}
                                         </h4>
                                         <div className="flex items-center gap-2 mt-1">
                                             <span className="w-2 h-2 rounded-full bg-sbc-light animate-pulse"></span>
@@ -100,7 +106,7 @@ export default function EquipeDetailClient({ team, logoUrl }: EquipeDetailClient
                                     </span>
                                 </div>
                                 <h4 className="font-bold text-gray-800 text-lg group-hover:text-sbc transition-colors leading-tight">
-                                    {(p.firstname || p.lastname) ? `${p.firstname || ''} ${p.lastname || ''}`.trim() : p.name}
+                                    {p.firstname || p.name}
                                 </h4>
                             </div>
                         )) : (

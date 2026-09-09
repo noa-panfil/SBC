@@ -39,7 +39,7 @@ export async function GET(
             teams = allTeams;
         }
 
-        const imageUrl = event.image_id ? `/api/image/${event.image_id}` : null;
+        const imageUrl = event.image_id ? `/api/image/${event.image_id}?scope=event` : null;
         const date = new Date(event.event_date);
 
         const eventData = {

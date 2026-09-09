@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { getTeamPath } from "@/lib/teamUrl";
 
 interface Team {
     name: string;
     category: string;
     image: string;
-    schedule: string;
+    trainingSlots: string[];
     widgetId: string;
     coaches: any[];
     players: any[];
@@ -53,7 +54,7 @@ export default function Equipes() {
     };
 
     const TeamCard = ({ id, team, isFav }: { id: string, team: Team, isFav: boolean }) => (
-        <Link href={`/equipe/${id}`} className="group block bg-white rounded-xl shadow-md overflow-hidden hover:shadow-2xl transition relative fade-in">
+        <Link href={getTeamPath(team.name)} className="group block bg-white rounded-xl shadow-md overflow-hidden hover:shadow-2xl transition relative fade-in">
             <div className="h-56 overflow-hidden relative">
                 <img src={team.image} alt={`${team.name} - Équipe Seclin Basket Club`} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
 

@@ -1,230 +1,113 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import ImageCropper from "@/components/ImageCropper";
 
-interface Player {
-    id: number;
-    firstname: string;
-    lastname: string;
-    birthdate: string; // YYYY-MM-DD
-    gender: string;
-    image_id: number | null;
+type Role = { code: string; label: string };
+type Team = { id: number; name: string; season: string };
+type Membership = { team_id: number; membership_role: "player" | "coach" | "assistant_coach"; jersey_number: number | null };
+type Person = {
+    id: number | null; firstname: string; lastname: string; birthdate: string;
+    gender: string; email: string; phone: string; image_id: number | null;
+    active: boolean; roles: string[]; memberships: Membership[];
+};
+
+const membershipLabels = { player: "Joueur / Joueuse", coach: "Coach", assistant_coach: "Coach adjoint" };
+
+export default function PlayerEditForm({ person, roles, teams }: { person: Person; roles: Role[]; teams: Team[] }) {
+    const router = useRouter();
+    const [form, setForm] = useState(person);
+    const [saving, setSaving] = useState(false);
+    const [message, setMessage] = useState("");
+    const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(person.image_id ? `/api/image/${person.image_id}?scope=person` : null);
+    const fileInput = useRef<HTMLInputElement>(null);
+
+    const toggleRole = (code: string) => setForm((current) => ({
+        ...current,
+        roles: current.roles.includes(code) ? current.roles.filter((role) => role !== code) : [...current.roles, code],
+    }));
+
+    const addMembership = () => {
+        const firstAvailable = teams.find((team) => !form.memberships.some((item) => item.team_id === team.id && item.membership_role === "player"));
+        if (firstAvailable) setForm({ ...form, memberships: [...form.memberships, { team_id: firstAvailable.id, membership_role: "player", jersey_number: null }] });
+    };
+
+    const patchMembership = (index: number, patch: Partial<Membership>) => setForm({
+        ...form,
+        memberships: form.memberships.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item),
+    });
+
+    const uploadCrop = async (blob: Blob) => {
+        setCropImageSrc(null);
+        setPreviewUrl(URL.createObjectURL(blob));
+        const data = new FormData();
+        data.append("file", new File([blob], "person-avatar.jpg", { type: "image/jpeg" }));
+        data.append("scope", "person");
+        const response = await fetch("/api/admin/upload", { method: "POST", body: data });
+        if (!response.ok) return setMessage("L’image n’a pas pu être importée.");
+        const result = await response.json();
+        setForm((current) => ({ ...current, image_id: result.id }));
+    };
+
+    const save = async (event: React.FormEvent) => {
+        event.preventDefault();
+        setSaving(true); setMessage("");
+        const response = await fetch("/api/admin/players/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+        const result = await response.json().catch(() => ({}));
+        setSaving(false);
+        if (!response.ok) return setMessage(result.error || "Impossible d’enregistrer la personne.");
+        router.push(`/admin/players/${result.id}`);
+        router.refresh();
+        setMessage("Fiche enregistrée.");
+    };
+
+    const remove = async () => {
+        if (!form.id || !confirm("Supprimer définitivement cette personne et toutes ses affectations ?")) return;
+        const response = await fetch(`/api/admin/players/save?id=${form.id}`, { method: "DELETE" });
+        if (response.ok) router.push("/admin/players");
+    };
+
+    return <div className="rounded-3xl border border-gray-100 bg-white shadow-xl">
+        {cropImageSrc && createPortal(<ImageCropper imageSrc={cropImageSrc} onCropComplete={uploadCrop} onCancel={() => setCropImageSrc(null)} />, document.body)}
+        <form onSubmit={save} className="space-y-8 p-6 md:p-8">
+            <div className="flex flex-col items-center">
+                <button type="button" onClick={() => fileInput.current?.click()} className="h-32 w-32 overflow-hidden rounded-full border-4 border-white bg-gray-100 shadow-lg">
+                    {previewUrl ? <img src={previewUrl} alt="" className="h-full w-full object-cover" /> : <i className="fas fa-camera text-3xl text-gray-300" />}
+                </button>
+                <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) setCropImageSrc(URL.createObjectURL(file)); event.target.value = ""; }} />
+                <p className="mt-2 text-xs text-gray-400">Cliquer pour choisir et recadrer la photo</p>
+            </div>
+
+            <section><h2 className="mb-4 text-lg font-black">Identité</h2><div className="grid gap-4 md:grid-cols-2">
+                <Field label="Prénom"><input required value={form.firstname} onChange={(e) => setForm({ ...form, firstname: e.target.value })} className="input" /></Field>
+                <Field label="Nom"><input required value={form.lastname} onChange={(e) => setForm({ ...form, lastname: e.target.value })} className="input" /></Field>
+                <Field label="Date de naissance"><input type="date" value={form.birthdate} onChange={(e) => setForm({ ...form, birthdate: e.target.value })} className="input" /></Field>
+                <Field label="Genre"><select value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} className="input"><option value="">Non renseigné</option><option value="F">Féminin</option><option value="M">Masculin</option><option value="X">Autre</option></select></Field>
+                <Field label="E-mail"><input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="input" /></Field>
+                <Field label="Téléphone"><input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="input" /></Field>
+            </div></section>
+
+            <section><h2 className="mb-2 text-lg font-black">Fonctions dans le club</h2><p className="mb-4 text-sm text-gray-500">Une même personne peut cumuler plusieurs fonctions.</p><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{roles.map((role) => <label key={role.code} className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-4 font-bold ${form.roles.includes(role.code) ? "border-sbc bg-green-50 text-sbc-dark" : "border-gray-200"}`}><input type="checkbox" checked={form.roles.includes(role.code)} onChange={() => toggleRole(role.code)} />{role.label}</label>)}</div></section>
+
+            <section><div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="text-lg font-black">Affectations aux équipes</h2><p className="text-sm text-gray-500">Chaque équipe est liée à une saison : changez simplement la sélection lors d’une montée de catégorie.</p></div><button type="button" onClick={addMembership} className="rounded-xl bg-gray-950 px-4 py-2 text-sm font-bold text-white"><i className="fas fa-plus mr-2" />Affecter</button></div>
+                <div className="space-y-3">{form.memberships.map((membership, index) => <div key={`${membership.team_id}-${index}`} className="grid gap-3 rounded-2xl border bg-gray-50 p-4 md:grid-cols-[1fr_180px_100px_auto]">
+                    <select value={membership.team_id} onChange={(e) => patchMembership(index, { team_id: Number(e.target.value) })} className="input">{teams.map((team) => <option key={team.id} value={team.id}>{team.season} — {team.name}</option>)}</select>
+                    <select value={membership.membership_role} onChange={(e) => patchMembership(index, { membership_role: e.target.value as Membership["membership_role"] })} className="input">{Object.entries(membershipLabels).map(([code, label]) => <option key={code} value={code}>{label}</option>)}</select>
+                    <input type="number" min="0" max="999" placeholder="N°" value={membership.jersey_number ?? ""} onChange={(e) => patchMembership(index, { jersey_number: e.target.value ? Number(e.target.value) : null })} className="input" />
+                    <button type="button" onClick={() => setForm({ ...form, memberships: form.memberships.filter((_, i) => i !== index) })} className="rounded-xl bg-red-50 px-4 text-red-700"><i className="fas fa-trash" /></button>
+                </div>)}{!form.memberships.length && <p className="rounded-2xl border-2 border-dashed p-6 text-center text-gray-400">Aucune équipe affectée.</p>}</div>
+            </section>
+
+            <label className="flex items-center gap-3 rounded-2xl bg-gray-50 p-4 font-bold"><input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} />Fiche active</label>
+            {message && <p className="rounded-xl bg-amber-50 p-3 text-sm font-bold text-amber-800">{message}</p>}
+            <div className="flex flex-col gap-3 sm:flex-row"><button disabled={saving} className="flex-1 rounded-xl bg-sbc py-4 font-black text-white disabled:opacity-50">{saving ? "Enregistrement…" : "Enregistrer"}</button>{form.id && <button type="button" onClick={remove} className="rounded-xl bg-red-50 px-6 py-4 font-bold text-red-700">Supprimer</button>}<button type="button" onClick={() => router.push("/admin/players")} className="rounded-xl border px-6 py-4 font-bold">Retour</button></div>
+        </form>
+    </div>;
 }
 
-export default function PlayerEditForm({ player }: { player: Player }) {
-    const router = useRouter();
-    const [formData, setFormData] = useState(player);
-    const [isSaving, setIsSaving] = useState(false);
-    const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
-    const [previewUrl, setPreviewUrl] = useState<string | null>(player.image_id ? `/api/image/${player.image_id}` : null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
-    // Image Cropper State
-    const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
-
-    const showNotification = (message: string, type: 'success' | 'error') => {
-        setNotification({ message, type });
-        setTimeout(() => setNotification(null), 3000);
-    };
-
-    const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.files?.[0]) return;
-        const file = e.target.files[0];
-        const url = URL.createObjectURL(file);
-        setCropImageSrc(url);
-        e.target.value = ""; // Reset to allow same file re-selection
-    };
-
-    const handleRecrop = () => {
-        if (previewUrl) {
-            setCropImageSrc(previewUrl);
-        }
-    };
-
-    const handleCropComplete = async (croppedBlob: Blob) => {
-        setCropImageSrc(null);
-
-        // Preview locally
-        const objectUrl = URL.createObjectURL(croppedBlob);
-        setPreviewUrl(objectUrl);
-
-        // Upload
-        const file = new File([croppedBlob], "player_avatar.jpg", { type: "image/jpeg" });
-        const uploadData = new FormData();
-        uploadData.append('file', file);
-
-        try {
-            const res = await fetch('/api/admin/upload', {
-                method: 'POST',
-                body: uploadData
-            });
-            const data = await res.json();
-            if (data.id) {
-                setFormData(prev => ({ ...prev, image_id: data.id }));
-                showNotification("Image mise à jour", "success");
-            }
-        } catch (e) {
-            showNotification("Erreur lors de l'upload", "error");
-        }
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsSaving(true);
-
-        try {
-            const res = await fetch('/api/admin/players/save', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            });
-
-            if (res.ok) {
-                showNotification("Profil mis à jour avec succès", "success");
-                setTimeout(() => router.push("/admin/players"), 1500);
-            } else {
-                showNotification("Erreur lors de la sauvegarde", "error");
-            }
-        } catch (error) {
-            showNotification("Erreur réseau", "error");
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
-    return (
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden relative">
-            {notification && (
-                <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white font-bold transform transition-all animate-bounce ${notification.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
-                    {notification.message}
-                </div>
-            )}
-
-            {/* Image Cropper Modal */}
-            {cropImageSrc && createPortal(
-                <ImageCropper
-                    imageSrc={cropImageSrc}
-                    onCropComplete={handleCropComplete}
-                    onCancel={() => setCropImageSrc(null)}
-                />,
-                document.body
-            )}
-
-            <form onSubmit={handleSubmit} className="p-8 space-y-8">
-                {/* Photo Section */}
-                <div className="flex flex-col items-center">
-                    <div className="relative group">
-                        <div className="w-32 h-32 rounded-full bg-gray-100 border-4 border-white shadow-lg overflow-hidden flex items-center justify-center relative group/avatar">
-                            {previewUrl ? (
-                                <img src={previewUrl} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                                <i className="fas fa-user text-4xl text-gray-300"></i>
-                            )}
-
-                            {/* Hover Overlay for Cropping/Changing */}
-                            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white opacity-0 group-hover/avatar:opacity-100 transition duration-200">
-                                <button
-                                    type="button"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="w-full h-1/2 flex items-center justify-center hover:bg-white/20 transition border-b border-white/10"
-                                    title="Changer la photo"
-                                >
-                                    <i className="fas fa-camera text-sm"></i>
-                                </button>
-                                {previewUrl && (
-                                    <button
-                                        type="button"
-                                        onClick={handleRecrop}
-                                        className="w-full h-1/2 flex items-center justify-center hover:bg-white/20 transition"
-                                        title="Recadrer la photo"
-                                    >
-                                        <i className="fas fa-crop-alt text-sm"></i>
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Always visible small camera icon for clarity */}
-                        <div className="absolute bottom-0 right-0 bg-sbc text-white w-8 h-8 rounded-full flex items-center justify-center shadow-lg border-2 border-white pointer-events-none">
-                            <i className="fas fa-camera text-xs"></i>
-                        </div>
-                    </div>
-                    <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={onFileChange}
-                        className="hidden"
-                        accept="image/*"
-                    />
-                    <p className="mt-2 text-sm text-gray-400">Survolez l'image pour modifier ou recadrer</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-600 mb-2 uppercase tracking-wider">Prénom</label>
-                        <input
-                            type="text"
-                            required
-                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-sbc focus:ring-1 focus:ring-sbc outline-none transition"
-                            value={formData.firstname}
-                            onChange={e => setFormData({ ...formData, firstname: e.target.value })}
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-600 mb-2 uppercase tracking-wider">Nom</label>
-                        <input
-                            type="text"
-                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-sbc focus:ring-1 focus:ring-sbc outline-none transition"
-                            value={formData.lastname}
-                            onChange={e => setFormData({ ...formData, lastname: e.target.value })}
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-600 mb-2 uppercase tracking-wider">Date de naissance</label>
-                        <input
-                            type="date"
-                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-sbc focus:ring-1 focus:ring-sbc outline-none transition"
-                            value={formData.birthdate}
-                            onChange={e => setFormData({ ...formData, birthdate: e.target.value })}
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-600 mb-2 uppercase tracking-wider">Genre</label>
-                        <select
-                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-sbc focus:ring-1 focus:ring-sbc outline-none transition"
-                            value={formData.gender}
-                            onChange={e => setFormData({ ...formData, gender: e.target.value })}
-                        >
-                            <option value="M">Masculin (M)</option>
-                            <option value="F">Féminin (F)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div className="flex gap-4 pt-4">
-                    <button
-                        type="submit"
-                        disabled={isSaving}
-                        className="flex-1 bg-sbc text-white py-4 rounded-xl font-bold text-lg hover:bg-sbc-dark transition shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                        {isSaving ? (
-                            <><i className="fas fa-spinner fa-spin"></i> Enregistrement...</>
-                        ) : (
-                            <><i className="fas fa-save"></i> Enregistrer les modifications</>
-                        )}
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => router.push("/admin/players")}
-                        className="px-6 py-4 rounded-xl border border-gray-200 font-bold text-gray-500 hover:bg-gray-50 transition"
-                    >
-                        Annuler
-                    </button>
-                </div>
-            </form>
-        </div>
-    );
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+    return <label className="text-sm font-bold text-gray-700">{label}{children}</label>;
 }

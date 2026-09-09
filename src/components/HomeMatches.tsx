@@ -11,6 +11,8 @@ interface Match {
     opponent: string;
     team_image_url?: string;
     team_story_image_url?: string;
+    home_away?: string;
+    venue?: string | null;
 }
 
 export default function HomeMatches({ matches }: { matches: Match[] }) {
@@ -111,7 +113,7 @@ export default function HomeMatches({ matches }: { matches: Match[] }) {
                                         <div className="relative z-10 mt-8 pt-8 border-t border-white/10 flex items-center justify-between">
                                             <div className="flex items-center gap-2 text-gray-400 text-sm">
                                                 <i className="fas fa-map-marker-alt text-sbc"></i>
-                                                <span>Salle Jesse Owens, Seclin</span>
+                                                <span>{nextMatch.venue || (nextMatch.home_away === 'away' ? 'Extérieur' : 'Salle Jesse Owens, Seclin')}</span>
                                             </div>
                                         </div>
                                     </>

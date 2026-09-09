@@ -65,6 +65,7 @@ export default function VolunteersManager() {
     const handleUpload = async (file: File) => {
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('scope', 'person');
 
         try {
             const res = await fetch('/api/admin/upload', {

@@ -16,7 +16,7 @@ export default function Header() {
             .then(data => {
                 /*
                 if (data.site_logo_id) {
-                    setLogoUrl(`/api/image/${data.site_logo_id}`);
+                    setLogoUrl(`/api/image/${data.site_logo_id}?scope=setting`);
                 }
                 */
             })
@@ -90,9 +90,6 @@ export default function Header() {
                         </a>
                     </div>
 
-                    <Link href="/login" className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-full transition shadow-md flex items-center gap-2">
-                        <i className="fas fa-user text-xs"></i> Connexion
-                    </Link>
                 </div>
 
                 {/* Burger Button */}
@@ -143,10 +140,6 @@ export default function Header() {
                     <Link href="/boutique" className={linkClass("/boutique", true)} onClick={() => setIsMobileMenuOpen(false)}>Boutique</Link>
                     <Link href="/partenaires" className={linkClass("/partenaires", true)} onClick={() => setIsMobileMenuOpen(false)}>Partenaires</Link>
                     <Link href="/contact" className="text-sbc-light font-bold py-2 bg-green-900/30 rounded-lg mt-2" onClick={() => setIsMobileMenuOpen(false)}>Nous Contacter</Link>
-                    <Link href="/login" className="text-white font-bold py-2 bg-white/10 rounded-lg flex items-center justify-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
-                        <i className="fas fa-lock text-sm"></i> Connexion
-                    </Link>
-
                     <div className="flex justify-center gap-6 pt-4 border-t border-green-800/30">
                         <a href="https://www.facebook.com/share/1BfEPGLcYV/" target="_blank" className="text-white hover:text-[#1877F2] transition">
                             <i className="fab fa-facebook text-2xl"></i>

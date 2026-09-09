@@ -44,8 +44,9 @@ export default function AdminAppearanceManager() {
     };
 
     const handleUpload = async (file: File) => {
-        const formData = new FormData();
-        formData.append('file', file);
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('scope', 'setting');
 
         try {
             const res = await fetch('/api/admin/upload', {
@@ -156,7 +157,7 @@ export default function AdminAppearanceManager() {
                     <div className="aspect-video relative bg-gray-100 flex items-center justify-center">
                         {customImageId ? (
                             <img
-                                src={`/api/image/${customImageId}`}
+                                src={`/api/image/${customImageId}?scope=setting`}
                                 className="w-full h-full object-cover"
                                 alt="Custom Hero"
                             />

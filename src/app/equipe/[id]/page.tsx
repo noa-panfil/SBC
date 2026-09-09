@@ -2,8 +2,9 @@ import { Metadata } from 'next';
 import pool from '@/lib/db';
 import { RowDataPacket } from 'mysql2';
 import EquipeDetailClient from './EquipeDetailClient';
-import { notFound } from 'next/navigation';
+import { permanentRedirect } from 'next/navigation';
 import { cache } from 'react';
+import { getTeamPath, slugifyTeamName } from '@/lib/teamUrl';
 
 const getTeamData = cache(async (id: string) => {
     const decodedId = decodeURIComponent(id);
@@ -11,51 +12,60 @@ const getTeamData = cache(async (id: string) => {
     try {
         // 1. Fetch Team
         const [teamRows] = await pool.query<RowDataPacket[]>(
-            'SELECT id, name, category, schedule, widget_id, image_id FROM teams WHERE id = ?',
-            [decodedId]
+            `SELECT t.id, t.name, t.category, t.widget_id, t.image_id
+             FROM teams t
+             JOIN seasons s ON s.id = t.season_id
+             WHERE t.active = 1 AND s.is_current = 1`
         );
 
-        if (teamRows.length === 0) {
-            return null;
-        }
+        const team = /^\d+$/.test(decodedId)
+            ? teamRows.find((row) => String(row.id) === decodedId)
+            : teamRows.find((row) => slugifyTeamName(String(row.name)) === decodedId);
 
-        const team = teamRows[0];
-        const imageUrl = team.image_id ? `/api/image/${team.image_id}` : '/img/default-team.png';
+        if (!team) return null;
+        const imageUrl = team.image_id ? `/api/image/${team.image_id}?scope=team` : '/img/default-team.png';
+
+        const [trainingSlotRows] = await pool.query<RowDataPacket[]>(
+            `SELECT schedule_text
+             FROM team_training_slots
+             WHERE team_id = ?
+             ORDER BY display_order, id`,
+            [team.id]
+        );
 
         // 2. Fetch Members
         const [memberRows] = await pool.query<RowDataPacket[]>(
-            `SELECT tm.role, tm.number, p.firstname, p.lastname, p.image_id
-             FROM team_members tm
+            `SELECT tm.membership_role, tm.jersey_number, p.firstname, p.image_id
+             FROM team_memberships tm
              JOIN persons p ON tm.person_id = p.id
              WHERE tm.team_id = ?`,
-            [decodedId]
+            [team.id]
         );
 
         const coaches = memberRows
-            .filter((m: any) => m.role.toLowerCase().includes('coach'))
+            .filter((m: any) => m.membership_role !== 'player')
             .map((m: any) => ({
                 firstname: m.firstname,
-                lastname: m.lastname,
-                name: `${m.firstname} ${m.lastname}`, // For compatibility
-                role: m.role,
-                img: m.image_id ? `/api/image/${m.image_id}` : null
+                name: m.firstname,
+                role: m.membership_role === 'assistant_coach' ? 'Coach adjoint' : 'Coach',
+                img: m.image_id ? `/api/image/${m.image_id}?scope=person` : null
             }));
 
         const players = memberRows
-            .filter((m: any) => !m.role.toLowerCase().includes('coach'))
+            .filter((m: any) => m.membership_role === 'player')
             .map((m: any) => ({
                 firstname: m.firstname,
-                lastname: m.lastname,
-                name: `${m.firstname} ${m.lastname}`, // For compatibility
-                num: m.number,
-                img: m.image_id ? `/api/image/${m.image_id}` : null
+                name: m.firstname,
+                num: m.jersey_number,
+                img: m.image_id ? `/api/image/${m.image_id}?scope=person` : null
             }));
 
         return {
+            id: Number(team.id),
             name: team.name,
             category: team.category,
             image: imageUrl,
-            schedule: team.schedule,
+            trainingSlots: trainingSlotRows.map((slot) => String(slot.schedule_text)),
             widgetId: team.widget_id,
             coaches,
             players
@@ -73,7 +83,7 @@ async function getLogoUrl() {
             "SELECT value FROM settings WHERE key_name = 'site_logo_id'"
         );
         if (rows.length > 0 && rows[0].value) {
-            return `/api/image/${rows[0].value}`;
+            return `/api/image/${rows[0].value}?scope=setting`;
         }
     } catch (e) { }
     */
@@ -101,6 +111,11 @@ export default async function EquipePage({ params }: { params: Promise<{ id: str
     const teamData = await getTeamData(id);
     const logoUrl = await getLogoUrl();
 
-    // If !teamData, client component handles it or we could return notFound() here.
+    if (teamData) {
+        const canonicalPath = getTeamPath(teamData.name);
+        const requestedPath = `/equipe/${decodeURIComponent(id)}`;
+        if (requestedPath !== canonicalPath) permanentRedirect(canonicalPath);
+    }
+
     return <EquipeDetailClient team={teamData} logoUrl={logoUrl} />;
 }

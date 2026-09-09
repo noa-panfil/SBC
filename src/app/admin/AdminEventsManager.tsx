@@ -149,6 +149,7 @@ export default function AdminEventsManager({ teams }: { teams: any[] }) {
     const handleUpload = async (file: File) => {
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('scope', 'event');
         try {
             const res = await fetch('/api/admin/upload', { method: 'POST', body: formData });
             if (!res.ok) throw new Error("Upload failed");

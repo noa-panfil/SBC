@@ -1,628 +1,342 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createPortal } from "react-dom";
-import ImageCropper from "@/components/ImageCropper";
+
+type MembershipRole = "player" | "coach" | "assistant_coach";
 
 interface Member {
-    person_id?: number;
+    person_id: number;
     name: string;
-    role?: string;
-    num?: number;
+    role: MembershipRole;
+    num?: number | null;
     img: string | null;
     birth: string | null;
     sexe: string;
-    // Local processing fields
-    image_id?: number | null;
-    isNew?: boolean;
-    birthISO?: string | null; // For API
 }
 
 interface Team {
     id: string;
+    season_id?: number;
+    season?: string;
     name: string;
     category: string;
     image: string | null;
-    image_id?: number; // Helper for banner update
+    image_id?: number | null;
     storyImage?: string | null;
     story_image_id?: number | null;
-    schedule: string;
+    trainingSlots: string[];
     widgetId: string;
     coaches: Member[];
     players: Member[];
 }
 
-export default function AdminTeamsClient({ teams }: { teams: Team[] }) {
+interface Candidate {
+    id: number;
+    name: string;
+    image_id: number | null;
+    img: string | null;
+    birth: string | null;
+    sexe: string;
+    roles: string[];
+}
+
+const cloneTeam = (team: Team): Team => JSON.parse(JSON.stringify(team));
+
+export default function AdminTeamsClient({ teams, candidates, teamToOpen }: {
+    teams: Team[];
+    candidates: Candidate[];
+    teamToOpen?: Team | null;
+}) {
     const router = useRouter();
     const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
-    const [isEditing, setIsEditing] = useState(false);
-
-    // Draft State
     const [editingTeam, setEditingTeam] = useState<Team | null>(null);
-    const [deletedMemberIds, setDeletedMemberIds] = useState<number[]>([]);
-    const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
-
-    // Cropper State
-    const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
-    const [cropTarget, setCropTarget] = useState<{ type: 'players' | 'coaches', index: number } | null>(null);
-
-    const showNotification = (message: string, type: 'success' | 'error') => {
-        setNotification({ message, type });
-        setTimeout(() => setNotification(null), 3000);
-    };
-
+    const [isEditing, setIsEditing] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [playerCandidateId, setPlayerCandidateId] = useState("");
+    const [coachCandidateId, setCoachCandidateId] = useState("");
+    const [coachRole, setCoachRole] = useState<"coach" | "assistant_coach">("coach");
+    const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
     const bannerInputRef = useRef<HTMLInputElement>(null);
     const storyImageInputRef = useRef<HTMLInputElement>(null);
 
-    // Helper: Convert DD/MM/YYYY to YYYY-MM-DD
-    const toISO = (dateStr: string | null) => {
-        if (!dateStr) return "";
-        const parts = dateStr.split('/');
-        if (parts.length !== 3) return "";
-        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    const showNotification = (message: string, type: "success" | "error") => {
+        setNotification({ message, type });
+        window.setTimeout(() => setNotification(null), 3000);
     };
 
-    // Helper: Convert YYYY-MM-DD to DD/MM/YYYY
-    const toDisplay = (isoStr: string) => {
-        if (!isoStr) return "";
-        const parts = isoStr.split('-');
-        if (parts.length !== 3) return "";
-        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    const openTeam = (team: Team, edit = false) => {
+        const copy = cloneTeam(team);
+        setSelectedTeam(copy);
+        setEditingTeam(copy);
+        setIsEditing(edit);
+        setPlayerCandidateId("");
+        setCoachCandidateId("");
     };
 
-    // Sync selectedTeam to editingTeam when opening modal
     useEffect(() => {
-        if (selectedTeam) {
-            // Deep copy & Initialize birthISO
-            const deepCopy = JSON.parse(JSON.stringify(selectedTeam));
+        if (teamToOpen) openTeam(teamToOpen, true);
+    }, [teamToOpen]);
 
-            // Pre-fill birthISO for players
-            deepCopy.players.forEach((p: Member) => {
-                p.birthISO = toISO(p.birth);
-            });
-            // Pre-fill birthISO for coaches (just in case)
-            deepCopy.coaches.forEach((c: Member) => {
-                c.birthISO = toISO(c.birth);
-            });
+    const availablePlayers = useMemo(() => candidates.filter((candidate) =>
+        candidate.roles.includes("player") &&
+        !editingTeam?.players.some((member) => member.person_id === candidate.id)
+    ), [candidates, editingTeam?.players]);
 
-            setEditingTeam(deepCopy);
-            setDeletedMemberIds([]);
-            setIsEditing(false);
-            setCropImageSrc(null);
-        } else {
-            setEditingTeam(null);
-        }
-    }, [selectedTeam]);
+    const availableCoaches = useMemo(() => candidates.filter((candidate) =>
+        (candidate.roles.includes("coach") || candidate.roles.includes("assistant_coach")) &&
+        !editingTeam?.coaches.some((member) => member.person_id === candidate.id && member.role === coachRole)
+    ), [candidates, editingTeam?.coaches, coachRole]);
 
-    const handleUpload = async (file: File) => {
-        const formData = new FormData();
-        formData.append('file', file);
-
-        try {
-            const res = await fetch('/api/admin/upload', {
-                method: 'POST',
-                body: formData
-            });
-            if (!res.ok) throw new Error("Upload failed");
-            const data = await res.json();
-            return data.id as number;
-        } catch (e) {
-            showNotification("Erreur lors de l'upload de l'image", 'error');
-            console.error(e);
-            return null;
-        }
-    };
-
-    const handleBannerChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!editingTeam || !e.target.files?.[0]) return;
-        const file = e.target.files[0];
-
-        // 1. Immediate Preview
-        const previewUrl = URL.createObjectURL(file);
-        setEditingTeam(prev => prev ? ({ ...prev, image: previewUrl }) : null);
-
-        // 2. Upload in background
-        const newImageId = await handleUpload(file);
-        if (newImageId) {
-            setEditingTeam(prev => prev ? ({ ...prev, image_id: newImageId }) : null);
-        }
-    };
-
-    const handleStoryImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!editingTeam || !e.target.files?.[0]) return;
-        const file = e.target.files[0];
-
-        // 1. Immediate Preview
-        const previewUrl = URL.createObjectURL(file);
-        setEditingTeam(prev => prev ? ({ ...prev, storyImage: previewUrl }) : null);
-
-        // 2. Upload in background
-        const newImageId = await handleUpload(file);
-        if (newImageId) {
-            setEditingTeam(prev => prev ? ({ ...prev, story_image_id: newImageId }) : null);
-        }
-    };
-
-    const handleMemberImageChange = (index: number, type: 'players' | 'coaches', e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.files?.[0]) return;
-        const file = e.target.files[0];
-
-        // Initialiser le cropper avec l'image sélectionnée
-        const url = URL.createObjectURL(file);
-        setCropImageSrc(url);
-        setCropTarget({ type, index });
-
-        // Reset input value to allow selecting same file again if needed
-        e.target.value = "";
-    };
-
-    const handleMemberImageRecrop = (index: number, type: 'players' | 'coaches') => {
+    const uploadImage = async (file: File, target: "banner" | "story") => {
         if (!editingTeam) return;
-        const member = type === 'players' ? editingTeam.players[index] : editingTeam.coaches[index];
-        if (!member.img) return;
+        const previewUrl = URL.createObjectURL(file);
+        setEditingTeam((current) => current ? {
+            ...current,
+            ...(target === "banner" ? { image: previewUrl } : { storyImage: previewUrl }),
+        } : null);
 
-        setCropImageSrc(member.img);
-        setCropTarget({ type, index });
-    };
-
-    const handleCropComplete = async (croppedBlob: Blob) => {
-        if (!editingTeam || !cropTarget) return;
-
-        // Convert Blob to File
-        const file = new File([croppedBlob], "avatar.jpg", { type: "image/jpeg" });
-        const previewUrl = URL.createObjectURL(croppedBlob);
-
-        const { type, index } = cropTarget;
-
-        // 1. Mise à jour de l'image locale (Preview)
-        setEditingTeam(prev => {
-            if (!prev) return null;
-            const list = type === 'players' ? [...prev.players] : [...prev.coaches];
-            list[index] = { ...list[index], img: previewUrl };
-            return { ...prev, [type]: list };
-        });
-
-        // Fermer le cropper
-        setCropImageSrc(null);
-        setCropTarget(null);
-
-        // 2. Upload en arrière-plan
-        const newImageId = await handleUpload(file);
-        if (newImageId) {
-            setEditingTeam(prev => {
-                if (!prev) return null;
-                const list = type === 'players' ? [...prev.players] : [...prev.coaches];
-                list[index] = { ...list[index], image_id: newImageId };
-                return { ...prev, [type]: list };
-            });
+        const data = new FormData();
+        data.append("file", file);
+        data.append("scope", "team");
+        const response = await fetch("/api/admin/upload", { method: "POST", body: data });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            URL.revokeObjectURL(previewUrl);
+            return showNotification(result.error || `L’image n’a pas pu être importée (erreur ${response.status}).`, "error");
         }
+
+        const associationResponse = await fetch("/api/admin/teams/image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ teamId: Number(editingTeam.id), imageId: Number(result.id), target }),
+        });
+        const associationResult = await associationResponse.json().catch(() => ({}));
+        if (!associationResponse.ok) {
+            URL.revokeObjectURL(previewUrl);
+            return showNotification(associationResult.error || "L’image a été importée, mais n’a pas pu être associée à l’équipe.", "error");
+        }
+
+        setEditingTeam((current) => current ? {
+            ...current,
+            ...(target === "banner"
+                ? { image_id: Number(result.id), image: String(result.url) }
+                : { story_image_id: Number(result.id), storyImage: String(result.url) }),
+        } : null);
+        setSelectedTeam((current) => current ? {
+            ...current,
+            ...(target === "banner"
+                ? { image_id: Number(result.id), image: String(result.url) }
+                : { story_image_id: Number(result.id), storyImage: String(result.url) }),
+        } : null);
+        URL.revokeObjectURL(previewUrl);
+        showNotification("Image de l’équipe enregistrée.", "success");
+        router.refresh();
     };
 
-    const handleCropCancel = () => {
-        setCropImageSrc(null);
-        setCropTarget(null);
+    const candidateToMember = (candidate: Candidate, role: MembershipRole): Member => ({
+        person_id: candidate.id,
+        name: candidate.name,
+        role,
+        num: null,
+        img: candidate.img,
+        birth: candidate.birth,
+        sexe: candidate.sexe,
+    });
+
+    const addPlayer = () => {
+        if (!editingTeam || !playerCandidateId) return;
+        const candidate = candidates.find((item) => item.id === Number(playerCandidateId));
+        if (!candidate) return;
+        setEditingTeam({ ...editingTeam, players: [...editingTeam.players, candidateToMember(candidate, "player")] });
+        setPlayerCandidateId("");
     };
 
-    const handleMemberChange = (index: number, type: 'players' | 'coaches', field: keyof Member, value: any) => {
-        setEditingTeam(prev => {
-            if (!prev) return null;
-            const list = type === 'players' ? [...prev.players] : [...prev.coaches];
-            list[index] = { ...list[index], [field]: value };
-            return { ...prev, [type]: list };
+    const addCoach = () => {
+        if (!editingTeam || !coachCandidateId) return;
+        const candidate = candidates.find((item) => item.id === Number(coachCandidateId));
+        if (!candidate) return;
+        setEditingTeam({ ...editingTeam, coaches: [...editingTeam.coaches, candidateToMember(candidate, coachRole)] });
+        setCoachCandidateId("");
+    };
+
+    const removeMember = (type: "players" | "coaches", index: number) => {
+        if (!editingTeam) return;
+        setEditingTeam({ ...editingTeam, [type]: editingTeam[type].filter((_, itemIndex) => itemIndex !== index) });
+    };
+
+    const addTrainingSlot = () => {
+        if (!editingTeam) return;
+        setEditingTeam({ ...editingTeam, trainingSlots: [...editingTeam.trainingSlots, ""] });
+    };
+
+    const patchTrainingSlot = (index: number, value: string) => {
+        if (!editingTeam) return;
+        setEditingTeam({
+            ...editingTeam,
+            trainingSlots: editingTeam.trainingSlots.map((slot, slotIndex) => slotIndex === index ? value : slot),
         });
     };
 
-    const handleDeleteMember = (index: number, type: 'players' | 'coaches') => {
+    const removeTrainingSlot = (index: number) => {
         if (!editingTeam) return;
-        if (!confirm("Êtes-vous sûr de vouloir supprimer ce membre ?")) return;
-
-        const list = type === 'players' ? [...editingTeam.players] : [...editingTeam.coaches];
-        const member = list[index];
-
-        if (member.person_id) {
-            setDeletedMemberIds(prev => [...prev, member.person_id!]);
-        }
-
-        list.splice(index, 1);
-        setEditingTeam({ ...editingTeam, [type]: list });
+        setEditingTeam({
+            ...editingTeam,
+            trainingSlots: editingTeam.trainingSlots.filter((_, slotIndex) => slotIndex !== index),
+        });
     };
 
-    const handleAddPlayer = () => {
-        if (!editingTeam) return;
-        const newPlayer: Member = {
-            name: "Nouveau Joueur",
-            num: 0,
-            role: "Joueur",
-            img: null,
-            birth: null,
-            sexe: "M",
-            isNew: true
-        };
-        setEditingTeam({ ...editingTeam, players: [...editingTeam.players, newPlayer] });
+    const patchMember = (type: "players" | "coaches", index: number, patch: Partial<Member>) => {
+        setEditingTeam((current) => current ? {
+            ...current,
+            [type]: current[type].map((member, itemIndex) => itemIndex === index ? { ...member, ...patch } : member),
+        } : null);
     };
 
     const saveChanges = async () => {
-        if (!editingTeam) return;
-
-        try {
-            const payload = {
-                teamId: editingTeam.id,
-                bannerId: editingTeam.image_id,
-                storyImageId: editingTeam.story_image_id,
+        if (!editingTeam || !editingTeam.name.trim()) return;
+        setSaving(true);
+        const response = await fetch("/api/admin/teams/save", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                teamId: Number(editingTeam.id),
+                name: editingTeam.name.trim(),
+                bannerId: editingTeam.image_id || null,
+                storyImageId: editingTeam.story_image_id || null,
                 category: editingTeam.category,
-                schedule: editingTeam.schedule,
-                deletedMemberIds,
-                members: [...editingTeam.players, ...editingTeam.coaches]
-            };
-
-            const res = await fetch('/api/admin/teams/save', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (res.ok) {
-                showNotification("Modifications enregistrées avec succès !", 'success');
-                setIsEditing(false);
-                router.refresh();
-                setSelectedTeam(null);
-            } else {
-                showNotification("Erreur lors de la sauvegarde.", 'error');
-            }
-        } catch (e) {
-            console.error(e);
-            showNotification("Erreur technique lors de la sauvegarde.", 'error');
-        }
-    };
-
-
-
-    const handleDateChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!editingTeam) return;
-        const val = e.target.value; // YYYY-MM-DD
-
-        setEditingTeam(prev => {
-            if (!prev) return null;
-            const list = [...prev.players];
-            list[index] = {
-                ...list[index],
-                birthISO: val,
-                birth: toDisplay(val)
-            };
-            return { ...prev, players: list };
+                trainingSlots: editingTeam.trainingSlots,
+                widgetId: editingTeam.widgetId,
+                members: [...editingTeam.players, ...editingTeam.coaches].map((member) => ({
+                    person_id: member.person_id,
+                    membership_role: member.role,
+                    jersey_number: member.role === "player" ? member.num || null : null,
+                })),
+            }),
         });
+        const result = await response.json().catch(() => ({}));
+        setSaving(false);
+        if (!response.ok) return showNotification(result.error || "Erreur lors de la sauvegarde.", "error");
+        const saved = cloneTeam(editingTeam);
+        setSelectedTeam(saved);
+        setEditingTeam(saved);
+        setIsEditing(false);
+        showNotification("Équipe enregistrée.", "success");
+        router.refresh();
     };
 
-    const [mounted, setMounted] = useState(false);
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+    const deleteTeam = async () => {
+        if (!selectedTeam || !confirm(`Supprimer définitivement l’équipe « ${selectedTeam.name} » ?\n\nSes affectations seront retirées, mais les fiches des joueurs et coachs seront conservées.`)) return;
+        setSaving(true);
+        const response = await fetch(`/api/admin/teams?id=${selectedTeam.id}`, { method: "DELETE" });
+        const result = await response.json().catch(() => ({}));
+        setSaving(false);
+        if (!response.ok) return showNotification(result.error || "Impossible de supprimer l’équipe.", "error");
+        setSelectedTeam(null);
+        setEditingTeam(null);
+        showNotification("Équipe supprimée.", "success");
+        router.refresh();
+    };
 
-    // ... (rest of the code)
+    return <div className="relative mb-8 rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+        {notification && <div className={`fixed bottom-8 right-8 z-[120] rounded-xl px-6 py-4 font-bold text-white shadow-2xl ${notification.type === "success" ? "bg-green-600" : "bg-red-600"}`}>{notification.message}</div>}
 
-    return (
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8 relative">
-            {/* Cropper Modal - Portaled to Body to win z-index war */}
-            {mounted && cropImageSrc && typeof document !== 'undefined' && createPortal(
-                <ImageCropper
-                    imageSrc={cropImageSrc}
-                    onCropComplete={handleCropComplete}
-                    onCancel={handleCropCancel}
-                />,
-                document.body
-            )}
-
-            {/* Notification Toast - also portal for safety if needed, but existing implementation is fine if ImageCropper handles z-index */}
-            {notification && (
-                <div className={`fixed bottom-8 right-8 px-6 py-4 rounded-xl shadow-2xl text-white font-bold transition-all transform animate-bounce-in z-[100] flex items-center gap-3 ${notification.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
-                    <i className={`fas ${notification.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'} text-xl`}></i>
-                    {notification.message}
-                </div>
-            )}
-
-            <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                <i className="fas fa-basketball-ball text-sbc"></i> Gestion des Équipes
-            </h2>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {teams.map((team) => (
-                    <div
-                        key={team.id}
-                        onClick={() => setSelectedTeam(team)}
-                        className="bg-white border border-gray-100 rounded-2xl p-4 md:p-5 hover:shadow-lg hover:border-sbc transition-all cursor-pointer flex items-center gap-4 group"
-                    >
-                        <div className="w-14 h-14 bg-gray-50 rounded-2xl flex-shrink-0 overflow-hidden border border-gray-100 shadow-inner">
-                            <img src={team.image || "/img/default-team.png"} alt={team.name} className="w-full h-full object-cover transition group-hover:scale-110" />
-                        </div>
-                        <div className="flex-grow min-w-0">
-                            <h3 className="font-black text-gray-900 truncate group-hover:text-sbc transition uppercase tracking-tight text-sm md:text-base">{team.name}</h3>
-                            <p className="text-xs text-gray-400 font-bold truncate uppercase tracking-widest">{team.category}</p>
-                        </div>
-                        <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-300 group-hover:bg-sbc/10 group-hover:text-sbc transition">
-                            <i className="fas fa-chevron-right text-xs"></i>
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            {/* Modal Détails */}
-            {selectedTeam && (
-                <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-md z-[100] flex items-end md:items-center justify-center p-0 md:p-4"
-                    onMouseDown={() => { if (!isEditing) setSelectedTeam(null); }}>
-                    <div className="bg-white rounded-t-[2.5rem] md:rounded-[2rem] shadow-2xl w-full max-w-[1600px] h-[92vh] md:h-[85vh] overflow-hidden flex flex-col border border-white/20 animate-fade-in-up md:scale-[0.98] md:hover:scale-[1] transition-transform"
-                        onMouseDown={(e) => e.stopPropagation()}>
-
-                        {/* Header Modal */}
-                        <div className="bg-white px-6 py-5 flex items-center justify-between border-b border-gray-100 sticky top-0 z-20">
-                            <div className="flex flex-col">
-                                <h3 className="text-xl md:text-2xl font-black text-gray-900 uppercase tracking-tighter">
-                                    {isEditing ? `Édition` : selectedTeam.name}
-                                </h3>
-                                {isEditing && <span className="text-[10px] bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full font-black uppercase tracking-widest w-fit mt-1">Mode Édition</span>}
-                                {!isEditing && <span className="text-xs text-gray-400 font-bold uppercase tracking-widest">{selectedTeam.category}</span>}
-                            </div>
-                            <div className="flex items-center gap-2">
-                                {isEditing ? (
-                                    <>
-                                        <button onClick={() => { setIsEditing(false); setEditingTeam(JSON.parse(JSON.stringify(selectedTeam))); }}
-                                            className="px-4 py-2.5 rounded-xl text-xs font-black text-gray-500 hover:bg-gray-100 uppercase tracking-widest transition">
-                                            Annuler
-                                        </button>
-                                        <button onClick={saveChanges}
-                                            className="bg-sbc text-white px-6 py-2.5 rounded-xl shadow-lg shadow-sbc/20 hover:bg-sbc-dark text-xs font-black uppercase tracking-widest transition">
-                                            Enregistrer
-                                        </button>
-                                    </>
-                                ) : (
-                                    <>
-                                        <button onClick={() => setIsEditing(true)} className="bg-sbc/10 text-sbc px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition flex items-center gap-2">
-                                            <i className="fas fa-edit"></i> <span className="hidden sm:inline">Éditer</span>
-                                        </button>
-                                        <button onClick={() => setSelectedTeam(null)} className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition">
-                                            <i className="fas fa-times text-gray-400 text-xl"></i>
-                                        </button>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Body Modal */}
-                        <div className="p-6 overflow-y-auto custom-scrollbar flex-grow bg-gray-50">
-                            {editingTeam && (
-                                <div className="flex flex-col lg:flex-row gap-8 h-full">
-                                    {/* Left Column: Image & Info */}
-                                    <div className="lg:w-1/3 flex flex-col gap-6">
-                                        <div className="group relative rounded-lg shadow-md border border-gray-200 overflow-hidden bg-gray-100 flex-shrink-0">
-                                            <img src={editingTeam.image || "/img/default-team.png"} className="w-full h-auto object-cover transition duration-300" alt={editingTeam.name} />
-                                            {isEditing && (
-                                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer"
-                                                    onClick={() => bannerInputRef.current?.click()}>
-                                                    <span className="text-white font-bold bg-sbc px-4 py-2 rounded-full"><i className="fas fa-camera mr-2"></i> Changer la photo</span>
-                                                    <input type="file" ref={bannerInputRef} className="hidden" accept="image/*" onChange={handleBannerChange} />
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Story Image UI */}
-                                        <div className="group relative rounded-lg shadow-md border border-gray-200 overflow-hidden bg-gray-100 flex-shrink-0">
-                                            <div className="absolute top-2 left-2 bg-purple-600/80 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded uppercase font-bold z-10 shadow-sm">
-                                                <i className="fas fa-mobile-alt mr-1"></i> Format Story
-                                            </div>
-                                            <div className="aspect-[9/16] w-full relative bg-gray-200">
-                                                <img
-                                                    src={editingTeam.storyImage || editingTeam.image || "/img/default-team.png"}
-                                                    className={`w-full h-full object-cover transition duration-300 ${!editingTeam.storyImage ? 'opacity-50 grayscale' : ''}`}
-                                                    alt="Story representation"
-                                                />
-                                                {!editingTeam.storyImage && (
-                                                    <div className="absolute inset-0 flex items-center justify-center">
-                                                        <span className="text-gray-500 font-bold text-xs uppercase text-center px-4">Utilise le logo par défaut</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            {isEditing && (
-                                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer"
-                                                    onClick={() => storyImageInputRef.current?.click()}>
-                                                    <span className="text-white font-bold bg-sbc px-4 py-2 rounded-full text-xs text-center shadow-lg transform hover:scale-105 transition"><i className="fas fa-camera mr-2"></i> Photo Story</span>
-                                                    <input type="file" ref={storyImageInputRef} className="hidden" accept="image/*" onChange={handleStoryImageChange} />
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="bg-white p-6 rounded-xl text-sm text-gray-700 border border-gray-200 shadow-sm space-y-3">
-                                            <div className="flex items-center gap-3">
-                                                <i className="fas fa-tag text-blue-500 text-xl w-8 text-center flex-shrink-0"></i>
-                                                <span className="font-bold text-gray-900 w-24 flex-shrink-0">Catégorie:</span>
-                                                {isEditing ? (
-                                                    <input
-                                                        className="flex-grow border-b border-gray-300 focus:border-sbc outline-none py-1 font-bold text-gray-800"
-                                                        value={editingTeam.category || ''}
-                                                        onChange={(e) => {
-                                                            const val = e.target.value;
-                                                            setEditingTeam(prev => prev ? ({ ...prev, category: val }) : null);
-                                                        }}
-                                                    />
-                                                ) : (
-                                                    <span>{editingTeam.category}</span>
-                                                )}
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <i className="fas fa-clock text-blue-500 text-xl w-8 text-center flex-shrink-0"></i>
-                                                <span className="font-bold text-gray-900 w-24 flex-shrink-0">Horaires:</span>
-                                                {isEditing ? (
-                                                    <input
-                                                        className="flex-grow border-b border-gray-300 focus:border-sbc outline-none py-1 text-gray-800"
-                                                        value={editingTeam.schedule || ''}
-                                                        placeholder="Ex: Mardi 18h - 20h"
-                                                        onChange={(e) => {
-                                                            const val = e.target.value;
-                                                            setEditingTeam(prev => prev ? ({ ...prev, schedule: val }) : null);
-                                                        }}
-                                                    />
-                                                ) : (
-                                                    <span>{editingTeam.schedule || 'Non communiqués'}</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Right Column: Staff & Players */}
-                                    <div className="lg:w-2/3 flex flex-col gap-8 overflow-y-auto pr-2 pb-10">
-
-                                        {/* Coaches Section */}
-                                        <div className="bg-gray-100/50 p-6 rounded-2xl border border-gray-200/60">
-                                            <h4 className="text-xl font-bold text-sbc-dark mb-4 flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-sbc flex items-center justify-center text-white text-sm"><i className="fas fa-user-tie"></i></div>
-                                                Staff Technique
-                                            </h4>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                {editingTeam.coaches.map((coach, i) => (
-                                                    <div key={i} className="flex items-center gap-4 bg-white p-4 rounded-xl border border-gray-200 shadow-sm relative group overflow-hidden">
-                                                        <div className="w-14 h-14 rounded-full bg-gray-100 overflow-hidden flex-shrink-0 border-2 border-white shadow-md relative group/avatar">
-                                                            {coach.img ? <img src={coach.img} className="w-full h-full object-cover" /> : <i className="fas fa-user text-gray-400 w-full h-full flex items-center justify-center"></i>}
-                                                            {isEditing && (
-                                                                <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white opacity-0 group-hover/avatar:opacity-100 transition duration-200">
-                                                                    <label className="cursor-pointer w-full h-1/2 flex items-center justify-center hover:bg-white/20 transition" title="Changer la photo">
-                                                                        <i className="fas fa-camera text-xs"></i>
-                                                                        <input type="file" className="hidden" accept="image/*" onChange={(e) => handleMemberImageChange(i, 'coaches', e)} />
-                                                                    </label>
-                                                                    {coach.img && (
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => handleMemberImageRecrop(i, 'coaches')}
-                                                                            className="w-full h-1/2 flex items-center justify-center hover:bg-white/20 transition border-t border-white/20"
-                                                                            title="Recadrer la photo"
-                                                                        >
-                                                                            <i className="fas fa-crop-alt text-xs"></i>
-                                                                        </button>
-                                                                    )}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        <div className="flex-grow z-20">
-                                                            {isEditing ? (
-                                                                <input
-                                                                    className="w-full font-bold text-gray-800 border-b border-gray-300 focus:border-sbc outline-none bg-transparent mb-1"
-                                                                    value={coach.name}
-                                                                    onChange={(e) => handleMemberChange(i, 'coaches', 'name', e.target.value)}
-                                                                />
-                                                            ) : (
-                                                                <p className="font-bold text-gray-800 text-lg">{coach.name}</p>
-                                                            )}
-                                                            <p className="text-xs text-sbc font-bold uppercase tracking-wider">{coach.role}</p>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {/* Players Section */}
-                                        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex-grow flex flex-col">
-                                            <div className="flex justify-between items-center mb-6">
-                                                <h4 className="text-xl font-bold text-sbc-dark flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-sbc flex items-center justify-center text-white text-sm"><i className="fas fa-users"></i></div>
-                                                    Effectif ({editingTeam.players.length})
-                                                </h4>
-                                                {isEditing && (
-                                                    <button onClick={handleAddPlayer} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow transition flex items-center gap-2">
-                                                        <i className="fas fa-plus"></i> Ajouter un joueur
-                                                    </button>
-                                                )}
-                                            </div>
-
-                                            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 content-start">
-                                                {editingTeam.players.map((player, i) => (
-                                                    <div key={i} className={`flex flex-col items-center justify-center text-center gap-3 p-6 rounded-xl border transition group min-h-[160px] shadow-sm relative ${isEditing ? 'border-dashed border-gray-300 bg-gray-50' : 'border-gray-100 hover:border-sbc hover:bg-gray-50'}`}>
-
-                                                        {isEditing && (
-                                                            <button onClick={() => handleDeleteMember(i, 'players')} className="absolute top-2 right-2 text-red-400 hover:text-red-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50 transition z-30">
-                                                                <i className="fas fa-trash"></i>
-                                                            </button>
-                                                        )}
-
-                                                        <div className="relative group/img flex flex-col items-center">
-                                                            {/* Player Image or Number if no image */}
-                                                            <div className="w-16 h-16 rounded-full bg-gray-100 overflow-hidden border-2 border-white shadow-md relative mb-3 group/avatar">
-                                                                {player.img ? (
-                                                                    <img src={player.img} className="w-full h-full object-cover" />
-                                                                ) : (
-                                                                    <div className="w-full h-full flex items-center justify-center bg-sbc text-white font-bold text-xl">
-                                                                        {player.num || '-'}
-                                                                    </div>
-                                                                )}
-
-                                                                {isEditing && (
-                                                                    <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white opacity-0 group-hover/avatar:opacity-100 transition duration-200 z-20">
-                                                                        <label className="cursor-pointer w-full h-full flex items-center justify-center hover:bg-white/20 transition" title="Changer la photo">
-                                                                            <i className="fas fa-camera"></i>
-                                                                            <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" onChange={(e) => handleMemberImageChange(i, 'players', e)} />
-                                                                        </label>
-                                                                        {player.img && (
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    handleMemberImageRecrop(i, 'players');
-                                                                                }}
-                                                                                className="absolute bottom-0 left-0 right-0 h-1/2 bg-sbc/80 hover:bg-sbc flex items-center justify-center transition border-t border-white/20"
-                                                                                title="Recadrer"
-                                                                            >
-                                                                                <i className="fas fa-crop-alt"></i>
-                                                                            </button>
-                                                                        )}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-
-                                                            {isEditing ? (
-                                                                <input
-                                                                    type="number"
-                                                                    className="w-12 text-center bg-gray-100 border border-gray-200 rounded text-sm font-bold text-sbc outline-none"
-                                                                    value={player.num || 0}
-                                                                    onChange={(e) => handleMemberChange(i, 'players', 'num', parseInt(e.target.value))}
-                                                                />
-                                                            ) : (
-                                                                <span className="font-mono font-bold text-sbc text-sm bg-gray-100 px-2 py-0.5 rounded">
-                                                                    #{player.num || '-'}
-                                                                </span>
-                                                            )}
-                                                        </div>
-
-                                                        <div className="min-w-0 w-full z-20">
-                                                            {isEditing ? (
-                                                                <div className="flex flex-col gap-1 w-full">
-                                                                    <input
-                                                                        className="w-full text-center font-bold text-gray-800 text-sm border-b border-gray-300 focus:border-sbc outline-none bg-transparent"
-                                                                        value={player.name}
-                                                                        placeholder="Nom Prénom"
-                                                                        onChange={(e) => handleMemberChange(i, 'players', 'name', e.target.value)}
-                                                                    />
-                                                                    <input
-                                                                        type="date"
-                                                                        className="w-full text-center text-xs text-gray-500 border-b border-gray-200 focus:border-sbc outline-none bg-transparent"
-                                                                        value={player.birthISO || toISO(player.birth)}
-                                                                        onChange={(e) => handleDateChange(i, e)}
-                                                                    />
-                                                                </div>
-                                                            ) : (
-                                                                <>
-                                                                    <p className="font-bold text-gray-800 text-base truncate w-full">{player.name}</p>
-                                                                    {player.birth && <p className="text-xs text-gray-400 font-medium mt-1">Né(e) le {player.birth}</p>}
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
+        <h2 className="mb-6 flex items-center gap-2 text-xl font-bold text-gray-800"><i className="fas fa-basketball-ball text-sbc" />Gestion des équipes</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {teams.map((team) => <button type="button" key={team.id} onClick={() => openTeam(team)} className="group flex items-center gap-4 rounded-2xl border border-gray-100 bg-white p-4 text-left transition hover:border-sbc hover:shadow-lg md:p-5">
+                <div className="h-14 w-14 shrink-0 overflow-hidden rounded-2xl border bg-gray-50"><img src={team.image || "/img/default-team.png"} alt="" className="h-full w-full object-cover transition group-hover:scale-110" /></div>
+                <div className="min-w-0 flex-1"><h3 className="truncate text-sm font-black uppercase text-gray-900 group-hover:text-sbc md:text-base">{team.name}</h3><p className="mt-1 text-[10px] font-black uppercase tracking-wider text-gray-400">Saison {team.season}</p><p className="truncate text-xs font-bold uppercase tracking-widest text-gray-400">{team.category}</p></div>
+                <i className="fas fa-chevron-right text-gray-300" />
+            </button>)}
         </div>
-    );
+
+        {selectedTeam && editingTeam && <div className="fixed inset-0 z-[100] flex items-end justify-center bg-gray-900/40 p-0 backdrop-blur-md md:items-center md:p-4" onMouseDown={() => { if (!isEditing) setSelectedTeam(null); }}>
+            <div className="flex h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-t-[2.5rem] border bg-white shadow-2xl md:h-[88vh] md:rounded-[2rem]" onMouseDown={(event) => event.stopPropagation()}>
+                <header className="flex items-center justify-between border-b px-6 py-5">
+                    <div><h3 className="text-xl font-black uppercase tracking-tight md:text-2xl">{isEditing ? "Modifier l’équipe" : selectedTeam.name}</h3><p className="text-xs font-bold uppercase tracking-widest text-gray-400">Saison {editingTeam.season}</p></div>
+                    <div className="flex gap-2">
+                        <button type="button" disabled={saving} onClick={deleteTeam} className="h-10 w-10 rounded-xl bg-red-50 text-red-700 transition hover:bg-red-600 hover:text-white disabled:opacity-40" title="Supprimer l’équipe"><i className="fas fa-trash" /></button>
+                        {isEditing ? <><button type="button" onClick={() => { setEditingTeam(cloneTeam(selectedTeam)); setIsEditing(false); }} className="rounded-xl px-4 py-2.5 text-xs font-black uppercase text-gray-500 hover:bg-gray-100">Annuler</button><button type="button" disabled={saving} onClick={saveChanges} className="rounded-xl bg-sbc px-5 py-2.5 text-xs font-black uppercase text-white disabled:opacity-50">{saving ? "Enregistrement…" : "Enregistrer"}</button></> : <><button type="button" onClick={() => setIsEditing(true)} className="rounded-xl bg-sbc/10 px-4 py-2.5 text-xs font-black uppercase text-sbc"><i className="fas fa-edit mr-2" />Éditer</button><button type="button" onClick={() => setSelectedTeam(null)} className="h-10 w-10 rounded-full hover:bg-gray-100"><i className="fas fa-times text-gray-400" /></button></>}
+                    </div>
+                </header>
+
+                <div className="flex-1 overflow-y-auto bg-gray-50 p-5 md:p-7">
+                    <div className="grid gap-7 lg:grid-cols-[320px_1fr]">
+                        <aside className="space-y-5">
+                            <ImageEditor label="Photo de l’équipe" image={editingTeam.image} editable={isEditing} onChoose={() => bannerInputRef.current?.click()} aspect="aspect-video" />
+                            <input ref={bannerInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) uploadImage(file, "banner"); event.target.value = ""; }} />
+                            <ImageEditor label="Format story" image={editingTeam.storyImage || editingTeam.image} editable={isEditing} onChoose={() => storyImageInputRef.current?.click()} aspect="aspect-[9/16]" />
+                            <input ref={storyImageInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) uploadImage(file, "story"); event.target.value = ""; }} />
+
+                            <div className="space-y-4 rounded-2xl border bg-white p-5">
+                                <Field label="Nom"><input disabled={!isEditing} required value={editingTeam.name} onChange={(event) => setEditingTeam({ ...editingTeam, name: event.target.value })} className="input disabled:bg-gray-50" /></Field>
+                                <Field label="Catégorie"><input disabled={!isEditing} value={editingTeam.category || ""} onChange={(event) => setEditingTeam({ ...editingTeam, category: event.target.value })} className="input disabled:bg-gray-50" /></Field>
+                                <Field label="Horaires d'entraînement">
+                                    <div className="mt-2 space-y-2">
+                                        {editingTeam.trainingSlots.map((slot, index) => <div key={index} className="flex gap-2">
+                                            <input disabled={!isEditing} value={slot} onChange={(event) => patchTrainingSlot(index, event.target.value)} placeholder="Ex. Lundi 18h00 - 19h30" className="input mt-0 disabled:bg-gray-50" />
+                                            {isEditing && <button type="button" onClick={() => removeTrainingSlot(index)} className="h-11 w-11 shrink-0 rounded-xl bg-red-50 text-red-700" title="Supprimer ce créneau"><i className="fas fa-trash" /></button>}
+                                        </div>)}
+                                        {!editingTeam.trainingSlots.length && !isEditing && <p className="text-sm font-medium text-gray-400">Aucun horaire renseigné.</p>}
+                                        {isEditing && <button type="button" onClick={addTrainingSlot} className="w-full rounded-xl border border-dashed border-sbc/40 bg-green-50 px-3 py-2.5 text-sm font-black text-sbc"><i className="fas fa-plus mr-2" />Ajouter un créneau</button>}
+                                    </div>
+                                </Field>
+                                <Field label="Identifiant widget"><input disabled={!isEditing} value={editingTeam.widgetId || ""} onChange={(event) => setEditingTeam({ ...editingTeam, widgetId: event.target.value })} className="input disabled:bg-gray-50" /></Field>
+                            </div>
+                        </aside>
+
+                        <div className="space-y-7">
+                            <MemberSection title="Coachs" icon="fa-user-tie">
+                                {isEditing && <div className="mb-5 grid gap-3 rounded-2xl border border-dashed border-sbc/30 bg-green-50 p-4 md:grid-cols-[1fr_180px_auto]">
+                                    <select value={coachCandidateId} onChange={(event) => setCoachCandidateId(event.target.value)} className="input"><option value="">Choisir un coach existant…</option>{availableCoaches.map((person) => <option key={person.id} value={person.id}>{person.name}</option>)}</select>
+                                    <select value={coachRole} onChange={(event) => setCoachRole(event.target.value as "coach" | "assistant_coach")} className="input"><option value="coach">Coach</option><option value="assistant_coach">Coach adjoint</option></select>
+                                    <button type="button" disabled={!coachCandidateId} onClick={addCoach} className="rounded-xl bg-sbc px-4 py-2.5 font-black text-white disabled:opacity-40"><i className="fas fa-file-import mr-2" />Importer</button>
+                                </div>}
+                                <div className="grid gap-3 md:grid-cols-2">{editingTeam.coaches.map((coach, index) => <article key={`${coach.person_id}-${coach.role}`} className="flex items-center gap-3 rounded-2xl border bg-white p-4">
+                                    <Avatar member={coach} /><div className="min-w-0 flex-1"><p className="truncate font-black">{coach.name}</p>{isEditing ? <select value={coach.role} onChange={(event) => patchMember("coaches", index, { role: event.target.value as MembershipRole })} className="mt-1 rounded-lg border px-2 py-1 text-xs"><option value="coach">Coach</option><option value="assistant_coach">Coach adjoint</option></select> : <p className="text-xs font-bold uppercase text-sbc">{coach.role === "assistant_coach" ? "Coach adjoint" : "Coach"}</p>}</div>
+                                    {isEditing ? <button type="button" onClick={() => removeMember("coaches", index)} className="h-9 w-9 rounded-lg bg-red-50 text-red-700"><i className="fas fa-trash" /></button> : <Link href={`/admin/players/${coach.person_id}`} className="text-gray-300 hover:text-sbc"><i className="fas fa-chevron-right" /></Link>}
+                                </article>)}</div>
+                                {!editingTeam.coaches.length && <EmptyMembers text="Aucun coach associé à cette équipe." />}
+                            </MemberSection>
+
+                            <MemberSection title={`Joueurs (${editingTeam.players.length})`} icon="fa-users">
+                                {isEditing && <div className="mb-5 grid gap-3 rounded-2xl border border-dashed border-sbc/30 bg-green-50 p-4 md:grid-cols-[1fr_auto]">
+                                    <select value={playerCandidateId} onChange={(event) => setPlayerCandidateId(event.target.value)} className="input"><option value="">Choisir un joueur existant…</option>{availablePlayers.map((person) => <option key={person.id} value={person.id}>{person.name}</option>)}</select>
+                                    <button type="button" disabled={!playerCandidateId} onClick={addPlayer} className="rounded-xl bg-sbc px-4 py-2.5 font-black text-white disabled:opacity-40"><i className="fas fa-file-import mr-2" />Importer</button>
+                                </div>}
+                                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{editingTeam.players.map((player, index) => <article key={player.person_id} className="flex items-center gap-3 rounded-2xl border bg-white p-4">
+                                    <Avatar member={player} /><div className="min-w-0 flex-1"><p className="truncate font-black">{player.name}</p>{player.birth && <p className="text-xs text-gray-400">Né(e) le {player.birth}</p>}{isEditing ? <label className="mt-2 flex items-center gap-2 text-xs font-bold text-gray-500">N°<input type="number" min="0" max="999" value={player.num ?? ""} onChange={(event) => patchMember("players", index, { num: event.target.value ? Number(event.target.value) : null })} className="w-16 rounded-lg border px-2 py-1" /></label> : <p className="text-xs font-bold text-sbc">#{player.num || "—"}</p>}</div>
+                                    {isEditing ? <button type="button" onClick={() => removeMember("players", index)} className="h-9 w-9 rounded-lg bg-red-50 text-red-700"><i className="fas fa-trash" /></button> : <Link href={`/admin/players/${player.person_id}`} className="text-gray-300 hover:text-sbc"><i className="fas fa-chevron-right" /></Link>}
+                                </article>)}</div>
+                                {!editingTeam.players.length && <EmptyMembers text="Aucun joueur associé à cette équipe." />}
+                            </MemberSection>
+
+                            {isEditing && !availablePlayers.length && !availableCoaches.length && <p className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">Crée d’abord les joueurs et coachs depuis <Link href="/admin/players" className="font-black underline">Gestion des personnes</Link>, puis reviens les importer ici.</p>}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>}
+    </div>;
+}
+
+function ImageEditor({ label, image, editable, onChoose, aspect }: { label: string; image: string | null | undefined; editable: boolean; onChoose: () => void; aspect: string }) {
+    return <div className={`group relative overflow-hidden rounded-2xl border bg-gray-100 ${aspect}`}><img src={image || "/img/default-team.png"} alt="" className="h-full w-full object-cover" /><span className="absolute left-3 top-3 rounded-full bg-black/65 px-3 py-1 text-[10px] font-black uppercase text-white">{label}</span>{editable && <button type="button" onClick={onChoose} className="absolute inset-0 flex items-center justify-center bg-black/50 font-black text-white opacity-0 transition group-hover:opacity-100"><i className="fas fa-camera mr-2" />Changer</button>}</div>;
+}
+
+function MemberSection({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
+    return <section className="rounded-3xl border bg-white p-5 shadow-sm"><h4 className="mb-5 flex items-center gap-3 text-xl font-black"><span className="flex h-9 w-9 items-center justify-center rounded-full bg-sbc text-sm text-white"><i className={`fas ${icon}`} /></span>{title}</h4>{children}</section>;
+}
+
+function Avatar({ member }: { member: Member }) {
+    return <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-gray-100">{member.img ? <img src={member.img} alt="" className="h-full w-full object-cover" /> : <span className="flex h-full items-center justify-center text-gray-300"><i className="fas fa-user" /></span>}</div>;
+}
+
+function EmptyMembers({ text }: { text: string }) {
+    return <p className="rounded-2xl border-2 border-dashed p-7 text-center text-sm text-gray-400">{text}</p>;
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+    return <label className="block text-sm font-black text-gray-700">{label}{children}</label>;
 }

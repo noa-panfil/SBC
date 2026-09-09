@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 interface Official {
     id: number;
@@ -18,6 +19,7 @@ interface BureauMember {
 }
 
 export default function BureauManager({ officials }: { officials: Official[] }) {
+    const router = useRouter();
     const [members, setMembers] = useState<BureauMember[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -66,7 +68,8 @@ export default function BureauManager({ officials }: { officials: Official[] }) 
                 setRole("");
                 setSelectedPerson(null);
                 setSearch("");
-                fetchMembers();
+                await fetchMembers();
+                router.refresh();
             } else {
                 alert("Erreur lors de l'ajout du membre.");
             }
@@ -82,6 +85,7 @@ export default function BureauManager({ officials }: { officials: Official[] }) 
             const res = await fetch(`/api/bureau/${id}`, { method: 'DELETE' });
             if (res.ok) {
                 setMembers(prev => prev.filter(m => m.id !== id));
+                router.refresh();
             } else {
                 alert("Erreur lors de la suppression.");
             }
@@ -107,7 +111,7 @@ export default function BureauManager({ officials }: { officials: Official[] }) 
                         <div className="flex items-center gap-3 p-2 bg-sbc/10 rounded-lg border border-sbc border-dashed relative">
                             <div className="w-10 h-10 rounded-full bg-white overflow-hidden shadow-sm flex items-center justify-center shrink-0">
                                 {selectedPerson.image_id ? (
-                                    <img src={`/api/image/${selectedPerson.image_id}`} alt="" className="w-full h-full object-cover" />
+                                    <img src={`/api/image/${selectedPerson.image_id}?scope=person`} alt="" className="w-full h-full object-cover" />
                                 ) : (
                                     <i className="fas fa-user text-gray-300"></i>
                                 )}
@@ -141,7 +145,7 @@ export default function BureauManager({ officials }: { officials: Official[] }) 
                                         >
                                             <div className="w-8 h-8 rounded-full bg-gray-100 overflow-hidden shrink-0 flex items-center justify-center">
                                                 {o.image_id ? (
-                                                    <img src={`/api/image/${o.image_id}`} alt="" className="w-full h-full object-cover" />
+                                                    <img src={`/api/image/${o.image_id}?scope=person`} alt="" className="w-full h-full object-cover" />
                                                 ) : <i className="fas fa-user text-gray-300 text-xs"></i>}
                                             </div>
                                             <div className="flex flex-col flex-1 min-w-0">
@@ -189,7 +193,7 @@ export default function BureauManager({ officials }: { officials: Official[] }) 
                     <div key={member.id} className="bg-white border rounded-xl overflow-hidden shadow-sm flex items-center p-3 relative group">
                         <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 shrink-0 border-2 border-white shadow-sm mr-3">
                             {member.image_id ? (
-                                <img src={`/api/image/${member.image_id}`} alt="" className="w-full h-full object-cover" />
+                                <img src={`/api/image/${member.image_id}?scope=person`} alt="" className="w-full h-full object-cover" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-gray-50">
                                     <i className="fas fa-user text-gray-300 drop-shadow-sm"></i>

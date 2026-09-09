@@ -1,493 +1,184 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import pool from "@/lib/db";
 import { RowDataPacket } from "mysql2";
-import AdminTeamsClient from "./AdminTeamsClient";
-import AdminCoachesManager from "./AdminCoachesManager";
+import pool from "@/lib/db";
+import { authOptions } from "@/lib/auth";
+import InstallPWA from "@/components/InstallPWA";
+import VolunteersManager from "@/components/admin/VolunteersManager";
+import BureauManager from "@/components/admin/BureauManager";
 import AdminEventsManager from "./AdminEventsManager";
-
-import AdminCoachLoginsManager from "./AdminCoachLoginsManager";
-import AdminOTMManager from "./AdminOTMManager";
 import AdminAppearanceManager from "./AdminAppearanceManager";
 import AdminStoryGenerator from "./AdminStoryGenerator";
 import AdminBirthdayGenerator from "./AdminBirthdayGenerator";
-import AdminVolunteerLoginsManager from "./AdminVolunteerLoginsManager";
-import VolunteersManager from "@/components/admin/VolunteersManager";
-import BureauManager from "@/components/admin/BureauManager";
-import { authOptions } from "@/lib/auth";
-import InstallPWA from "@/components/InstallPWA";
-import AdminCoachPlanningManager from "./AdminCoachPlanningManager";
 import AdminMaintenanceManager from "./AdminMaintenanceManager";
+import AdminMatchesManager from "./AdminMatchesManager";
+import AdminTeamManagement from "./AdminTeamManagement";
 
 async function getMaintenanceMode() {
-    try {
-        const [rows] = await pool.query<RowDataPacket[]>(
-            "SELECT value FROM settings WHERE key_name = 'maintenance_mode' LIMIT 1"
-        );
-        return rows[0]?.value === 'true';
-    } catch (e) {
-        console.error("Error fetching maintenance mode", e);
-        return false;
-    }
+    const [rows] = await pool.query<RowDataPacket[]>("SELECT value FROM settings WHERE key_name = 'maintenance_mode' LIMIT 1");
+    return rows[0]?.value === "true";
 }
 
 async function getStats() {
-    try {
-        const [playerRows] = await pool.query<RowDataPacket[]>(
-            "SELECT COUNT(DISTINCT person_id) as count FROM team_members WHERE role NOT LIKE '%Coach%'"
-        );
-        const [coachRows] = await pool.query<RowDataPacket[]>(
-            "SELECT COUNT(DISTINCT person_id) as count FROM team_members WHERE role LIKE '%Coach%'"
-        );
-
-        return {
-            players: playerRows[0].count,
-            coaches: coachRows[0].count
-        };
-    } catch (e) {
-        console.error(e);
-        return { players: 0, coaches: 0 };
-    }
+    const [rows] = await pool.query<RowDataPacket[]>(`
+        SELECT
+            (SELECT COUNT(DISTINCT p.id) FROM persons p) AS persons,
+            (SELECT COUNT(DISTINCT pr.person_id)
+             FROM person_roles pr
+             JOIN roles r ON r.id = pr.role_id
+             WHERE r.code = 'player') AS players,
+            (SELECT COUNT(DISTINCT pr.person_id)
+             FROM person_roles pr
+             JOIN roles r ON r.id = pr.role_id
+             WHERE r.code IN ('coach', 'assistant_coach')) AS coaches,
+            (SELECT COUNT(DISTINCT b.person_id) FROM bureau_members b) AS bureau,
+            (SELECT COUNT(DISTINCT v.person_id) FROM volunteers v) AS volunteers
+    `);
+    const stats = rows[0];
+    return {
+        persons: Number(stats.persons),
+        players: Number(stats.players),
+        coaches: Number(stats.coaches),
+        bureau: Number(stats.bureau),
+        volunteers: Number(stats.volunteers),
+    };
 }
 
-async function getVolunteers() {
-    try {
-        const [rows] = await pool.query<RowDataPacket[]>(
-            "SELECT id, name, DATE_FORMAT(birth_date, '%d/%m/%Y') as birth_date, image, image_id, role FROM volunteers WHERE display = 1 AND birth_date IS NOT NULL ORDER BY name ASC"
-        );
-        return rows.map((v: any) => ({
-            id: v.id,
-            name: v.name,
-            birth: v.birth_date,
-            img: v.image_id ? `/api/image/${v.image_id}` : v.image,
-            role: v.role
-        }));
-    } catch (e) {
-        console.error("Error fetching volunteers", e);
-        return [];
-    }
-}
-
-async function getBureauMembersCount() {
-    try {
-        const [rows] = await pool.query<RowDataPacket[]>("SELECT COUNT(*) as count FROM bureau_members");
-        return rows[0].count;
-    } catch (e) {
-        console.error("Error fetching bureau count", e);
-        return 0;
-    }
-}
-
-async function getCoachLogins() {
-    try {
-        const [rows] = await pool.query<RowDataPacket[]>("SELECT id, firstname, lastname, email FROM login_coachs ORDER BY lastname ASC");
-        return rows.map((r: any) => ({
-            id: r.id,
-            firstname: r.firstname,
-            lastname: r.lastname,
-            email: r.email
-        }));
-    } catch (e) {
-        console.error("Error fetching coach logins", e);
-        return [];
-    }
-}
-
-async function getVolunteerLogins() {
-    try {
-        const [rows] = await pool.query<RowDataPacket[]>("SELECT id, firstname, lastname, email, volunteer_id FROM login_volunteers ORDER BY lastname ASC");
-        return rows.map((r: any) => ({
-            id: r.id,
-            firstname: r.firstname,
-            lastname: r.lastname,
-            email: r.email,
-            volunteer_id: r.volunteer_id
-        }));
-    } catch (e) {
-        console.error("Error fetching volunteer logins", e);
-        return [];
-    }
+async function getSeasons() {
+    const [rows] = await pool.query<RowDataPacket[]>("SELECT id, label, is_current FROM seasons ORDER BY starts_on DESC");
+    return rows.map((row) => ({ id: Number(row.id), label: String(row.label), is_current: Number(row.is_current) }));
 }
 
 async function getTeams() {
-    try {
-        const [teamRows] = await pool.query<RowDataPacket[]>(
-            'SELECT id, name, category, schedule, widget_id, image_id, story_image_id FROM teams ORDER BY name'
-        );
-        const [memberRows] = await pool.query<RowDataPacket[]>(
-            `SELECT tm.person_id, tm.team_id, tm.role, tm.number, p.firstname, p.lastname, p.birthdate, p.gender, p.image_id
-             FROM team_members tm
-             JOIN persons p ON tm.person_id = p.id`
-        );
-
-        const teams = teamRows.map((team: any) => {
-            const members = memberRows.filter((m: any) => m.team_id === team.id);
-
-            const coaches = members
-                .filter((m: any) => m.role.toLowerCase().includes('coach'))
-                .map((m: any) => ({
-                    person_id: m.person_id,
-                    name: `${m.firstname} ${m.lastname || ''}`.trim(),
-                    role: m.role,
-                    img: m.image_id ? `/api/image/${m.image_id}` : null,
-                    birth: m.birthdate ? new Date(m.birthdate).toLocaleDateString('fr-FR') : null,
-                    sexe: m.gender
-                }));
-
-            const players = members
-                .filter((m: any) => !m.role.toLowerCase().includes('coach'))
-                .map((m: any) => ({
-                    person_id: m.person_id,
-                    name: `${m.firstname} ${m.lastname || ''}`.trim(),
-                    num: m.number,
-                    img: m.image_id ? `/api/image/${m.image_id}` : null,
-                    birth: m.birthdate ? new Date(m.birthdate).toLocaleDateString('fr-FR') : null,
-                    sexe: m.gender
-                }));
-
-            return {
-                id: team.id.toString(),
-                name: team.name,
-                category: team.category,
-                image: team.image_id ? `/api/image/${team.image_id}` : null,
-                image_id: team.image_id, // Added: Essential for persistence on edit!
-                storyImage: team.story_image_id ? `/api/image/${team.story_image_id}` : null,
-                story_image_id: team.story_image_id,
-                schedule: team.schedule,
-                widgetId: team.widget_id,
-                coaches: coaches,
-                players: players
-            };
+    const [teamRows] = await pool.query<RowDataPacket[]>(`
+        SELECT t.id, t.season_id, t.name, t.category, t.widget_id,
+               t.image_id, t.story_image_id, s.label AS season
+        FROM teams t JOIN seasons s ON s.id = t.season_id
+        WHERE t.active = 1
+        ORDER BY s.starts_on DESC, t.display_order, t.name
+    `);
+    const [memberRows] = await pool.query<RowDataPacket[]>(`
+        SELECT tm.person_id, tm.team_id, tm.membership_role, tm.jersey_number,
+               p.firstname, p.lastname, p.birthdate, p.gender, p.image_id
+        FROM team_memberships tm JOIN persons p ON p.id = tm.person_id
+    `);
+    const [trainingSlotRows] = await pool.query<RowDataPacket[]>(`
+        SELECT team_id, schedule_text
+        FROM team_training_slots
+        ORDER BY team_id, display_order, id
+    `);
+    return teamRows.map((team) => {
+        const members = memberRows.filter((member) => Number(member.team_id) === Number(team.id));
+        const formatMember = (member: RowDataPacket) => ({
+            person_id: Number(member.person_id), name: `${member.firstname} ${member.lastname}`.trim(),
+            role: member.membership_role, num: member.jersey_number,
+            img: member.image_id ? `/api/image/${member.image_id}?scope=person` : null,
+            image_id: member.image_id, birth: member.birthdate ? new Date(member.birthdate).toLocaleDateString("fr-FR") : null,
+            sexe: member.gender,
         });
-
-        // Helper to determine sort weight
-        const getTeamWeight = (name: string) => {
-            let score = 0;
-            const n = name.toUpperCase();
-
-            // 1. Age Category (Base Score)
-            if (n.includes('BABY')) score = 100;
-            else if (n.includes('U7') || n.includes('MINI')) score = 200;
-            else if (n.includes('U9') || n.includes('POUSSIN')) score = 300;
-            else if (n.includes('U11') || n.includes('BENJAMIN')) score = 400;
-            else if (n.includes('U13') || n.includes('MINIME')) score = 500;
-            else if (n.includes('U15') || n.includes('CADET')) score = 600;
-            else if (n.includes('U17')) score = 700;
-            else if (n.includes('U18')) score = 800;
-            else if (n.includes('U20') || n.includes('JUNIOR')) score = 900;
-            else if (n.includes('SENIOR')) score = 1000;
-            else if (n.includes('LOISIR')) score = 1100;
-            else score = 9999; // Others at the end
-
-            // 2. Gender Priority (Same level: F < M)
-            // If it contains "F" (and not just in "Enfant" or generic words), give small bonus
-            // Actually, let's look for specific patterns like "U11 F", "SF", "Seniors F"
-            const isFemale = n.includes(' F') || n.includes('-F') || n.endsWith(' F') || n.includes('FILLE');
-            const isMale = n.includes(' M') || n.includes('-M') || n.endsWith(' M') || n.includes('GARCON') || n.includes(' MASC');
-
-            if (isFemale) score += 0;
-            else if (isMale) score += 5;
-            else score += 2; // Mixed/Undefined in between or after female? Usually Baby is mixed (0+2=102). U11F(400) < U11M(405).
-
-            // 3. Team Level (1 < 2 < 3)
-            if (n.includes(' 2') || n.includes('-2')) score += 1;
-            else if (n.includes(' 3') || n.includes('-3')) score += 2;
-            else if (n.includes(' 4') || n.includes('-4')) score += 3;
-
-            return score;
+        return {
+            id: String(team.id), season_id: Number(team.season_id), season: team.season,
+            name: team.name, category: team.category,
+            image: team.image_id ? `/api/image/${team.image_id}?scope=team` : null, image_id: team.image_id,
+            storyImage: team.story_image_id ? `/api/image/${team.story_image_id}?scope=team` : null, story_image_id: team.story_image_id,
+            trainingSlots: trainingSlotRows
+                .filter((slot) => Number(slot.team_id) === Number(team.id))
+                .map((slot) => String(slot.schedule_text)),
+            widgetId: team.widget_id,
+            coaches: members.filter((member) => member.membership_role !== "player").map(formatMember),
+            players: members.filter((member) => member.membership_role === "player").map(formatMember),
         };
-
-        const sortedTeams = teams.sort((a: any, b: any) => {
-            return getTeamWeight(a.name) - getTeamWeight(b.name);
-        });
-
-        return sortedTeams;
-    } catch (e) {
-        console.error(e);
-        return [];
-    }
+    });
 }
 
-async function getOtmMatches() {
-    try {
-        const [homeRows] = await pool.query<RowDataPacket[]>(`
-            SELECT *, 'home' as loc FROM otm_matches 
-        `);
-        const [awayRows] = await pool.query<RowDataPacket[]>(`
-            SELECT id, match_code, match_date, match_time, category, opponent, location, match_type, status, created_at, 'away' as loc FROM external_matches 
-        `);
-
-        const rows = [...homeRows, ...awayRows].sort((a: any, b: any) => {
-            const dateA = new Date(a.match_date).getTime();
-            const dateB = new Date(b.match_date).getTime();
-            if (dateA !== dateB) return dateA - dateB;
-            if (a.match_time && b.match_time) {
-                return a.match_time.localeCompare(b.match_time);
-            }
-            return 0;
-        });
-
-        return rows.map((row: any) => ({
-            ...row,
-            match_date: row.match_date.toISOString(),
-            created_at: row.created_at.toISOString(),
-        }));
-    } catch (e) {
-        console.error("Error fetching OTM and External matches", e);
-        return [];
-    }
+async function getVolunteersForBirthdays() {
+    const [rows] = await pool.query<RowDataPacket[]>(`
+        SELECT v.id, CONCAT(p.firstname, ' ', p.lastname) AS name,
+               DATE_FORMAT(p.birthdate, '%d/%m/%Y') AS birth_date,
+               p.image_id, v.title AS role
+        FROM volunteers v JOIN persons p ON p.id = v.person_id
+        WHERE v.display = 1 AND p.birthdate IS NOT NULL ORDER BY p.lastname, p.firstname
+    `);
+    return rows.map((row) => ({ id: row.id, name: row.name, birth: row.birth_date, img: row.image_id ? `/api/image/${row.image_id}?scope=person` : null, role: row.role }));
 }
 
-async function getAllPersons() {
-    try {
-        const [rows] = await pool.query<RowDataPacket[]>(`
-            SELECT p.id, p.firstname, p.lastname, p.image_id, t.name as team_name, tm.role
-            FROM persons p
-            LEFT JOIN team_members tm ON p.id = tm.person_id
-            LEFT JOIN teams t ON tm.team_id = t.id
-            ORDER BY p.lastname, p.firstname
-        `);
+async function getPersonsForBureau() {
+    const [rows] = await pool.query<RowDataPacket[]>(`
+        SELECT p.id, p.firstname, p.lastname, p.image_id,
+               GROUP_CONCAT(DISTINCT t.name ORDER BY t.name SEPARATOR ', ') AS teams,
+               GROUP_CONCAT(DISTINCT r.label ORDER BY r.label SEPARATOR ', ') AS roles
+        FROM persons p
+        LEFT JOIN team_memberships tm ON tm.person_id = p.id
+        LEFT JOIN teams t ON t.id = tm.team_id
+        LEFT JOIN person_roles pr ON pr.person_id = p.id
+        LEFT JOIN roles r ON r.id = pr.role_id
+        WHERE p.active = 1
+        GROUP BY p.id ORDER BY p.lastname, p.firstname
+    `);
+    return rows.map((row) => ({ id: Number(row.id), fullname: `${String(row.lastname).toUpperCase()} ${row.firstname}`.trim(), image_id: row.image_id, team: row.teams || null, role: row.roles || null }));
+}
 
-        const personMap = new Map<number, any>();
-        rows.forEach((r: any) => {
-            const fullname = `${r.lastname.toUpperCase()} ${r.firstname}`.trim();
-            if (!personMap.has(r.id)) {
-                personMap.set(r.id, {
-                    id: r.id,
-                    fullname,
-                    image_id: r.image_id,
-                    team: r.team_name,
-                    teams: r.team_name ? [r.team_name] : [],
-                    role: r.role
-                });
-            } else {
-                const existing = personMap.get(r.id);
-                // If we encounter a team name and didn't have one (or just adding to list)
-                if (r.team_name) {
-                    if (!existing.teams.includes(r.team_name)) {
-                        existing.teams.push(r.team_name);
-                    }
-                    // Prioritize non-coach team for display if current is coach or null
-                    if ((!existing.team || (existing.role && existing.role.includes('Coach'))) && r.role && !r.role.includes('Coach')) {
-                        existing.team = r.team_name;
-                        existing.role = r.role;
-                    }
-                }
-            }
-        });
-
-        // Mix in volunteers
-        const [volData] = await pool.query<RowDataPacket[]>(`
-            SELECT id, name, image_id FROM volunteers ORDER BY name
-        `);
-
-        volData.forEach((v: any) => {
-            const fullname = v.name.trim().toUpperCase();
-            // Try to find if already in persons
-            const existing = Array.from(personMap.values()).find(p => p.fullname === fullname);
-            if (!existing) {
-                // We use a negative ID for volunteers to differentiate them
-                const vId = -v.id;
-                personMap.set(vId, {
-                    id: vId,
-                    fullname: fullname,
-                    image_id: v.image_id,
-                    team: null,
-                    teams: [],
-                    role: 'Bénévole',
-                    is_volunteer: true,
-                    original_vol_id: v.id
-                });
-            } else if (!existing.role) {
-                existing.role = 'Bénévole';
-            }
-        });
-
-        return Array.from(personMap.values());
-
-    } catch (e) {
-        console.error("Error fetching all persons", e);
-        return [];
-    }
+async function getTeamCandidates() {
+    const [rows] = await pool.query<RowDataPacket[]>(`
+        SELECT p.id, p.firstname, p.lastname, p.image_id, p.gender,
+               DATE_FORMAT(p.birthdate, '%d/%m/%Y') AS birth,
+               GROUP_CONCAT(DISTINCT r.code ORDER BY r.code SEPARATOR ',') AS role_codes
+        FROM persons p
+        LEFT JOIN person_roles pr ON pr.person_id = p.id
+        LEFT JOIN roles r ON r.id = pr.role_id
+        WHERE p.active = 1
+        GROUP BY p.id
+        ORDER BY p.lastname, p.firstname
+    `);
+    return rows.map((row) => ({
+        id: Number(row.id),
+        name: `${row.firstname} ${row.lastname}`.trim(),
+        image_id: row.image_id == null ? null : Number(row.image_id),
+        img: row.image_id ? `/api/image/${row.image_id}?scope=person` : null,
+        birth: row.birth || null,
+        sexe: row.gender || "",
+        roles: row.role_codes ? String(row.role_codes).split(",") : [],
+    }));
 }
 
 export default async function AdminDashboard() {
-    const session: any = await getServerSession(authOptions);
+    const session = await getServerSession(authOptions);
+    if (!session || session.user.role !== "admin") redirect("/login");
 
-    if (!session) {
-        redirect("/login");
-    }
+    const [stats, teams, seasons, volunteers, officials, teamCandidates, maintenanceEnabled] = await Promise.all([
+        getStats(), getTeams(), getSeasons(), getVolunteersForBirthdays(), getPersonsForBureau(), getTeamCandidates(), getMaintenanceMode(),
+    ]);
 
-    if (session.user.role !== 'admin') {
-        redirect("/login");
-    }
+    const cards = [
+        { label: "Personnes", value: stats.persons, icon: "fa-users", link: "/admin/players" },
+        { label: "Joueurs", value: stats.players, icon: "fa-basketball-ball", link: "/admin/players" },
+        { label: "Coachs", value: stats.coaches, icon: "fa-user-tie", link: "/admin/players" },
+        { label: "Bureau", value: stats.bureau, icon: "fa-users-cog", link: "#bureau" },
+        { label: "Bénévoles", value: stats.volunteers, icon: "fa-hands-helping", link: "#volunteers" },
+        { label: "Équipes", value: teams.length, icon: "fa-shield-alt", link: "#teams" },
+    ];
 
-    const stats = await getStats();
-    const teams = await getTeams();
-    const volunteers = await getVolunteers();
-    const bureauCount = await getBureauMembersCount();
-    const coachLogins = await getCoachLogins();
-    const volunteerLogins = await getVolunteerLogins();
-    const otmMatches = await getOtmMatches();
-    const rawOfficials = await getAllPersons();
-    const maintenanceEnabled = await getMaintenanceMode();
+    return <div className="mx-auto w-full max-w-7xl space-y-10 overflow-x-hidden p-4 pb-20 md:p-8">
+        <header className="sticky top-0 z-40 flex flex-col gap-4 rounded-2xl border bg-white/90 p-6 shadow-sm backdrop-blur md:top-4 md:flex-row md:items-center md:justify-between">
+            <div><h1 className="text-3xl font-black">Tableau de bord</h1><p className="text-sm text-gray-500">Session : <span className="font-bold text-sbc">{session.user?.email}</span></p></div>
+            <div className="flex gap-3"><InstallPWA /><Link href="/" className="rounded-xl bg-gray-100 px-4 py-3 text-xs font-black uppercase">Voir le site</Link></div>
+        </header>
 
-    // Use officials directly without disambiguation (UI shows team and photo separately)
-    const officials = rawOfficials;
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">{cards.map((card) => <Link key={card.label} href={card.link} className="rounded-3xl border bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"><i className={`fas ${card.icon} mb-4 text-2xl text-sbc`} /><p className="text-xs font-black uppercase tracking-wider text-gray-400">{card.label}</p><p className="text-3xl font-black">{card.value}</p></Link>)}</div>
 
-    return (
-        <div className="w-full max-w-7xl mx-auto p-4 md:p-8 space-y-6 md:space-y-10 pb-20 overflow-x-hidden">
-            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/90 backdrop-blur-md sticky top-0 md:top-4 z-40 p-6 md:rounded-2xl shadow-sm border-b md:border border-gray-100 md:border-white/20">
-                <div className="w-full md:w-auto">
-                    <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">Tableau de bord</h1>
-                    <p className="text-xs md:text-sm text-gray-500 font-medium truncate">Session : <span className="text-sbc font-bold">{session.user?.email}</span></p>
-                </div>
-                <div className="flex items-center gap-3 w-full md:w-auto">
-                    <InstallPWA />
-                    <Link href="/" className="flex-1 md:flex-none justify-center px-4 py-2.5 text-xs font-black text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition flex items-center gap-2 uppercase tracking-wider">
-                        <i className="fas fa-external-link-alt text-[10px]"></i> Site public
-                    </Link>
-                    <div className={`px-3 py-2 text-[10px] font-black rounded-xl uppercase tracking-widest border ${maintenanceEnabled ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-sbc/10 text-sbc border-sbc/20'}`}>
-                        Statut : {maintenanceEnabled ? 'Maintenance' : 'En ligne'}
-                    </div>
-                </div>
-            </header>
-
-            <AdminMaintenanceManager initialEnabled={maintenanceEnabled} />
-
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
-                {[
-                    { label: "Joueurs", value: stats.players, icon: "fas fa-users", color: "from-blue-500 to-indigo-600", link: "/admin/players" },
-                    { label: "Coachs", value: stats.coaches, icon: "fas fa-user-tie", color: "from-emerald-500 to-teal-600", link: "/admin/coaches" },
-                    { label: "Planning", value: "Saison", icon: "fas fa-calendar-alt", color: "from-rose-400 to-orange-500", link: "#planning" },
-                    { label: "Bureau", value: bureauCount, icon: "fas fa-users-cog", color: "from-purple-500 to-pink-600", link: "#bureau" },
-                    { label: "Bénévoles", value: volunteers.length, icon: "fas fa-hands-helping", color: "from-orange-500 to-red-500", link: "#volunteers" },
-                    { label: "Équipes", value: teams.length, icon: "fas fa-shield-alt", color: "from-sbc to-sbc-dark", link: "#teams", fullMobile: false },
-                ].map((stat, i) => (
-                    <div key={i} className={`group relative ${stat.fullMobile ? 'col-span-2 lg:col-span-1' : 'col-span-1'}`}>
-                        {stat.link ? (
-                            <Link href={stat.link} className="absolute inset-0 z-10" />
-                        ) : null}
-                        <div className="bg-white p-5 md:p-6 rounded-2xl md:rounded-3xl shadow-sm border border-gray-100 transition-all duration-300 active:scale-95 md:hover:shadow-xl md:hover:-translate-y-1">
-                            <div className={`w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-gradient-to-br ${stat.color} text-white flex items-center justify-center text-xl md:text-2xl shadow-lg mb-3 md:mb-4 transition-transform`}>
-                                <i className={stat.icon}></i>
-                            </div>
-                            <div>
-                                <p className="text-gray-400 text-xs md:text-sm font-black uppercase tracking-widest">{stat.label}</p>
-                                <p className="text-2xl md:text-3xl font-black text-gray-900 mt-0.5 md:mt-1">{stat.value}</p>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            <section id="teams" className="scroll-mt-24">
-                <div className="flex items-center gap-3 mb-6">
-                    <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Équipes</h2>
-                    <div className="h-px flex-grow bg-gray-200"></div>
-                </div>
-                <AdminTeamsClient teams={teams} />
-            </section>
-
-            <section id="coaches" className="scroll-mt-24">
-                <div className="flex items-center gap-3 mb-6">
-                    <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Staff Technique</h2>
-                    <div className="h-px flex-grow bg-gray-200"></div>
-                </div>
-                <AdminCoachesManager teams={teams} />
-                <div className="mt-8">
-                    <AdminCoachLoginsManager initialLogins={coachLogins} />
-                </div>
-            </section>
-
-            <section id="planning" className="scroll-mt-24">
-                <div className="flex items-center gap-3 mb-6">
-                    <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Disponibilités Coachs</h2>
-                    <div className="h-px flex-grow bg-gray-200"></div>
-                </div>
-                <AdminCoachPlanningManager />
-            </section>
-
-            <section id="bureau" className="scroll-mt-24">
-                <div className="flex items-center gap-3 mb-6">
-                    <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Membres du Bureau</h2>
-                    <div className="h-px flex-grow bg-gray-200"></div>
-                </div>
-                <BureauManager officials={officials} />
-            </section>
-
-            <section id="volunteers" className="scroll-mt-24">
-                <div className="flex items-center gap-3 mb-6">
-                    <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Gestion Bénévoles</h2>
-                    <div className="h-px flex-grow bg-gray-200"></div>
-                </div>
-                <VolunteersManager />
-                <div className="mt-8">
-                    <AdminVolunteerLoginsManager initialLogins={volunteerLogins} volunteers={volunteers} />
-                </div>
-            </section>
-
-            <section id="events" className="scroll-mt-24">
-                <div className="flex items-center gap-3 mb-6">
-                    <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Événements</h2>
-                    <div className="h-px flex-grow bg-gray-200"></div>
-                </div>
-                <AdminEventsManager teams={teams} />
-            </section>
-
-            <section id="otm" className="scroll-mt-24">
-                <div className="flex items-center gap-3 mb-6">
-                    <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Gestion OTM</h2>
-                    <div className="h-px flex-grow bg-gray-200"></div>
-                </div>
-                <AdminOTMManager initialMatches={otmMatches} teams={teams} officials={officials} />
-            </section>
-
-            <section id="stories" className="scroll-mt-24">
-                <div className="flex items-center gap-3 mb-6">
-                    <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Générateur de Stories</h2>
-                    <div className="h-px flex-grow bg-gray-200"></div>
-                </div>
-                <AdminStoryGenerator teams={teams} />
-            </section>
-
-            <section id="appearance" className="scroll-mt-24">
-                <div className="flex items-center gap-3 mb-6">
-                    <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Apparence</h2>
-                    <div className="h-px flex-grow bg-gray-200"></div>
-                </div>
-                <AdminAppearanceManager />
-            </section>
-
-
-
-            <section id="birthdays" className="scroll-mt-24">
-                <div className="flex items-center gap-3 mb-6">
-                    <h2 className="text-lg md:text-2xl font-black text-gray-900 uppercase tracking-tight whitespace-nowrap">Générateur Anniversaires</h2>
-                    <div className="h-px flex-grow bg-gray-200"></div>
-                </div>
-                <AdminBirthdayGenerator teams={teams} volunteers={volunteers} />
-            </section>
-
-            <div className="bg-sbc-dark rounded-3xl md:rounded-[2.5rem] p-6 md:p-10 text-white overflow-hidden relative shadow-2xl">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-sbc-light opacity-10 rounded-full -mr-32 -mt-32"></div>
-                <div className="absolute bottom-0 left-0 w-32 h-32 bg-white opacity-5 rounded-full -ml-16 -mb-16"></div>
-
-                <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6 text-center md:text-left">
-                    <div>
-                        <h2 className="text-2xl md:text-3xl font-black mb-1">Actions rapides</h2>
-                        <p className="text-gray-400 text-xs md:text-base font-medium">Gérez votre contenu en toute simplicité.</p>
-                    </div>
-                    <div className="flex flex-wrap justify-center gap-3 w-full md:w-auto">
-                        <Link href="/admin/images" className="w-full md:w-auto bg-white/10 hover:bg-white/20 px-8 py-4 rounded-xl md:rounded-2xl font-black text-sm md:text-base uppercase tracking-widest flex items-center justify-center gap-3 transition-all backdrop-blur-sm border border-white/10">
-                            <i className="fas fa-images text-lg"></i> Médiathèque
-                        </Link>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    );
+        <section id="teams" className="scroll-mt-24"><SectionTitle>Équipes par saison</SectionTitle><AdminTeamManagement seasons={seasons} teams={teams as never[]} candidates={teamCandidates} /></section>
+        <section id="matches" className="scroll-mt-24"><SectionTitle>Matchs</SectionTitle><AdminMatchesManager teams={teams.map((team) => ({ id: Number(team.id), name: String(team.name), season_id: team.season_id }))} seasons={seasons} /></section>
+        <section id="bureau" className="scroll-mt-24"><SectionTitle>Membres du bureau</SectionTitle><BureauManager officials={officials} /></section>
+        <section id="volunteers" className="scroll-mt-24"><SectionTitle>Bénévoles</SectionTitle><VolunteersManager /></section>
+        <section id="events" className="scroll-mt-24"><SectionTitle>Événements</SectionTitle><AdminEventsManager teams={teams as never[]} /></section>
+        <section id="stories" className="scroll-mt-24"><SectionTitle>Stories</SectionTitle><AdminStoryGenerator teams={teams as never[]} /></section>
+        <section id="appearance" className="scroll-mt-24"><SectionTitle>Apparence</SectionTitle><AdminAppearanceManager /></section>
+        <section id="birthdays" className="scroll-mt-24"><SectionTitle>Anniversaires</SectionTitle><AdminBirthdayGenerator teams={teams as never[]} volunteers={volunteers} /></section>
+        <AdminMaintenanceManager initialEnabled={maintenanceEnabled} />
+    </div>;
 }
 
+function SectionTitle({ children }: { children: React.ReactNode }) {
+    return <div className="mb-6 flex items-center gap-3"><h2 className="whitespace-nowrap text-xl font-black uppercase tracking-tight md:text-2xl">{children}</h2><div className="h-px flex-1 bg-gray-200" /></div>;
+}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { getTeamPath } from "@/lib/teamUrl";
 
 // Types
 interface Event {
@@ -236,7 +237,7 @@ function BirthdaySection() {
                 function processPerson(person: any, teamName: string, teamId: string, roleLabel: string) {
                     if (!person.birth) return;
                     const parts = person.birth.split("/");
-                    if (parts.length === 3) {
+                    if (parts.length >= 2) {
                         const birthDay = parseInt(parts[0], 10);
                         const birthMonth = parseInt(parts[1], 10) - 1;
 
@@ -335,15 +336,6 @@ function BirthdaySection() {
                         </div>
                         <div className="flex flex-wrap justify-center gap-6">
                             {todaysBirthdays.map((p, i) => {
-                                const parts = p.birth.split("/");
-                                let birthYear = parseInt(parts[2], 10);
-                                const currentYear = new Date().getFullYear();
-                                if (birthYear < 100) {
-                                    const currentYearShort = currentYear - 2000;
-                                    birthYear += birthYear > currentYearShort ? 1900 : 2000;
-                                }
-                                const age = currentYear - birthYear;
-
                                 return (
                                     <div key={i} className="flex flex-col items-center max-w-xs w-full bg-white rounded-3xl p-6 shadow-[0_0_30px_rgba(234,179,8,0.2)] border-2 border-yellow-400 relative overflow-hidden transform hover:scale-105 transition duration-500">
                                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-300 via-orange-500 to-red-500"></div>
@@ -389,16 +381,6 @@ function BirthdaySection() {
                 {/* OTHER BIRTHDAYS */}
                 <div className="flex flex-wrap justify-center gap-6 w-full">
                     {otherBirthdays.map((p, i) => {
-                        const parts = p.birth.split("/");
-                        let birthYear = parseInt(parts[2], 10);
-                        const currentYear = new Date().getFullYear();
-                        if (birthYear < 100) {
-                            const currentYearShort = currentYear - 2000;
-                            birthYear += birthYear > currentYearShort ? 1900 : 2000;
-                        }
-                        const age = currentYear - birthYear;
-                        const pronoun = p.sexe === "F" ? "Elle" : "Il";
-
                         return (
                             <div key={i} className={`bg-white rounded-xl shadow-md p-4 flex items-center gap-4 w-full md:w-[calc(50%-12px)] lg:w-[calc(33.33%-16px)] xl:w-[calc(25%-18px)] border-l-4 ${p.day < todayDay ? 'border-gray-200 grayscale opacity-60' : 'border-sbc hover:shadow-lg transition transform hover:-translate-y-1'}`}>
                                 <div className="relative flex-shrink-0">
@@ -420,7 +402,7 @@ function BirthdaySection() {
                                             {p.teamsData.map((t, idx) => (
                                                 <span key={idx}>
                                                     {idx > 0 && " / "}
-                                                    <Link href={`/equipe/${t.id}`} className="text-gray-600 hover:text-sbc hover:underline transition font-medium">{t.name}</Link>
+                                                    <Link href={getTeamPath(t.name)} className="text-gray-600 hover:text-sbc hover:underline transition font-medium">{t.name}</Link>
                                                 </span>
                                             ))}
                                         </span>

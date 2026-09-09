@@ -1,6 +1,6 @@
 "use client";
 
-import { signIn, getSession, signOut } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -9,29 +9,17 @@ export default function LoginPage() {
     const [logoUrl, setLogoUrl] = useState("/logo.png");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [rememberMe, setRememberMe] = useState(false);
-    const [savedAccount, setSavedAccount] = useState<any>(null);
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
-        // Load saved account
-        const saved = localStorage.getItem('sbc_saved_account');
-        if (saved) {
-            try {
-                setSavedAccount(JSON.parse(saved));
-            } catch (e) {
-                console.error("Error parsing saved account", e);
-            }
-        }
-
         fetch('/api/settings')
             .then(res => res.json())
             .then(data => {
                 /*
                 if (data.site_logo_id) {
-                    setLogoUrl(`/api/image/${data.site_logo_id}`);
+                    setLogoUrl(`/api/image/${data.site_logo_id}?scope=setting`);
                 }
                 */
             })
@@ -53,26 +41,7 @@ export default function LoginPage() {
                 setError("Email ou mot de passe incorrect");
                 setIsLoading(false);
             } else {
-                const session: any = await getSession();
-
-                // Save account if requested
-                if (rememberMe || (savedAccount && savedAccount.email === loginEmail)) {
-                    localStorage.setItem('sbc_saved_account', JSON.stringify({
-                        email: loginEmail,
-                        password: loginPass, // Note: Storing password locally is not secure standard practice but requested for auto-login
-                        name: session?.user?.name || "Utilisateur",
-                        role: session?.user?.role || "user",
-                        picture: null // We don't have avatar URL easily here unless we fetch it, skipping for now
-                    }));
-                }
-
-                if (session?.user?.role === 'coach') {
-                    router.push("/coach");
-                } else if (session?.user?.role === 'volunteer') {
-                    router.push("/volunteer");
-                } else {
-                    router.push("/admin");
-                }
+                router.push("/admin");
             }
         } catch (err) {
             setError("Une erreur est survenue");
@@ -83,18 +52,6 @@ export default function LoginPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         handleLogin(email, password);
-    };
-
-    const loginWithSavedAccount = () => {
-        if (savedAccount) {
-            handleLogin(savedAccount.email, savedAccount.password);
-        }
-    };
-
-    const removeSavedAccount = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        localStorage.removeItem('sbc_saved_account');
-        setSavedAccount(null);
     };
 
     return (
@@ -156,21 +113,6 @@ export default function LoginPage() {
                         </div>
                     </div>
 
-                    <div className="flex items-center ml-1">
-                        <label className="flex items-center gap-3 cursor-pointer group">
-                            <input
-                                type="checkbox"
-                                className="w-5 h-5 rounded border-2 border-white/20 bg-white/5 checked:bg-sbc checked:border-sbc transition focus:ring-2 focus:ring-sbc/50 outline-none appearance-none cursor-pointer"
-                                checked={rememberMe}
-                                onChange={(e) => setRememberMe(e.target.checked)}
-                            />
-                            <div className={`absolute pointer-events-none transition-opacity ${rememberMe ? 'opacity-100' : 'opacity-0'}`}>
-                                <i className="fas fa-check text-white text-xs ml-0.5"></i>
-                            </div>
-                            <span className="text-sm font-bold text-gray-400 group-hover:text-white transition select-none">Rester connecté</span>
-                        </label>
-                    </div>
-
                     <button
                         type="submit"
                         disabled={isLoading}
@@ -179,35 +121,6 @@ export default function LoginPage() {
                         {isLoading ? <i className="fas fa-spinner fa-spin"></i> : <>Connexion <i className="fas fa-arrow-right text-sm"></i></>}
                     </button>
                 </form>
-
-                {savedAccount && !email && (
-                    <div className="mt-8 pt-8 border-t border-white/10 animate-fade-in-up">
-                        <p className="text-gray-400 text-xs font-black uppercase tracking-widest mb-4 ml-2">Compte enregistré</p>
-                        <div
-                            onClick={loginWithSavedAccount}
-                            className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl p-4 flex items-center gap-4 cursor-pointer transition group relative"
-                        >
-                            <div className="w-12 h-12 rounded-full bg-sbc flex items-center justify-center text-white text-xl font-bold border-2 border-white/10">
-                                {savedAccount.name.charAt(0)}
-                            </div>
-                            <div className="flex-1">
-                                <h4 className="text-white font-bold group-hover:text-sbc transition">{savedAccount.name}</h4>
-                                <p className="text-gray-400 text-xs">{savedAccount.role === 'coach' ? 'Coach' : savedAccount.role === 'volunteer' ? 'Bénévole' : 'Admin'}</p>
-                            </div>
-                            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 group-hover:bg-sbc group-hover:text-white transition">
-                                <i className="fas fa-sign-in-alt"></i>
-                            </div>
-
-                            <button
-                                onClick={removeSavedAccount}
-                                className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition hover:bg-red-600 shadow-lg"
-                                title="Oublier ce compte"
-                            >
-                                <i className="fas fa-times"></i>
-                            </button>
-                        </div>
-                    </div>
-                )}
 
                 <div className="mt-8 text-center">
                     <Link href="/" className="text-gray-500 hover:text-white text-sm font-bold transition">

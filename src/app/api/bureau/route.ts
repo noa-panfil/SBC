@@ -1,58 +1,22 @@
-import { NextResponse } from 'next/server';
-import pool from '@/lib/db';
-import { ResultSetHeader, RowDataPacket } from 'mysql2';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { ResultSetHeader, RowDataPacket } from "mysql2";
+import pool from "@/lib/db";
+import { authOptions } from "@/lib/auth";
 
 export async function GET() {
-    try {
-        const [rows] = await pool.query<RowDataPacket[]>(
-            `SELECT 
-                b.id, b.role, b.display_order,
-                COALESCE(p.image_id, v.image_id, NULL) as image_id,
-                COALESCE(NULLIF(TRIM(CONCAT(p.lastname, ' ', p.firstname)), ''), v.name) as fullname
-             FROM bureau_members b
-             LEFT JOIN persons p ON b.person_id = p.id
-             LEFT JOIN volunteers v ON b.volunteer_id = v.id
-             ORDER BY b.display_order ASC, b.role ASC, p.lastname ASC, v.name ASC`
-        );
-        return NextResponse.json(rows);
-    } catch (e) {
-        console.error("Error fetching bureau members:", e);
-        return NextResponse.json({ error: "Interal Server Error" }, { status: 500 });
-    }
+    const [rows] = await pool.query<RowDataPacket[]>("SELECT b.id, b.person_id, CONCAT(p.firstname, ' ', p.lastname) AS fullname, b.title AS role, p.image_id FROM bureau_members b JOIN persons p ON p.id = b.person_id ORDER BY b.display_order, b.id");
+    return NextResponse.json(rows);
 }
 
-export async function POST(req: Request) {
+export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
-    if (session?.user?.role !== 'admin') {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    try {
-        const body = await req.json();
-        const { id, role } = body;
-
-        if (!id || !role) {
-            return NextResponse.json({ error: "Missing fields" }, { status: 400 });
-        }
-
-        let person_id = null;
-        let volunteer_id = null;
-
-        // Volunteers have negative IDs
-        if (id < 0) {
-            volunteer_id = Math.abs(id);
-        } else {
-            person_id = id;
-        }
-
-        const [result] = await pool.query<ResultSetHeader>(
-            "INSERT INTO bureau_members (person_id, volunteer_id, role) VALUES (?, ?, ?)",
-            [person_id, volunteer_id, role]
-        );
-        return NextResponse.json({ success: true, id: result.insertId }, { status: 201 });
-    } catch (e) {
-        console.error("Error adding bureau member:", e);
-        return NextResponse.json({ error: "Interal Server Error" }, { status: 500 });
-    }
+    if (session?.user?.role !== "admin") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const body = await request.json().catch(() => null); const personId = Number(body?.id); const title = String(body?.role || "").trim();
+    if (!personId || !title) return NextResponse.json({ error: "Personne et fonction requises." }, { status: 400 });
+    const [season] = await pool.query<RowDataPacket[]>("SELECT id FROM seasons WHERE is_current = 1 ORDER BY starts_on DESC LIMIT 1");
+    const [result] = await pool.query<ResultSetHeader>("INSERT INTO bureau_members (person_id, season_id, title) VALUES (?, ?, ?)", [personId, season[0]?.id || null, title]);
+    const [role] = await pool.query<RowDataPacket[]>("SELECT id FROM roles WHERE code = 'board_member'");
+    await pool.query("INSERT IGNORE INTO person_roles (person_id, role_id) VALUES (?, ?)", [personId, role[0].id]);
+    return NextResponse.json({ id: result.insertId }, { status: 201 });
 }

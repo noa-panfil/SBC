@@ -4,11 +4,11 @@ import Header from "./Header";
 import Footer from "./Footer";
 import { usePathname } from "next/navigation";
 
-import { PWARegistration } from "@/components/PushSubscriptionManager";
+import PWARegistration from "@/components/PWARegistration";
 
 export default function RootLayoutClient({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
-    const isDashboard = pathname?.startsWith("/admin") || pathname?.startsWith("/coach") || pathname === "/login" || pathname === "/maintenance" || pathname?.startsWith("/widget");
+    const isDashboard = pathname?.startsWith("/admin") || pathname === "/login" || pathname === "/maintenance" || pathname?.startsWith("/widget");
 
     return (
         <>

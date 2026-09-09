@@ -31,11 +31,10 @@ jobs:
             git clean -fd
             
             echo "Installation des dépendances..."
-            npm install
+            npm ci
             
             echo "Construction du projet Next.js..."
-            # On ignore les erreurs de BDD au build pour éviter de bloquer si le .env est partiel
-            npm run build || echo "Build terminé avec warnings"
+            npm run build
             
             echo "Redémarrage de l'application via PM2..."
             # On recharge le processus PM2 nommé "sbc"

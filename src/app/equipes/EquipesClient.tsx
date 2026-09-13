@@ -1,6 +1,7 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { getTeamPath } from "@/lib/teamUrl";
 
@@ -10,163 +11,99 @@ interface Team {
     image: string;
     trainingSlots: string[];
     widgetId: string;
-    coaches: any[];
-    players: any[];
+    coaches: unknown[];
+    players: unknown[];
+}
+
+const getTeamWeight = (name: string) => {
+    let score = 0;
+    const normalizedName = name.toUpperCase();
+    if (normalizedName.includes("BABY")) score = 100;
+    else if (normalizedName.includes("U7") || normalizedName.includes("MINI")) score = 200;
+    else if (normalizedName.includes("U9") || normalizedName.includes("POUSSIN")) score = 300;
+    else if (normalizedName.includes("U11") || normalizedName.includes("BENJAMIN")) score = 400;
+    else if (normalizedName.includes("U13") || normalizedName.includes("MINIME")) score = 500;
+    else if (normalizedName.includes("U15") || normalizedName.includes("CADET")) score = 600;
+    else if (normalizedName.includes("U17")) score = 700;
+    else if (normalizedName.includes("U18")) score = 800;
+    else if (normalizedName.includes("U20") || normalizedName.includes("U21") || normalizedName.includes("JUNIOR") || normalizedName.includes("ESPOIR")) score = 900;
+    else if (normalizedName.includes("SENIOR")) score = 1000;
+    else if (normalizedName.includes("LOISIR")) score = 1100;
+    else score = 9999;
+    if (normalizedName.includes(" M") || normalizedName.includes("-M") || normalizedName.includes("GARCON") || normalizedName.includes(" MASC")) score += 5;
+    else if (!(normalizedName.includes(" F") || normalizedName.includes("-F") || normalizedName.includes("FILLE"))) score += 2;
+    if (normalizedName.includes(" 2") || normalizedName.includes("-2")) score += 1;
+    else if (normalizedName.includes(" 3") || normalizedName.includes("-3")) score += 2;
+    else if (normalizedName.includes(" 4") || normalizedName.includes("-4")) score += 3;
+    return score;
+};
+
+function TeamCard({ id, team, isFavorite, onToggleFavorite }: { id: string; team: Team; isFavorite: boolean; onToggleFavorite: (event: React.MouseEvent, id: string) => void }) {
+    return (
+        <article className="group relative overflow-hidden rounded-[1.75rem] border border-gray-200/80 bg-white shadow-[0_8px_35px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_55px_rgba(8,43,29,0.16)]">
+            <Link href={getTeamPath(team.name)} className="block focus:outline-none focus:ring-4 focus:ring-inset focus:ring-sbc/25">
+                <div className="relative aspect-[4/3] overflow-hidden bg-[#e8ebe5]">
+                    <img src={team.image} alt={`Équipe ${team.name} du Seclin Basket Club`} className="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-[1.045]" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#061d14] via-[#082b1d]/10 to-transparent" />
+                    <span className="absolute left-5 top-5 rounded-full border border-white/30 bg-white/90 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-sbc-dark shadow-sm backdrop-blur">{team.category}</span>
+                    <div className="absolute inset-x-0 bottom-0 p-5 text-white sm:p-6">
+                        <h3 className="text-2xl font-black tracking-[-0.04em] sm:text-3xl">{team.name}</h3>
+                        <div className="mt-3 flex items-center gap-4 text-xs font-bold text-white/75"><span><i className="fas fa-users mr-1.5 text-green-300" />{team.players.length} joueur{team.players.length > 1 ? "s" : ""}</span><span><i className="fas fa-user-tie mr-1.5 text-green-300" />{team.coaches.length} coach{team.coaches.length > 1 ? "s" : ""}</span></div>
+                    </div>
+                </div>
+                <div className="flex items-center justify-between px-5 py-4 sm:px-6"><span className="text-sm font-black text-gray-950">Découvrir l’équipe</span><span className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-950 text-white transition group-hover:bg-sbc"><i className="fas fa-arrow-right text-xs" /></span></div>
+            </Link>
+            <button type="button" onClick={(event) => onToggleFavorite(event, id)} aria-label={isFavorite ? `Retirer ${team.name} des favoris` : `Ajouter ${team.name} aux favoris`} aria-pressed={isFavorite} className="absolute right-5 top-5 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white shadow-lg backdrop-blur transition hover:scale-105 hover:bg-black/65 focus:outline-none focus:ring-4 focus:ring-white/40"><i className={`${isFavorite ? "fas text-yellow-300" : "far"} fa-star`} /></button>
+        </article>
+    );
 }
 
 export default function Equipes() {
     const [teamsData, setTeamsData] = useState<Record<string, Team>>({});
-    const [favorites, setFavorites] = useState<string[]>([]);
+    const [favorites, setFavorites] = useState<string[]>(() => {
+        if (typeof window === "undefined") return [];
+        try {
+            const stored = JSON.parse(localStorage.getItem("sbc_favorites") || "[]");
+            return Array.isArray(stored) ? stored.map(String) : [];
+        } catch { return []; }
+    });
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
 
     useEffect(() => {
-        // Load Favorites
-        const storedFavs = localStorage.getItem('sbc_favorites');
-        if (storedFavs) {
-            setFavorites(JSON.parse(storedFavs));
-        }
-
-        // Load Teams
-        fetch('/api/teams')
-            .then(res => res.json())
-            .then(data => {
-                setTeamsData(data);
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error(err);
-                setLoading(false);
-            });
+        fetch("/api/teams", { cache: "no-store" })
+            .then(async (response) => { const data = await response.json(); if (!response.ok) throw new Error(data.error || "Impossible de charger les équipes."); setTeamsData(data); })
+            .catch((reason) => setError(reason instanceof Error ? reason.message : "Impossible de charger les équipes."))
+            .finally(() => setLoading(false));
     }, []);
 
-    const toggleFavorite = (e: React.MouseEvent, id: string) => {
-        e.preventDefault();
-        e.stopPropagation();
+    const sortedTeams = useMemo(() => Object.entries(teamsData).sort(([, a], [, b]) => getTeamWeight(a.name) - getTeamWeight(b.name)), [teamsData]);
+    const favoriteTeams = sortedTeams.filter(([id]) => favorites.includes(id));
+    const otherTeams = sortedTeams.filter(([id]) => !favorites.includes(id));
 
-        let newFavs = [...favorites];
-        if (newFavs.includes(id)) {
-            newFavs = newFavs.filter(fav => fav !== id);
-        } else {
-            newFavs.push(id);
-        }
-        setFavorites(newFavs);
-        localStorage.setItem('sbc_favorites', JSON.stringify(newFavs));
+    const toggleFavorite = (event: React.MouseEvent, id: string) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setFavorites((current) => {
+            const next = current.includes(id) ? current.filter((favorite) => favorite !== id) : [...current, id];
+            localStorage.setItem("sbc_favorites", JSON.stringify(next));
+            return next;
+        });
     };
 
-    const TeamCard = ({ id, team, isFav }: { id: string, team: Team, isFav: boolean }) => (
-        <Link href={getTeamPath(team.name)} className="group block bg-white rounded-xl shadow-md overflow-hidden hover:shadow-2xl transition relative fade-in">
-            <div className="h-56 overflow-hidden relative">
-                <img src={team.image} alt={`${team.name} - Équipe Seclin Basket Club`} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
+    const renderGrid = (teams: [string, Team][]) => <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">{teams.map(([id, team]) => <TeamCard key={id} id={id} team={team} isFavorite={favorites.includes(id)} onToggleFavorite={toggleFavorite} />)}</div>;
 
-                <div className="absolute top-0 left-0 bg-sbc text-white font-bold px-3 py-1 text-sm rounded-br-lg shadow-sm">
-                    {team.category}
-                </div>
-
-                <button onClick={(e) => toggleFavorite(e, id)}
-                    className="absolute top-2 right-2 z-20 w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center transition shadow-lg backdrop-blur-sm group-hover:scale-110">
-                    <i className={`${isFav ? "fas fa-star text-yellow-400" : "far fa-star text-white hover:text-yellow-300"} text-xl transition-colors duration-300 drop-shadow-md`}></i>
-                </button>
-            </div>
-            <div className="p-6">
-                <h3 className="text-xl font-bold group-hover:text-sbc transition flex items-center justify-between">
-                    {team.name}
-                </h3>
-                <p className="text-gray-500 mt-2 text-sm flex items-center">
-                    Voir l'effectif <i className="fas fa-arrow-right ml-2 opacity-0 group-hover:opacity-100 transition-opacity transform group-hover:translate-x-1"></i>
-                </p>
-            </div>
-        </Link>
-    );
-
-    if (loading) {
-        return (
-            <main className="container mx-auto px-4 py-12 flex-grow fade-in text-center">
-                <h1 className="text-4xl font-bold text-sbc-dark">Nos Équipes</h1>
-                <p className="text-gray-600 mt-2">Saison 2026 - 2027</p>
-                <div className="mt-12 text-gray-500">Chargement des équipes...</div>
-            </main>
-        )
-    }
-
-    // Sorting Logic (Same as Admin)
-    const getTeamWeight = (name: string) => {
-        let score = 0;
-        const n = name.toUpperCase();
-
-        // 1. Age Category (Base Score)
-        if (n.includes('BABY')) score = 100;
-        else if (n.includes('U7') || n.includes('MINI')) score = 200;
-        else if (n.includes('U9') || n.includes('POUSSIN')) score = 300;
-        else if (n.includes('U11') || n.includes('BENJAMIN')) score = 400;
-        else if (n.includes('U13') || n.includes('MINIME')) score = 500;
-        else if (n.includes('U15') || n.includes('CADET')) score = 600;
-        else if (n.includes('U17')) score = 700;
-        else if (n.includes('U18')) score = 800;
-        else if (n.includes('U20') || n.includes('U21') || n.includes('JUNIOR') || n.includes('ESPOIR')) score = 900;
-        else if (n.includes('SENIOR')) score = 1000;
-        else if (n.includes('LOISIR')) score = 1100;
-        else score = 9999;
-
-        // 2. Gender Priority (Same level: F < M)
-        const isFemale = n.includes(' F') || n.includes('-F') || n.endsWith(' F') || n.includes('FILLE');
-        const isMale = n.includes(' M') || n.includes('-M') || n.endsWith(' M') || n.includes('GARCON') || n.includes(' MASC');
-
-        if (isFemale) score += 0;
-        else if (isMale) score += 5;
-        else score += 2;
-
-        // 3. Team Level (1 < 2 < 3)
-        if (n.includes(' 2') || n.includes('-2')) score += 1;
-        else if (n.includes(' 3') || n.includes('-3')) score += 2;
-        else if (n.includes(' 4') || n.includes('-4')) score += 3;
-
-        return score;
-    };
-
-    const favoriteTeams = Object.entries(teamsData)
-        .filter(([id]) => favorites.includes(id))
-        .sort(([, a], [, b]) => getTeamWeight(a.name) - getTeamWeight(b.name));
-
-    const displayedMainTeams = (favorites.length > 0
-        ? Object.entries(teamsData).filter(([id]) => !favorites.includes(id))
-        : Object.entries(teamsData)
-    ).sort(([, a], [, b]) => getTeamWeight(a.name) - getTeamWeight(b.name));
-
-    return (
-        <>
-            <header className="bg-white py-12 shadow-sm text-center relative overflow-hidden">
-                <div className="relative z-10">
-                    <h1 className="text-4xl font-bold text-sbc-dark mb-4 uppercase tracking-wide">Nos Équipes</h1>
-                    <p className="text-gray-600">Saison 2026 - 2027</p>
-                </div>
-                <i className="fas fa-basketball-ball absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-9xl text-gray-100 -z-0"></i>
-            </header>
-
-            <main className="container mx-auto px-4 py-12 flex-grow fade-in">
-                {favorites.length > 0 && (
-                    <section id="favorites-section" className="mb-16 border-b border-gray-200 pb-12">
-                        <h2 className="text-2xl font-bold text-yellow-600 mb-6 flex items-center gap-2">
-                            <i className="fas fa-star"></i> Mes Favoris
-                        </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {favoriteTeams.map(([id, team]) => (
-                                <TeamCard key={id} id={id} team={team} isFav={true} />
-                            ))}
-                        </div>
-                    </section>
-                )}
-
-                <section>
-                    <h2 className="text-2xl font-bold text-sbc-dark mb-6 flex items-center gap-2">
-                        <i className="fas fa-users"></i> {favorites.length > 0 ? "Autres équipes" : "Toutes les équipes"}
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {displayedMainTeams.map(([id, team]) => (
-                            <TeamCard key={id} id={id} team={team} isFav={false} />
-                        ))}
-                    </div>
-                </section>
-            </main>
-        </>
-    );
+    return <main className="min-h-screen bg-[#f7f7f5]">
+        <section className="relative isolate overflow-hidden bg-[#082b1d] text-white">
+            <div className="absolute inset-0 -z-10 opacity-80 [background:radial-gradient(circle_at_14%_8%,rgba(34,197,94,.3),transparent_29%),radial-gradient(circle_at_86%_80%,rgba(249,115,22,.2),transparent_30%)]" />
+            <div className="container mx-auto px-4 py-12 md:py-16 lg:py-20"><p className="text-xs font-black uppercase tracking-[0.24em] text-green-300">Seclin Basket Club</p><h1 className="mt-4 max-w-5xl text-5xl font-black leading-[0.9] tracking-[-0.055em] sm:text-6xl md:text-7xl lg:text-8xl">Une équipe pour <span className="text-green-400">chaque passion.</span></h1><p className="mt-6 max-w-2xl text-base leading-7 text-green-50/70 md:text-lg">Retrouvez les collectifs du club, leurs joueurs, leurs coachs et les informations de la saison 2026–2027.</p><a href="#equipes" className="mt-8 inline-flex items-center gap-3 rounded-full bg-white px-6 py-3.5 font-black text-gray-950 transition hover:bg-green-100">Voir les équipes <i className="fas fa-arrow-down text-xs" /></a></div>
+        </section>
+        <section className="border-b border-gray-200 bg-white"><div className="container mx-auto grid divide-y divide-gray-100 px-4 sm:grid-cols-3 sm:divide-x sm:divide-y-0"><div className="flex items-center gap-3 py-5 sm:px-5"><i className="fas fa-users text-xl text-sbc" /><div><p className="text-sm font-black text-gray-950">{sortedTeams.length || "—"} équipes</p><p className="text-xs text-gray-500">Des plus jeunes aux seniors</p></div></div><div className="flex items-center gap-3 py-5 sm:px-5"><i className="fas fa-basketball-ball text-xl text-sbc" /><div><p className="text-sm font-black text-gray-950">Saison 2026–2027</p><p className="text-xs text-gray-500">Effectifs et informations</p></div></div><div className="flex items-center gap-3 py-5 sm:px-5"><i className="far fa-star text-xl text-sbc" /><div><p className="text-sm font-black text-gray-950">Vos favoris</p><p className="text-xs text-gray-500">Gardez vos équipes en tête</p></div></div></div></section>
+        <div id="equipes" className="container mx-auto space-y-14 px-4 py-12 md:py-20">
+            {loading && <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">{[1, 2, 3, 4, 5, 6].map((value) => <div key={value} className="overflow-hidden rounded-[1.75rem] border border-gray-200 bg-white"><div className="aspect-[4/3] animate-pulse bg-gray-200" /><div className="h-20 animate-pulse bg-white" /></div>)}</div>}
+            {error && <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-900"><p className="font-black">Les équipes n’ont pas pu être chargées.</p><p className="mt-1 text-sm">{error}</p><button onClick={() => location.reload()} className="mt-4 rounded-xl bg-red-700 px-4 py-2 font-bold text-white">Réessayer</button></div>}
+            {!loading && !error && favoriteTeams.length > 0 && <section><div className="mb-7 flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-full bg-yellow-100 text-yellow-600"><i className="fas fa-star" /></span><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-yellow-600">Accès rapide</p><h2 className="text-2xl font-black tracking-tight text-gray-950">Mes favoris</h2></div></div>{renderGrid(favoriteTeams)}</section>}
+            {!loading && !error && <section><div className="mb-7"><p className="text-xs font-black uppercase tracking-[0.22em] text-sbc">Les collectifs</p><h2 className="mt-2 text-3xl font-black tracking-[-0.04em] text-gray-950 md:text-5xl">{favoriteTeams.length ? "Toutes les autres équipes" : "Toutes les équipes"}</h2></div>{otherTeams.length ? renderGrid(otherTeams) : <div className="rounded-3xl border-2 border-dashed border-gray-200 bg-white px-6 py-16 text-center text-gray-500">Aucune autre équipe à afficher.</div>}</section>}
+        </div>
+    </main>;
 }

@@ -18,11 +18,11 @@ export async function POST(request: NextRequest) {
     try {
         await connection.beginTransaction();
         let personId = Number(body.id) || 0;
-        const values = [body.firstname.trim(), body.lastname.trim(), body.birthdate || null, body.gender || null, body.email || null, body.phone || null, body.image_id || null, body.active ? 1 : 0];
+        const values = [body.firstname.trim(), body.lastname.trim(), body.birthdate || null, body.gender || null, body.email || null, body.phone || null, body.image_id || null, body.celebration_image_id || null, body.active ? 1 : 0];
         if (personId) {
-            await connection.query("UPDATE persons SET firstname=?, lastname=?, birthdate=?, gender=?, email=?, phone=?, image_id=?, active=? WHERE id=?", [...values, personId]);
+            await connection.query("UPDATE persons SET firstname=?, lastname=?, birthdate=?, gender=?, email=?, phone=?, image_id=?, celebration_image_id=?, active=? WHERE id=?", [...values, personId]);
         } else {
-            const [insert] = await connection.query<ResultSetHeader>("INSERT INTO persons (firstname, lastname, birthdate, gender, email, phone, image_id, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", values);
+            const [insert] = await connection.query<ResultSetHeader>("INSERT INTO persons (firstname, lastname, birthdate, gender, email, phone, image_id, celebration_image_id, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", values);
             personId = insert.insertId;
         }
 

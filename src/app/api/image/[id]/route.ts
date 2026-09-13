@@ -32,20 +32,20 @@ export async function GET(
                     EXISTS(
                         SELECT 1 FROM persons p
                         JOIN volunteers v ON v.person_id = p.id
-                        WHERE p.image_id = ? AND p.active = 1 AND v.display = 1
+                        WHERE (p.image_id = ? OR p.celebration_image_id = ?) AND p.active = 1 AND v.display = 1
                     ) OR EXISTS(
                         SELECT 1 FROM persons p
                         JOIN bureau_members b ON b.person_id = p.id
-                        WHERE p.image_id = ? AND p.active = 1
+                        WHERE (p.image_id = ? OR p.celebration_image_id = ?) AND p.active = 1
                     ) OR EXISTS(
                         SELECT 1 FROM persons p
                         JOIN team_memberships tm ON tm.person_id = p.id
                         JOIN teams t ON t.id = tm.team_id
                         JOIN seasons s ON s.id = t.season_id
-                        WHERE p.image_id = ? AND p.active = 1 AND t.active = 1 AND s.is_current = 1
+                        WHERE (p.image_id = ? OR p.celebration_image_id = ?) AND p.active = 1 AND t.active = 1 AND s.is_current = 1
                     )
                 ) AS is_public`,
-                [id, id, id]
+                [id, id, id, id, id, id]
             );
             isPublic = Boolean(visibilityRows[0]?.is_public);
 

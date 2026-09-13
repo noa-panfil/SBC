@@ -14,7 +14,7 @@ async function getPlayers() {
                 p.lastname, 
                 p.birthdate, 
                 p.gender, 
-                p.image_id, p.active,
+                p.image_id, p.celebration_image_id, p.active,
                 GROUP_CONCAT(DISTINCT CONCAT(s.label, ' · ', t.name) ORDER BY s.starts_on DESC SEPARATOR ', ') as teams,
                 GROUP_CONCAT(DISTINCT r.label ORDER BY r.label SEPARATOR ', ') AS roles
             FROM persons p
@@ -28,7 +28,8 @@ async function getPlayers() {
         `);
         return rows.map(row => ({
             id: Number(row.id), firstname: String(row.firstname), lastname: String(row.lastname),
-            image_id: row.image_id == null ? null : Number(row.image_id), teams: row.teams || null,
+            image_id: row.image_id == null ? null : Number(row.image_id),
+            celebration_image_id: row.celebration_image_id == null ? null : Number(row.celebration_image_id), teams: row.teams || null,
             roles: row.roles || null, active: Number(row.active),
             birthdate: row.birthdate ? new Date(row.birthdate).toISOString() : null
         }));

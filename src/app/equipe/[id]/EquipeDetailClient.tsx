@@ -1,6 +1,14 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
+
+type PersonPhoto = {
+    firstname: string;
+    name: string;
+    img: string | null;
+    celebrationImg: string | null;
+};
 
 interface Team {
     id: number;
@@ -9,8 +17,8 @@ interface Team {
     image: string;
     trainingSlots: string[];
     widgetId: string;
-    coaches: { name: string; role: string; img: string | null; firstname: string }[];
-    players: { name: string; num: number; img: string | null; firstname: string }[];
+    coaches: (PersonPhoto & { role: string })[];
+    players: (PersonPhoto & { num: number | null })[];
 }
 
 interface EquipeDetailClientProps {
@@ -18,111 +26,135 @@ interface EquipeDetailClientProps {
     logoUrl: string;
 }
 
+function PortraitLayers({ person, logoUrl }: { person: PersonPhoto; logoUrl: string }) {
+    if (!person.img && !person.celebrationImg) {
+        return (
+            <div className="absolute inset-0 flex items-center justify-center">
+                <img src={logoUrl} alt="" className="w-28 opacity-20 grayscale sm:w-36" />
+            </div>
+        );
+    }
+
+    const classicPhoto = person.img || person.celebrationImg;
+    return (
+        <>
+            {classicPhoto && (
+                <img
+                    src={classicPhoto}
+                    alt={`Portrait de ${person.firstname}`}
+                    className={`absolute inset-0 h-full w-full object-cover object-top drop-shadow-[0_20px_22px_rgba(0,0,0,0.22)] transition duration-500 ease-out motion-reduce:transition-none ${person.celebrationImg ? "group-hover:scale-[1.025] group-hover:opacity-0 group-focus:scale-[1.025] group-focus:opacity-0" : "group-hover:scale-[1.025] group-focus:scale-[1.025]"}`}
+                />
+            )}
+            {person.celebrationImg && (
+                <img
+                    src={person.celebrationImg}
+                    alt={`${person.firstname} en célébration`}
+                    className="absolute inset-0 h-full w-full scale-[0.985] object-cover object-top opacity-0 drop-shadow-[0_20px_22px_rgba(0,0,0,0.28)] transition duration-500 ease-out group-hover:scale-100 group-hover:opacity-100 group-focus:scale-100 group-focus:opacity-100 motion-reduce:transition-none"
+                />
+            )}
+        </>
+    );
+}
+
+function PlayerCard({ player, logoUrl }: { player: Team["players"][number]; logoUrl: string }) {
+    const displayNumber = player.num == null ? "—" : String(player.num).padStart(2, "0");
+    return (
+        <article
+            tabIndex={0}
+            aria-label={`${player.firstname}${player.num == null ? "" : `, numéro ${player.num}`}${player.celebrationImg ? ". Survolez pour voir la célébration." : ""}`}
+            className="group relative isolate aspect-[4/5] overflow-hidden rounded-[1.75rem] bg-[#eceee8] outline-none transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_65px_rgba(8,43,29,0.18)] focus:-translate-y-1 focus:ring-4 focus:ring-sbc/25"
+        >
+            <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_75%_14%,rgba(74,222,128,.3),transparent_27%),linear-gradient(145deg,#f4f5f1_0%,#e5e9e1_100%)]" />
+            <span className="absolute -right-2 top-0 -z-10 select-none text-[7.5rem] font-black leading-none tracking-[-0.09em] text-sbc/8 sm:text-[10rem]">
+                {displayNumber}
+            </span>
+            <div className="absolute inset-0 overflow-hidden">
+                <PortraitLayers person={player} logoUrl={logoUrl} />
+            </div>
+            <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-[#082b1d] via-[#082b1d]/95 to-transparent px-5 pb-5 pt-20 text-white sm:px-7 sm:pb-7">
+                <div className="flex items-end justify-between gap-3">
+                    <div className="min-w-0">
+                        <h3 className="truncate text-3xl font-black tracking-[-0.05em] sm:text-4xl">{player.firstname || player.name}</h3>
+                    </div>
+                    <span className="shrink-0 text-6xl font-black leading-[0.72] tracking-[-0.08em] text-green-400 sm:text-7xl">{displayNumber}</span>
+                </div>
+            </div>
+        </article>
+    );
+}
+
+function CoachCard({ coach, logoUrl }: { coach: Team["coaches"][number]; logoUrl: string }) {
+    return (
+        <article
+            tabIndex={0}
+            aria-label={`${coach.firstname}, ${coach.role}${coach.celebrationImg ? ". Survolez pour voir la seconde photo." : ""}`}
+            className="group relative isolate aspect-[4/5] overflow-hidden rounded-[1.75rem] bg-[#0b3425] text-white outline-none transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_65px_rgba(8,43,29,0.24)] focus:-translate-y-1 focus:ring-4 focus:ring-sbc/25"
+        >
+            <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_78%_10%,rgba(74,222,128,.28),transparent_30%),linear-gradient(145deg,#164d36,#082b1d)]" />
+            <div className="absolute inset-0 overflow-hidden">
+                <PortraitLayers person={coach} logoUrl={logoUrl} />
+            </div>
+            <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-[#061d14] via-[#061d14]/95 to-transparent px-5 pb-5 pt-20 sm:px-7 sm:pb-7">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-green-300">{coach.role}</p>
+                <h3 className="mt-1 truncate text-2xl font-black tracking-[-0.04em] sm:text-3xl">{coach.firstname || coach.name}</h3>
+            </div>
+        </article>
+    );
+}
+
 export default function EquipeDetailClient({ team, logoUrl }: EquipeDetailClientProps) {
     if (!team) return (
-        <div className='text-center p-12 mt-12'>
-            <h1 className='text-2xl font-bold'>Équipe introuvable</h1>
-            <Link href='/equipes' className='text-sbc underline'>Retour des équipes</Link>
-        </div>
+        <main className="flex min-h-[60vh] items-center justify-center bg-[#f7f7f5] px-4 text-center">
+            <div>
+                <p className="text-xs font-black uppercase tracking-[0.22em] text-sbc">Erreur 404</p>
+                <h1 className="mt-2 text-3xl font-black text-gray-950">Équipe introuvable</h1>
+                <Link href="/equipes" className="mt-6 inline-flex rounded-full bg-gray-950 px-6 py-3 font-black text-white transition hover:bg-sbc">Retour aux équipes</Link>
+            </div>
+        </main>
     );
 
     return (
-        <>
-            <div className="bg-sbc-dark text-white py-12">
-                <div className="container mx-auto px-4">
-                    <Link href="/equipes" className="text-gray-300 hover:text-white mb-4 inline-block text-sm">
-                        <i className="fas fa-arrow-left mr-1"></i> Retour aux équipes
+        <main className="min-h-screen bg-[#f7f7f5]">
+            <section className="relative isolate overflow-hidden bg-[#082b1d] text-white">
+                <img src={team.image} alt="" className="absolute inset-0 -z-20 h-full w-full object-cover opacity-25 mix-blend-luminosity" />
+                <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,#082b1d_12%,rgba(8,43,29,.9)_52%,rgba(8,43,29,.45)),radial-gradient(circle_at_85%_20%,rgba(249,115,22,.25),transparent_30%)]" />
+                <div className="container mx-auto px-4 py-12 md:py-16 lg:py-20">
+                    <Link href="/equipes" className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-green-100/75 transition hover:text-white">
+                        <i className="fas fa-arrow-left" />Toutes les équipes
                     </Link>
-                    <h1 className="text-4xl md:text-5xl font-bold">{team.name}</h1>
-                    <span className="inline-block bg-sbc-light text-sbc-dark font-bold px-3 py-1 rounded mt-3">{team.category}</span>
+                    <div className="mt-10 max-w-4xl">
+                        <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-green-200 backdrop-blur">{team.category}</span>
+                        <h1 className="mt-5 text-5xl font-black leading-[0.88] tracking-[-0.06em] sm:text-6xl md:text-7xl lg:text-8xl">{team.name}</h1>
+                        <p className="mt-6 max-w-xl text-base leading-7 text-green-50/70 md:text-lg">Le groupe, le staff et toutes les informations de la saison.</p>
+                    </div>
                 </div>
+            </section>
+
+            <section className="border-b border-gray-200 bg-white">
+                <div className="container mx-auto px-4 py-7 md:py-8">
+                    <div className="flex flex-col gap-5 md:flex-row md:items-start">
+                        <div className="flex shrink-0 items-center gap-3 md:w-64"><span className="flex h-11 w-11 items-center justify-center rounded-full bg-green-50 text-sbc"><i className="far fa-clock" /></span><div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-sbc">Cette saison</p><h2 className="font-black text-gray-950">Entraînements</h2></div></div>
+                        {team.trainingSlots.length > 0 ? <div className="grid flex-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">{team.trainingSlots.map((slot, index) => <div key={index} className="rounded-2xl border border-gray-200 bg-[#f7f7f5] px-4 py-3 text-sm font-bold text-gray-800"><i className="fas fa-calendar-day mr-2 text-sbc" />{slot}</div>)}</div> : <p className="py-3 text-sm text-gray-500">Horaires non communiqués.</p>}
+                    </div>
+                </div>
+            </section>
+
+            <div className="container mx-auto space-y-16 px-4 py-12 md:space-y-24 md:py-20">
+                <section aria-labelledby="players-title">
+                    <div className="mb-8 flex items-end justify-between gap-5">
+                        <h2 id="players-title" className="text-3xl font-black tracking-[-0.04em] text-gray-950 md:text-5xl">L’effectif</h2>
+                        <span className="rounded-full bg-white px-4 py-2 text-sm font-black text-gray-500 shadow-sm">{team.players.length} joueur{team.players.length > 1 ? "s" : ""}</span>
+                    </div>
+                    {team.players.length > 0 ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">{team.players.map((player, index) => <PlayerCard key={`${player.firstname}-${index}`} player={player} logoUrl={logoUrl} />)}</div> : <div className="rounded-3xl border-2 border-dashed border-gray-200 bg-white px-6 py-16 text-center text-gray-500">Effectif non communiqué.</div>}
+                </section>
+
+                {team.coaches.length > 0 && <section aria-labelledby="staff-title">
+                    <div className="mb-8"><p className="text-xs font-black uppercase tracking-[0.22em] text-sbc">Autour du groupe</p><h2 id="staff-title" className="mt-2 text-3xl font-black tracking-[-0.04em] text-gray-950 md:text-5xl">Le staff</h2></div>
+                    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">{team.coaches.map((coach, index) => <CoachCard key={`${coach.firstname}-${index}`} coach={coach} logoUrl={logoUrl} />)}</div>
+                </section>}
+
+                {team.widgetId && <section aria-labelledby="results-title"><div className="mb-8"><p className="text-xs font-black uppercase tracking-[0.22em] text-sbc">Compétition</p><h2 id="results-title" className="mt-2 text-3xl font-black tracking-[-0.04em] text-gray-950 md:text-5xl">Résultats & classement</h2></div><div className="overflow-hidden rounded-[1.75rem] border border-gray-200 bg-white shadow-sm"><iframe src={`/widget/${team.widgetId}`} className="block min-h-[800px] w-full border-0" title="Résultats et classement" /></div></section>}
             </div>
-
-            <main className="container mx-auto px-4 py-12 flex flex-col lg:grid lg:grid-cols-3 gap-12 flex-grow fade-in">
-                <div className="lg:col-span-1 space-y-8">
-                    <div className="bg-white p-6 rounded-xl shadow border-l-4 border-sbc">
-                        <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><i className="far fa-clock text-sbc"></i>
-                            Horaires d'entraînement</h3>
-                        {team.trainingSlots.length > 0 ? <ul className="space-y-3">
-                            {team.trainingSlots.map((slot, index) => <li key={index} className="flex items-start gap-3 text-gray-700 font-medium">
-                                <i className="fas fa-calendar-day mt-1 text-sbc" />
-                                <span>{slot}</span>
-                            </li>)}
-                        </ul> : <p className="text-gray-500">Horaires non communiqués.</p>}
-                    </div>
-                    <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
-                        <h3 className="text-xl font-bold mb-6 text-sbc-dark flex items-center gap-2">
-                            <i className="fas fa-user-tie"></i> Coachs
-                        </h3>
-                        <div className="space-y-4">
-                            {team.coaches && team.coaches.map((c, i) => (
-                                <div key={i} className="relative overflow-hidden flex items-center gap-5 p-4 rounded-xl bg-sbc-dark text-white shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group">
-                                    <div className="absolute right-0 top-0 w-24 h-full bg-white/5 skew-x-12 translate-x-12 group-hover:translate-x-8 transition-transform"></div>
-                                    <img src={logoUrl} alt="" className="absolute -right-6 -bottom-6 w-24 opacity-10 grayscale rotate-12 group-hover:rotate-0 transition-all duration-500" />
-
-                                    <div className="relative flex-shrink-0">
-                                        <div className="absolute inset-0 bg-sbc-light rounded-full blur-md opacity-20 group-hover:opacity-40 transition-opacity"></div>
-                                        <img src={c.img || logoUrl} alt={`Coach ${c.name}`} className="relative w-16 h-16 rounded-full object-cover border-2 border-sbc-light/30 shadow-sm" />
-                                    </div>
-
-                                    <div className="relative z-10 flex-grow">
-                                        <h4 className="font-bold text-lg leading-tight tracking-wide group-hover:text-sbc-light transition-colors">
-                                            {c.firstname || 'INCONNU'}
-                                        </h4>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <span className="w-2 h-2 rounded-full bg-sbc-light animate-pulse"></span>
-                                            <p className="text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                                                {c.role}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                    {team.widgetId && (
-                        <iframe
-                            src={`/widget/${team.widgetId}`}
-                            className="hidden lg:block lg:col-span-1 lg:col-start-1 lg:row-start-2 mt-6 w-full border-0"
-                            style={{ minHeight: '500px', height: '800px' }}
-                            title="Résultats et Classement"
-                        ></iframe>
-                    )}
-                </div>
-
-                <div className="lg:col-span-2">
-                    <h2 className="text-2xl font-bold border-b-2 border-gray-200 pb-2 mb-6 text-sbc-dark flex items-center gap-3">
-                        <img src={logoUrl} alt="Logo Seclin Basket Club - SBC" className="h-8 w-auto" /> Effectif Joueurs
-                    </h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-                        {team.players && team.players.length > 0 ? team.players.map((p, i) => (
-                            <div key={i} className="group relative bg-white p-6 rounded-2xl shadow hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 overflow-hidden text-center">
-                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sbc to-sbc-light"></div>
-                                <div className="relative inline-block mb-4">
-                                    <div className="absolute inset-0 bg-sbc rounded-full blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
-                                    <img src={p.img || logoUrl} alt={p.name} className="relative w-24 h-24 rounded-full object-cover border-4 border-white shadow-md group-hover:scale-105 transition-transform duration-300" />
-                                    <span className="absolute -bottom-2 -right-2 bg-gradient-to-br from-sbc to-sbc-dark text-white text-sm font-bold h-8 w-8 flex items-center justify-center rounded-full border-2 border-white shadow-lg">
-                                        #{p.num}
-                                    </span>
-                                </div>
-                                <h4 className="font-bold text-gray-800 text-lg group-hover:text-sbc transition-colors leading-tight">
-                                    {p.firstname || p.name}
-                                </h4>
-                            </div>
-                        )) : (
-                            <p className="text-gray-500 col-span-full">Effectif non communiqué.</p>
-                        )}
-                    </div>
-                    {team.widgetId && (
-                        <iframe
-                            src={`/widget/${team.widgetId}`}
-                            className="block lg:hidden mt-6 w-full border-0"
-                            style={{ minHeight: '500px', height: '800px' }}
-                            title="Résultats et Classement Mobile"
-                        ></iframe>
-                    )}
-                </div>
-            </main>
-        </>
+        </main>
     );
 }

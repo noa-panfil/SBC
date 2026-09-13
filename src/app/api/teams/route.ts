@@ -14,12 +14,16 @@ export async function GET() {
         // 2. Fetch All Members
         const [memberRows] = await pool.query<RowDataPacket[]>(
             `SELECT tm.team_id, tm.membership_role, tm.jersey_number, p.firstname,
-                    DATE_FORMAT(p.birthdate, '%d/%m') AS birthday, p.gender, p.image_id
+                    DATE_FORMAT(p.birthdate, '%d/%m') AS birthday, p.gender, p.image_id,
+                    p.celebration_image_id
        FROM team_memberships tm
        JOIN persons p ON tm.person_id = p.id
        JOIN teams t ON t.id = tm.team_id
        JOIN seasons s ON s.id = t.season_id
-       WHERE p.active = 1 AND t.active = 1 AND s.is_current = 1`
+       WHERE p.active = 1 AND t.active = 1 AND s.is_current = 1
+       ORDER BY tm.team_id,
+                CASE WHEN tm.membership_role = 'player' THEN 0 ELSE 1 END,
+                tm.jersey_number IS NULL, tm.jersey_number, p.firstname`
         );
         const [trainingSlotRows] = await pool.query<RowDataPacket[]>(
             `SELECT team_id, schedule_text
@@ -28,32 +32,34 @@ export async function GET() {
         );
 
         // 3. Reconstruct JSON Structure
-        const teamsData: Record<string, any> = {};
+        const teamsData: Record<string, object> = {};
 
         for (const team of teamRows) {
             // Resolve Image URL
-            const imageUrl = team.image_id ? `/api/image/${team.image_id}?scope=team` : '/img/default-team.png';
+            const imageUrl = team.image_id ? `/api/image/${team.image_id}?scope=team` : '/logo.png';
 
-            const members = memberRows.filter((m: any) => m.team_id === team.id);
+            const members = memberRows.filter((member) => Number(member.team_id) === Number(team.id));
 
             const coaches = members
-                .filter((m: any) => m.membership_role !== 'player')
-                .map((m: any) => ({
-                    name: m.firstname,
-                    role: m.membership_role,
-                    img: m.image_id ? `/api/image/${m.image_id}?scope=person` : null,
-                    birth: m.birthday || null,
-                    sexe: m.gender
+                .filter((member) => member.membership_role !== 'player')
+                .map((member) => ({
+                    name: member.firstname,
+                    role: member.membership_role,
+                    img: member.image_id ? `/api/image/${member.image_id}?scope=person` : null,
+                    celebrationImg: member.celebration_image_id ? `/api/image/${member.celebration_image_id}?scope=person` : null,
+                    birth: member.birthday || null,
+                    sexe: member.gender
                 }));
 
             const players = members
-                .filter((m: any) => m.membership_role === 'player')
-                .map((m: any) => ({
-                    name: m.firstname,
-                    num: m.jersey_number,
-                    img: m.image_id ? `/api/image/${m.image_id}?scope=person` : null,
-                    birth: m.birthday || null,
-                    sexe: m.gender
+                .filter((member) => member.membership_role === 'player')
+                .map((member) => ({
+                    name: member.firstname,
+                    num: member.jersey_number,
+                    img: member.image_id ? `/api/image/${member.image_id}?scope=person` : null,
+                    celebrationImg: member.celebration_image_id ? `/api/image/${member.celebration_image_id}?scope=person` : null,
+                    birth: member.birthday || null,
+                    sexe: member.gender
                 }));
 
             teamsData[team.id] = {
@@ -61,8 +67,8 @@ export async function GET() {
                 category: team.category,
                 image: imageUrl,
                 trainingSlots: trainingSlotRows
-                    .filter((slot: any) => Number(slot.team_id) === Number(team.id))
-                    .map((slot: any) => String(slot.schedule_text)),
+                    .filter((slot) => Number(slot.team_id) === Number(team.id))
+                    .map((slot) => String(slot.schedule_text)),
                 widgetId: team.widget_id,
                 coaches,
                 players

@@ -23,7 +23,7 @@ const getTeamData = cache(async (id: string) => {
             : teamRows.find((row) => slugifyTeamName(String(row.name)) === decodedId);
 
         if (!team) return null;
-        const imageUrl = team.image_id ? `/api/image/${team.image_id}?scope=team` : '/img/default-team.png';
+        const imageUrl = team.image_id ? `/api/image/${team.image_id}?scope=team` : '/logo.png';
 
         const [trainingSlotRows] = await pool.query<RowDataPacket[]>(
             `SELECT schedule_text
@@ -35,29 +35,33 @@ const getTeamData = cache(async (id: string) => {
 
         // 2. Fetch Members
         const [memberRows] = await pool.query<RowDataPacket[]>(
-            `SELECT tm.membership_role, tm.jersey_number, p.firstname, p.image_id
+            `SELECT tm.membership_role, tm.jersey_number, p.firstname, p.image_id, p.celebration_image_id
              FROM team_memberships tm
              JOIN persons p ON tm.person_id = p.id
-             WHERE tm.team_id = ?`,
+             WHERE tm.team_id = ?
+             ORDER BY CASE WHEN tm.membership_role = 'player' THEN 0 ELSE 1 END,
+                      tm.jersey_number IS NULL, tm.jersey_number, p.firstname`,
             [team.id]
         );
 
         const coaches = memberRows
-            .filter((m: any) => m.membership_role !== 'player')
-            .map((m: any) => ({
-                firstname: m.firstname,
-                name: m.firstname,
-                role: m.membership_role === 'assistant_coach' ? 'Coach adjoint' : 'Coach',
-                img: m.image_id ? `/api/image/${m.image_id}?scope=person` : null
+            .filter((member) => member.membership_role !== 'player')
+            .map((member) => ({
+                firstname: member.firstname,
+                name: member.firstname,
+                role: member.membership_role === 'assistant_coach' ? 'Coach adjoint' : 'Coach',
+                img: member.image_id ? `/api/image/${member.image_id}?scope=person` : null,
+                celebrationImg: member.celebration_image_id ? `/api/image/${member.celebration_image_id}?scope=person` : null
             }));
 
         const players = memberRows
-            .filter((m: any) => m.membership_role === 'player')
-            .map((m: any) => ({
-                firstname: m.firstname,
-                name: m.firstname,
-                num: m.jersey_number,
-                img: m.image_id ? `/api/image/${m.image_id}?scope=person` : null
+            .filter((member) => member.membership_role === 'player')
+            .map((member) => ({
+                firstname: member.firstname,
+                name: member.firstname,
+                num: member.jersey_number,
+                img: member.image_id ? `/api/image/${member.image_id}?scope=person` : null,
+                celebrationImg: member.celebration_image_id ? `/api/image/${member.celebration_image_id}?scope=person` : null
             }));
 
         return {

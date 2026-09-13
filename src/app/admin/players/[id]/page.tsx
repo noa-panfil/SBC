@@ -13,13 +13,13 @@ async function getData(id: string) {
         WHERE t.active = 1 ORDER BY s.starts_on DESC, t.display_order, t.name
     `);
     if (id === "new") return {
-        person: { id: null, firstname: "", lastname: "", birthdate: "", gender: "", email: "", phone: "", image_id: null, active: true, roles: [], memberships: [] }, roles, teams,
+        person: { id: null, firstname: "", lastname: "", birthdate: "", gender: "", email: "", phone: "", image_id: null, celebration_image_id: null, active: true, roles: [], memberships: [] }, roles, teams,
     };
     const numericId = Number(id);
     if (!Number.isSafeInteger(numericId) || numericId < 1) return null;
     const [people] = await pool.query<RowDataPacket[]>(`
         SELECT id, firstname, lastname, DATE_FORMAT(birthdate, '%Y-%m-%d') AS birthdate,
-               gender, email, phone, image_id, active FROM persons WHERE id = ?
+               gender, email, phone, image_id, celebration_image_id, active FROM persons WHERE id = ?
     `, [numericId]);
     if (!people.length) return null;
     const [personRoles] = await pool.query<RowDataPacket[]>("SELECT r.code FROM person_roles pr JOIN roles r ON r.id = pr.role_id WHERE pr.person_id = ?", [numericId]);

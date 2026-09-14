@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import PalmaresClient from './PalmaresClient';
+import PalmaresClient from './vitrine/TrophyRoomPalmares';
 
 export const metadata: Metadata = {
     title: 'Palmarès | Seclin Basket Club',

@@ -15,6 +15,7 @@ const menuItems = [
     { name: "Anniversaires", icon: "fas fa-birthday-cake", href: "/admin#birthdays" },
     { name: "Apparence", icon: "fas fa-paint-brush", href: "/admin#appearance" },
     { name: "Boutique", icon: "fas fa-shopping-basket", href: "/admin/boutique" },
+    { name: "Contacts", icon: "fas fa-inbox", href: "/admin/contacts" },
 ];
 
 export default function AdminSidebar() {
@@ -38,7 +39,7 @@ export default function AdminSidebar() {
                 {/* Navigation */}
                 <nav className="flex-grow mt-6 px-3 space-y-2">
                     {menuItems.map((item) => {
-                        const isActive = pathname === item.href;
+                        const isActive = pathname === item.href || (item.href !== "/admin" && !item.href.includes("#") && pathname.startsWith(`${item.href}/`));
                         return (
                             <Link
                                 key={item.name}
@@ -75,8 +76,8 @@ export default function AdminSidebar() {
 
             {/* Mobile Bottom Navigation - Visible only on mobile */}
             <div className="md:hidden fixed bottom-4 left-4 right-4 bg-white/90 backdrop-blur-xl border border-white/20 px-6 py-4 z-[100] flex justify-between items-center shadow-2xl rounded-[2rem]">
-                {menuItems.filter((item) => ["/admin", "/admin/players", "/admin/boutique"].includes(item.href)).map((item) => {
-                    const isActive = pathname === item.href;
+                {menuItems.filter((item) => ["/admin", "/admin/players", "/admin/boutique", "/admin/contacts"].includes(item.href)).map((item) => {
+                    const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(`${item.href}/`));
                     return (
                         <Link
                             key={item.name}

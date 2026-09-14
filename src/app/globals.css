@@ -107,4 +107,20 @@ body {
   .input {
     @apply mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 font-normal outline-none transition focus:border-green-600 focus:ring-1 focus:ring-green-600;
   }
+
+  .sbc-da-hero {
+    height: 500px;
+  }
+
+  @media (min-width: 640px) {
+    .sbc-da-hero { height: 430px; }
+  }
+
+  @media (min-width: 768px) {
+    .sbc-da-hero { height: 410px; }
+  }
+
+  @media (min-width: 1024px) {
+    .sbc-da-hero { height: 390px; }
+  }
 }

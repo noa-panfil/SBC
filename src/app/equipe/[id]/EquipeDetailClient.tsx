@@ -115,17 +115,17 @@ export default function EquipeDetailClient({ team, logoUrl }: EquipeDetailClient
 
     return (
         <main className="min-h-screen bg-[#f7f7f5]">
-            <section className="relative isolate overflow-hidden bg-[#082b1d] text-white">
+            <section className="sbc-da-hero relative isolate overflow-hidden bg-[#082b1d] text-white">
                 <img src={team.image} alt="" className="absolute inset-0 -z-20 h-full w-full object-cover opacity-25 mix-blend-luminosity" />
                 <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,#082b1d_12%,rgba(8,43,29,.9)_52%,rgba(8,43,29,.45)),radial-gradient(circle_at_85%_20%,rgba(249,115,22,.25),transparent_30%)]" />
-                <div className="container mx-auto px-4 py-12 md:py-16 lg:py-20">
+                <div className="container mx-auto flex h-full flex-col justify-center px-4">
                     <Link href="/equipes" className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-green-100/75 transition hover:text-white">
                         <i className="fas fa-arrow-left" />Toutes les équipes
                     </Link>
-                    <div className="mt-10 max-w-4xl">
+                    <div className="mt-6 max-w-4xl">
                         <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-green-200 backdrop-blur">{team.category}</span>
-                        <h1 className="mt-5 text-5xl font-black leading-[0.88] tracking-[-0.06em] sm:text-6xl md:text-7xl lg:text-8xl">{team.name}</h1>
-                        <p className="mt-6 max-w-xl text-base leading-7 text-green-50/70 md:text-lg">Le groupe, le staff et toutes les informations de la saison.</p>
+                        <h1 className="mt-4 text-4xl font-black leading-[0.95] tracking-[-0.04em] sm:text-5xl md:text-6xl">{team.name}</h1>
+                        <p className="mt-5 max-w-xl text-base leading-7 text-green-50/70 md:text-lg">Le groupe, le staff et toutes les informations de la saison.</p>
                     </div>
                 </div>
             </section>

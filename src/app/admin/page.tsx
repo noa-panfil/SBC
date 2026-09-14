@@ -33,7 +33,8 @@ async function getStats() {
              JOIN roles r ON r.id = pr.role_id
              WHERE r.code IN ('coach', 'assistant_coach')) AS coaches,
             (SELECT COUNT(DISTINCT b.person_id) FROM bureau_members b) AS bureau,
-            (SELECT COUNT(DISTINCT v.person_id) FROM volunteers v) AS volunteers
+            (SELECT COUNT(DISTINCT v.person_id) FROM volunteers v) AS volunteers,
+            (SELECT COUNT(*) FROM contact_messages WHERE status = 'new') AS contacts
     `);
     const stats = rows[0];
     return {
@@ -42,6 +43,7 @@ async function getStats() {
         coaches: Number(stats.coaches),
         bureau: Number(stats.bureau),
         volunteers: Number(stats.volunteers),
+        contacts: Number(stats.contacts),
     };
 }
 
@@ -157,6 +159,7 @@ export default async function AdminDashboard() {
         { label: "Bureau", value: stats.bureau, icon: "fa-users-cog", link: "#bureau" },
         { label: "Bénévoles", value: stats.volunteers, icon: "fa-hands-helping", link: "#volunteers" },
         { label: "Équipes", value: teams.length, icon: "fa-shield-alt", link: "#teams" },
+        { label: "Contacts", value: stats.contacts, icon: "fa-inbox", link: "/admin/contacts" },
     ];
 
     return <div className="mx-auto w-full max-w-7xl space-y-10 overflow-x-hidden p-4 pb-20 md:p-8">
@@ -165,7 +168,7 @@ export default async function AdminDashboard() {
             <div className="flex gap-3"><InstallPWA /><Link href="/" className="rounded-xl bg-gray-100 px-4 py-3 text-xs font-black uppercase">Voir le site</Link></div>
         </header>
 
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">{cards.map((card) => <Link key={card.label} href={card.link} className="rounded-3xl border bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"><i className={`fas ${card.icon} mb-4 text-2xl text-sbc`} /><p className="text-xs font-black uppercase tracking-wider text-gray-400">{card.label}</p><p className="text-3xl font-black">{card.value}</p></Link>)}</div>
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">{cards.map((card) => <Link key={card.label} href={card.link} className="rounded-3xl border bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"><i className={`fas ${card.icon} mb-4 text-2xl text-sbc`} /><p className="text-xs font-black uppercase tracking-wider text-gray-400">{card.label}</p><p className="text-3xl font-black">{card.value}</p></Link>)}</div>
 
         <section id="teams" className="scroll-mt-24"><SectionTitle>Équipes par saison</SectionTitle><AdminTeamManagement seasons={seasons} teams={teams as never[]} candidates={teamCandidates} /></section>
         <section id="matches" className="scroll-mt-24"><SectionTitle>Matchs</SectionTitle><AdminMatchesManager teams={teams.map((team) => ({ id: Number(team.id), name: String(team.name), season_id: team.season_id }))} seasons={seasons} /></section>

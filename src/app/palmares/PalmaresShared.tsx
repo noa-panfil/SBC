@@ -48,10 +48,10 @@ export function PalmaresHero({ eyebrow, title, accent, description, years, disti
     years: number;
     distinctions: number;
 }) {
-    return <section className="relative isolate overflow-hidden bg-[#082b1d] text-white">
+    return <section className="sbc-da-hero relative isolate overflow-hidden bg-[#082b1d] text-white">
         <div className="absolute inset-0 -z-20 opacity-90 [background:radial-gradient(circle_at_13%_8%,rgba(34,197,94,.34),transparent_29%),radial-gradient(circle_at_88%_78%,rgba(249,115,22,.23),transparent_28%)]" />
-        <div className="absolute -right-20 top-1/2 -z-10 h-80 w-80 -translate-y-1/2 rounded-full border-[52px] border-white/[0.035]" />
-        <div className="container mx-auto px-4 py-12 md:py-16">
+        <img src="/logo.png" alt="" className="pointer-events-none absolute -right-10 top-1/2 -z-10 w-72 -translate-y-1/2 object-contain opacity-[0.075] grayscale sm:w-80 lg:right-10" />
+        <div className="container mx-auto flex h-full flex-col justify-center px-4">
             <p className="text-xs font-black uppercase tracking-[0.24em] text-green-300">{eyebrow}</p>
             <h1 className="mt-4 max-w-5xl text-4xl font-black leading-[0.95] tracking-[-0.04em] sm:text-5xl md:text-6xl">{title} <span className="text-green-400">{accent}</span></h1>
             <div className="mt-6 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">

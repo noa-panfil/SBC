@@ -1,9 +1,9 @@
-import { Metadata } from 'next';
-import PartenairesClient from './PartenairesClient';
+import type { Metadata } from "next";
+import PartenairesClient from "./PartenairesClient";
 
 export const metadata: Metadata = {
-    title: 'Nos Partenaires | Seclin Basket Club',
-    description: 'Merci à tous nos partenaires qui soutiennent le Seclin Basket Club.',
+    title: "Nos partenaires | Seclin Basket Club",
+    description: "Découvrez les entreprises et acteurs locaux qui soutiennent le Seclin Basket Club et contribuent à son projet sportif.",
 };
 
 export default function PartenairesPage() {

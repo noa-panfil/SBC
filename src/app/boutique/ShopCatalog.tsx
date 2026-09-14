@@ -365,9 +365,10 @@ export default function ShopCatalog() {
     }, []);
 
     return <>
-        <section className="relative isolate overflow-hidden bg-[#082b1d] text-white">
-            <div className="absolute inset-0 -z-10 opacity-70 [background:radial-gradient(circle_at_15%_10%,rgba(34,197,94,.28),transparent_30%),radial-gradient(circle_at_85%_80%,rgba(249,115,22,.18),transparent_30%)]" />
-            <div className="container mx-auto px-4 py-12 md:py-16">
+        <section className="sbc-da-hero relative isolate overflow-hidden bg-[#082b1d] text-white">
+            <div className="absolute inset-0 -z-20 opacity-70 [background:radial-gradient(circle_at_15%_10%,rgba(34,197,94,.28),transparent_30%),radial-gradient(circle_at_85%_80%,rgba(249,115,22,.18),transparent_30%)]" />
+            <img src="/logo.png" alt="" className="pointer-events-none absolute -right-10 top-1/2 -z-10 w-72 -translate-y-1/2 object-contain opacity-[0.075] grayscale sm:w-80 lg:right-10" />
+            <div className="container mx-auto flex h-full flex-col justify-center px-4">
                 <div className="w-full"><h1 className="w-full text-4xl font-black leading-[0.95] tracking-[-0.04em] sm:text-5xl md:text-6xl">Les couleurs du club, <span className="text-green-400">sur le terrain</span> comme en gradin.</h1><p className="mt-5 max-w-3xl text-base leading-7 text-green-50/75 md:text-lg">Découvrez les vêtements officiels du Seclin Basket Club, disponibles en plusieurs couleurs et tailles.</p><div className="mt-7 flex flex-wrap gap-3"><a href="#collection" className="rounded-full bg-white px-6 py-3.5 font-black text-gray-950 transition hover:bg-green-100">Découvrir la collection</a><Link href="/boutique/panier" className="inline-flex items-center gap-3 rounded-full border border-white/20 bg-white/10 px-6 py-3.5 font-black text-white backdrop-blur transition hover:bg-white/20"><i className="fas fa-shopping-bag" />Panier <span className="rounded-full bg-green-400 px-2.5 py-1 text-xs text-green-950">{count}</span></Link></div></div>
             </div>
         </section>

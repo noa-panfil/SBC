@@ -14,6 +14,7 @@ import AdminBirthdayGenerator from "./AdminBirthdayGenerator";
 import AdminMaintenanceManager from "./AdminMaintenanceManager";
 import AdminMatchesManager from "./AdminMatchesManager";
 import AdminTeamManagement from "./AdminTeamManagement";
+import AdminPartnersManager from "./AdminPartnersManager";
 
 async function getMaintenanceMode() {
     const [rows] = await pool.query<RowDataPacket[]>("SELECT value FROM settings WHERE key_name = 'maintenance_mode' LIMIT 1");
@@ -34,6 +35,7 @@ async function getStats() {
              WHERE r.code IN ('coach', 'assistant_coach')) AS coaches,
             (SELECT COUNT(DISTINCT b.person_id) FROM bureau_members b) AS bureau,
             (SELECT COUNT(DISTINCT v.person_id) FROM volunteers v) AS volunteers,
+            (SELECT COUNT(*) FROM partners) AS partners,
             (SELECT COUNT(*) FROM contact_messages WHERE status = 'new') AS contacts
     `);
     const stats = rows[0];
@@ -43,6 +45,7 @@ async function getStats() {
         coaches: Number(stats.coaches),
         bureau: Number(stats.bureau),
         volunteers: Number(stats.volunteers),
+        partners: Number(stats.partners),
         contacts: Number(stats.contacts),
     };
 }
@@ -159,6 +162,7 @@ export default async function AdminDashboard() {
         { label: "Bureau", value: stats.bureau, icon: "fa-users-cog", link: "#bureau" },
         { label: "Bénévoles", value: stats.volunteers, icon: "fa-hands-helping", link: "#volunteers" },
         { label: "Équipes", value: teams.length, icon: "fa-shield-alt", link: "#teams" },
+        { label: "Partenaires", value: stats.partners, icon: "fa-handshake", link: "#partners" },
         { label: "Contacts", value: stats.contacts, icon: "fa-inbox", link: "/admin/contacts" },
     ];
 
@@ -177,6 +181,7 @@ export default async function AdminDashboard() {
         <section id="events" className="scroll-mt-24"><SectionTitle>Événements</SectionTitle><AdminEventsManager teams={teams as never[]} /></section>
         <section id="stories" className="scroll-mt-24"><SectionTitle>Stories</SectionTitle><AdminStoryGenerator teams={teams as never[]} /></section>
         <section id="appearance" className="scroll-mt-24"><SectionTitle>Apparence</SectionTitle><AdminAppearanceManager /></section>
+        <section id="partners" className="scroll-mt-24"><SectionTitle>Partenaires</SectionTitle><AdminPartnersManager /></section>
         <section id="birthdays" className="scroll-mt-24"><SectionTitle>Anniversaires</SectionTitle><AdminBirthdayGenerator teams={teams as never[]} volunteers={volunteers} /></section>
         <AdminMaintenanceManager initialEnabled={maintenanceEnabled} />
     </div>;

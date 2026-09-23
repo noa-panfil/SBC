@@ -14,6 +14,7 @@ const menuItems = [
     { name: "Stories", icon: "fas fa-mobile-alt", href: "/admin#stories" },
     { name: "Anniversaires", icon: "fas fa-birthday-cake", href: "/admin#birthdays" },
     { name: "Apparence", icon: "fas fa-paint-brush", href: "/admin#appearance" },
+    { name: "Partenaires", icon: "fas fa-handshake", href: "/admin#partners" },
     { name: "Boutique", icon: "fas fa-shopping-basket", href: "/admin/boutique" },
     { name: "Contacts", icon: "fas fa-inbox", href: "/admin/contacts" },
 ];

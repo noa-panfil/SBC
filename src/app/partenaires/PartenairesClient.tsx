@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
-type Partner = { id: number; name: string; img: string | null };
+type Partner = { id: number; name: string; websiteUrl: string | null; img: string | null };
 
 function PartnerCard({ partner, onOpen }: { partner: Partner; onOpen: (partner: Partner) => void }) {
     return <article className="group overflow-hidden rounded-[1.75rem] border border-gray-200/80 bg-white shadow-[0_8px_35px_rgba(15,23,42,.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_22px_60px_rgba(8,43,29,.15)]">
@@ -13,9 +13,9 @@ function PartnerCard({ partner, onOpen }: { partner: Partner; onOpen: (partner: 
             <div className="pointer-events-none absolute inset-3 rounded-2xl border border-white/40 opacity-0 transition duration-300 group-hover:opacity-100" />
             {partner.img && <span className="absolute bottom-4 right-4 flex h-10 w-10 translate-y-2 items-center justify-center rounded-full bg-white text-xs text-gray-950 opacity-0 shadow-lg transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100"><i className="fas fa-expand" /></span>}
         </button>
-        <div className="flex items-center justify-between gap-4 px-5 py-5 sm:px-6">
+        <div className="flex items-center gap-4 px-5 py-5 sm:px-6">
             <h2 className="min-w-0 truncate text-2xl font-black tracking-[-0.045em] text-gray-950 sm:text-[1.7rem]">{partner.name}</h2>
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-50 text-sbc transition group-hover:bg-sbc group-hover:text-white"><i className="fas fa-handshake text-xs" /></span>
+            {partner.websiteUrl ? <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer" aria-label={`Visiter le site de ${partner.name}`} title={`Visiter le site de ${partner.name}`} className="ml-auto inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-50 text-sbc transition hover:bg-sbc hover:text-white focus:outline-none focus:ring-4 focus:ring-sbc/20"><svg viewBox="0 0 100 100" aria-hidden="true" className="h-4 w-4 fill-current"><path d="M75.394 58.138 88.067 45.463c9.245-9.243 9.245-24.286 0-33.529-9.244-9.246-24.286-9.246-33.53 0L36.248 30.223c-9.245 9.243-9.245 24.286 0 33.529a23.768 23.768 0 0 0 4.44 3.486l9.791-9.792a10.72 10.72 0 0 1-5.086-2.838c-4.202-4.202-4.202-11.04 0-15.241l18.289-18.289c4.202-4.202 11.04-4.202 15.241 0 4.202 4.202 4.202 11.039 0 15.241l-5.373 5.374c2.214 5.211 2.826 10.942 1.844 16.445Z" /><path d="M24.607 41.862 11.934 54.536c-9.246 9.244-9.246 24.286 0 33.53 9.243 9.245 24.286 9.245 33.53 0l18.288-18.289c9.245-9.244 9.244-24.286 0-33.529a23.737 23.737 0 0 0-4.439-3.486l-9.791 9.792a10.72 10.72 0 0 1 5.086 2.838c4.202 4.202 4.202 11.039 0 15.241l-18.29 18.289c-4.202 4.202-11.039 4.202-15.241 0-4.202-4.202-4.202-11.039 0-15.241l5.374-5.373c-2.215-5.211-2.827-10.943-1.844-16.446Z" /></svg></a> : <span className="ml-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-50 text-sbc transition group-hover:bg-sbc group-hover:text-white"><i className="fas fa-handshake text-xs" /></span>}
         </div>
     </article>;
 }

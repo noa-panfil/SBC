@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 type Partner = {
     id: number | null;
     name: string;
+    websiteUrl: string;
     imageId: number | null;
     image: string | null;
     displayOrder: number;
@@ -15,6 +16,7 @@ type Partner = {
 const emptyPartner: Partner = {
     id: null,
     name: "",
+    websiteUrl: "",
     imageId: null,
     image: null,
     displayOrder: 0,
@@ -137,6 +139,9 @@ export default function AdminPartnersManager() {
             <div className="space-y-4 p-5">
                 <label className="block text-sm font-bold text-gray-700">Nom
                     <input value={partner.name} maxLength={255} onChange={(event) => update({ name: event.target.value })} placeholder="Nom du partenaire" className="mt-1.5 w-full rounded-xl border border-gray-200 px-3 py-2.5 font-medium outline-none focus:border-sbc" />
+                </label>
+                <label className="block text-sm font-bold text-gray-700">Lien du site
+                    <input type="url" value={partner.websiteUrl} maxLength={2048} onChange={(event) => update({ websiteUrl: event.target.value })} placeholder="https://exemple.fr" className="mt-1.5 w-full rounded-xl border border-gray-200 px-3 py-2.5 font-medium outline-none focus:border-sbc" />
                 </label>
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4">
                     <label className="block text-sm font-bold text-gray-700">Ordre d’affichage

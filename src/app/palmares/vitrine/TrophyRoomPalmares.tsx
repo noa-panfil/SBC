@@ -52,10 +52,10 @@ export default function TrophyRoomPalmares() {
         const finalists: PalmaresItem[] = [];
         const stories: PalmaresItem[] = [];
         history.forEach((item) => {
-            const value = `${item.title} ${item.description}`.toLowerCase();
-            if (value.includes("champion") && !value.includes("vice")) champions.push(item);
-            else if (value.includes("vice") || value.includes("finale")) finalists.push(item);
-            else stories.push(item);
+            const level = item.awardLevel || "gold";
+            if (level === "silver") finalists.push(item);
+            else if (level === "bronze") stories.push(item);
+            else champions.push(item);
         });
         return { champions, finalists, stories };
     }, [history]);

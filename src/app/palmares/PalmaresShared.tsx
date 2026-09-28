@@ -11,6 +11,7 @@ export interface PalmaresItem {
     category: string;
     image: string | null;
     is_highlight: boolean;
+    awardLevel?: "gold" | "silver" | "bronze";
 }
 
 export function usePalmaresData() {

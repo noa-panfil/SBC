@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
     try {
         const [rows] = await pool.query<RowDataPacket[]>(
-            'SELECT id, year, title, description, category, image_id, is_highlight FROM palmares ORDER BY year DESC'
+            'SELECT id, year, title, description, category, image_id, is_highlight, COALESCE(award_level, "gold") AS award_level FROM palmares ORDER BY year DESC'
         );
 
         const data = rows.map((row: any) => ({
@@ -17,7 +17,8 @@ export async function GET() {
             description: row.description,
             category: row.category,
             image: row.image_id ? `/api/image/${row.image_id}?scope=palmares` : null,
-            is_highlight: Boolean(row.is_highlight)
+            is_highlight: Boolean(row.is_highlight),
+            awardLevel: row.award_level || 'gold',
         }));
 
         return NextResponse.json(data);

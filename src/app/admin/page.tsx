@@ -15,6 +15,7 @@ import AdminMaintenanceManager from "./AdminMaintenanceManager";
 import AdminMatchesManager from "./AdminMatchesManager";
 import AdminTeamManagement from "./AdminTeamManagement";
 import AdminPartnersManager from "./AdminPartnersManager";
+import AdminPalmaresManager from "./AdminPalmaresManager";
 
 async function getMaintenanceMode() {
     const [rows] = await pool.query<RowDataPacket[]>("SELECT value FROM settings WHERE key_name = 'maintenance_mode' LIMIT 1");
@@ -36,6 +37,7 @@ async function getStats() {
             (SELECT COUNT(DISTINCT b.person_id) FROM bureau_members b) AS bureau,
             (SELECT COUNT(DISTINCT v.person_id) FROM volunteers v) AS volunteers,
             (SELECT COUNT(*) FROM partners) AS partners,
+            (SELECT COUNT(*) FROM palmares) AS palmares,
             (SELECT COUNT(*) FROM contact_messages WHERE status = 'new') AS contacts
     `);
     const stats = rows[0];
@@ -46,6 +48,7 @@ async function getStats() {
         bureau: Number(stats.bureau),
         volunteers: Number(stats.volunteers),
         partners: Number(stats.partners),
+        palmares: Number(stats.palmares),
         contacts: Number(stats.contacts),
     };
 }
@@ -159,6 +162,7 @@ export default async function AdminDashboard() {
         { label: "Personnes", value: stats.persons, icon: "fa-users", link: "/admin/players" },
         { label: "Joueurs", value: stats.players, icon: "fa-basketball-ball", link: "/admin/players" },
         { label: "Coachs", value: stats.coaches, icon: "fa-user-tie", link: "/admin/players" },
+        { label: "Palmarès", value: stats.palmares, icon: "fa-trophy", link: "#palmares" },
         { label: "Bureau", value: stats.bureau, icon: "fa-users-cog", link: "#bureau" },
         { label: "Bénévoles", value: stats.volunteers, icon: "fa-hands-helping", link: "#volunteers" },
         { label: "Équipes", value: teams.length, icon: "fa-shield-alt", link: "#teams" },
@@ -172,8 +176,9 @@ export default async function AdminDashboard() {
             <div className="flex gap-3"><InstallPWA /><Link href="/" className="rounded-xl bg-gray-100 px-4 py-3 text-xs font-black uppercase">Voir le site</Link></div>
         </header>
 
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">{cards.map((card) => <Link key={card.label} href={card.link} className="rounded-3xl border bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"><i className={`fas ${card.icon} mb-4 text-2xl text-sbc`} /><p className="text-xs font-black uppercase tracking-wider text-gray-400">{card.label}</p><p className="text-3xl font-black">{card.value}</p></Link>)}</div>
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-9">{cards.map((card) => <Link key={card.label} href={card.link} className="rounded-3xl border bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"><i className={`fas ${card.icon} mb-4 text-2xl text-sbc`} /><p className="text-xs font-black uppercase tracking-wider text-gray-400">{card.label}</p><p className="text-3xl font-black">{card.value}</p></Link>)}</div>
 
+        <section id="palmares" className="scroll-mt-24"><SectionTitle>Palmarès & Salle des trophées</SectionTitle><AdminPalmaresManager /></section>
         <section id="teams" className="scroll-mt-24"><SectionTitle>Équipes par saison</SectionTitle><AdminTeamManagement seasons={seasons} teams={teams as never[]} candidates={teamCandidates} /></section>
         <section id="matches" className="scroll-mt-24"><SectionTitle>Matchs</SectionTitle><AdminMatchesManager teams={teams.map((team) => ({ id: Number(team.id), name: String(team.name), season_id: team.season_id }))} seasons={seasons} /></section>
         <section id="bureau" className="scroll-mt-24"><SectionTitle>Membres du bureau</SectionTitle><BureauManager officials={officials} /></section>

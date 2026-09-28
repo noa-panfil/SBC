@@ -45,9 +45,9 @@ function TeamCard({ id, team, isFavorite, onToggleFavorite }: { id: string; team
                 <div className="relative aspect-[4/3] overflow-hidden bg-[#e8ebe5]">
                     <img src={team.image} alt={`Équipe ${team.name} du Seclin Basket Club`} className="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-[1.045]" />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#061d14] via-[#082b1d]/10 to-transparent" />
-                    <span className="absolute left-5 top-5 rounded-full border border-white/30 bg-white/90 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-sbc-dark shadow-sm backdrop-blur">{team.category}</span>
+                    {team.category && <span className="absolute bottom-5 right-5 rounded-full border border-white/30 bg-white/90 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-sbc-dark shadow-sm backdrop-blur">{team.category}</span>}
                     <div className="absolute inset-x-0 bottom-0 p-5 text-white sm:p-6">
-                        <h3 className="text-2xl font-black tracking-[-0.04em] sm:text-3xl">{team.name}</h3>
+                        <h3 className="pr-28 text-2xl font-black tracking-[-0.04em] sm:text-3xl">{team.name}</h3>
                         <div className="mt-3 flex items-center gap-4 text-xs font-bold text-white/75"><span><i className="fas fa-users mr-1.5 text-green-300" />{team.players.length} joueur{team.players.length > 1 ? "s" : ""}</span><span><i className="fas fa-user-tie mr-1.5 text-green-300" />{team.coaches.length} coach{team.coaches.length > 1 ? "s" : ""}</span></div>
                     </div>
                 </div>

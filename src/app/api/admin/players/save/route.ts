@@ -5,8 +5,13 @@ import pool from "@/lib/db";
 import { authOptions } from "@/lib/auth";
 
 const membershipRoles = new Set(["player", "coach", "assistant_coach"]);
+const roleContexts = ["player", "coach", "bureau"] as const;
 type MembershipInput = { team_id?: number | string; membership_role?: string; jersey_number?: number | string | null };
 function isMembership(value: unknown): value is MembershipInput { return typeof value === "object" && value !== null; }
+function imageId(value: unknown) {
+    const id = Number(value);
+    return Number.isSafeInteger(id) && id > 0 ? id : null;
+}
 
 export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
@@ -18,13 +23,29 @@ export async function POST(request: NextRequest) {
     try {
         await connection.beginTransaction();
         let personId = Number(body.id) || 0;
-        const values = [body.firstname.trim(), body.lastname.trim(), body.birthdate || null, body.gender || null, body.email || null, body.phone || null, body.image_id || null, body.celebration_image_id || null, body.active ? 1 : 0];
+        const roleImages = roleContexts.map((context) => {
+            const photos = body.role_images?.[context] || {};
+            return {
+                context,
+                imageId: imageId(photos.image_id ?? body.image_id),
+                celebrationImageId: context === "bureau" ? null : imageId(photos.celebration_image_id ?? body.celebration_image_id),
+            };
+        });
+        const fallbackImageId = roleImages.find((photos) => photos.imageId)?.imageId || null;
+        const fallbackCelebrationImageId = roleImages.find((photos) => photos.celebrationImageId)?.celebrationImageId || null;
+        const values = [body.firstname.trim(), body.lastname.trim(), body.birthdate || null, body.gender || null, body.email || null, body.phone || null, fallbackImageId, fallbackCelebrationImageId, body.active ? 1 : 0];
         if (personId) {
             await connection.query("UPDATE persons SET firstname=?, lastname=?, birthdate=?, gender=?, email=?, phone=?, image_id=?, celebration_image_id=?, active=? WHERE id=?", [...values, personId]);
         } else {
             const [insert] = await connection.query<ResultSetHeader>("INSERT INTO persons (firstname, lastname, birthdate, gender, email, phone, image_id, celebration_image_id, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", values);
             personId = insert.insertId;
         }
+
+        await connection.query(
+            `INSERT INTO person_role_images (person_id, role_context, image_id, celebration_image_id) VALUES ?
+             ON DUPLICATE KEY UPDATE image_id = VALUES(image_id), celebration_image_id = VALUES(celebration_image_id)`,
+            [roleImages.map((photos) => [personId, photos.context, photos.imageId, photos.celebrationImageId])]
+        );
 
         const membershipInputs: MembershipInput[] = Array.isArray(body.memberships) ? body.memberships.filter((item: unknown): item is MembershipInput => isMembership(item) && Number(item.team_id) > 0 && membershipRoles.has(String(item.membership_role))) : [];
         const memberships = [...new Map(membershipInputs.map((item) => [`${Number(item.team_id)}:${String(item.membership_role)}`, item])).values()];

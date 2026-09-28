@@ -13,7 +13,14 @@ async function getData(id: string) {
         WHERE t.active = 1 ORDER BY s.starts_on DESC, t.display_order, t.name
     `);
     if (id === "new") return {
-        person: { id: null, firstname: "", lastname: "", birthdate: "", gender: "", email: "", phone: "", image_id: null, celebration_image_id: null, active: true, roles: [], memberships: [] }, roles, teams,
+        person: {
+            id: null, firstname: "", lastname: "", birthdate: "", gender: "", email: "", phone: "", active: true, roles: [], memberships: [],
+            role_images: {
+                player: { image_id: null, celebration_image_id: null },
+                coach: { image_id: null, celebration_image_id: null },
+                bureau: { image_id: null, celebration_image_id: null },
+            },
+        }, roles, teams,
     };
     const numericId = Number(id);
     if (!Number.isSafeInteger(numericId) || numericId < 1) return null;
@@ -24,8 +31,20 @@ async function getData(id: string) {
     if (!people.length) return null;
     const [personRoles] = await pool.query<RowDataPacket[]>("SELECT r.code FROM person_roles pr JOIN roles r ON r.id = pr.role_id WHERE pr.person_id = ?", [numericId]);
     const [memberships] = await pool.query<RowDataPacket[]>("SELECT team_id, membership_role, jersey_number FROM team_memberships WHERE person_id = ? ORDER BY id", [numericId]);
+    const [roleImageRows] = await pool.query<RowDataPacket[]>("SELECT role_context, image_id, celebration_image_id FROM person_role_images WHERE person_id = ?", [numericId]);
+    const roleImages = Object.fromEntries(["player", "coach", "bureau"].map((context) => {
+        const stored = roleImageRows.find((row) => row.role_context === context);
+        return [context, {
+            image_id: stored ? stored.image_id : people[0].image_id ?? null,
+            celebration_image_id: context === "bureau" ? null : stored ? stored.celebration_image_id : people[0].celebration_image_id ?? null,
+        }];
+    }));
     return {
-        person: { ...people[0], active: !!people[0].active, roles: personRoles.map((role) => role.code), memberships: memberships.map((membership) => ({ ...membership, team_id: Number(membership.team_id) })) }, roles, teams,
+        person: {
+            ...people[0], active: !!people[0].active, roles: personRoles.map((role) => role.code),
+            memberships: memberships.map((membership) => ({ ...membership, team_id: Number(membership.team_id) })),
+            role_images: roleImages,
+        }, roles, teams,
     };
 }
 

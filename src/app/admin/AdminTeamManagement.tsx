@@ -8,8 +8,10 @@ type Season = { id: number; label: string; is_current: number };
 type Candidate = {
     id: number;
     name: string;
-    image_id: number | null;
-    img: string | null;
+    player_image_id: number | null;
+    coach_image_id: number | null;
+    player_img: string | null;
+    coach_img: string | null;
     birth: string | null;
     sexe: string;
     roles: string[];

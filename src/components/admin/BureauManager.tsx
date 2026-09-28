@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface Official {
     id: number;
@@ -13,6 +14,7 @@ interface Official {
 
 interface BureauMember {
     id: number;
+    person_id: number;
     fullname: string;
     role: string;
     image_id: number | null;
@@ -204,13 +206,18 @@ export default function BureauManager({ officials }: { officials: Official[] }) 
                             <span className="font-bold text-gray-900 leading-tight truncate">{member.fullname}</span>
                             <span className="text-sbc text-xs uppercase font-black tracking-widest truncate">{member.role}</span>
                         </div>
-                        <button
-                            onClick={() => handleDelete(member.id)}
-                            className="absolute top-2 right-2 text-red-500 bg-red-50 hover:bg-red-500 hover:text-white w-8 h-8 rounded-lg transition opacity-0 group-hover:opacity-100 flex items-center justify-center focus:opacity-100"
-                            title="Retirer du bureau"
-                        >
-                            <i className="fas fa-trash text-sm"></i>
-                        </button>
+                        <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
+                            <Link href={`/admin/players/${member.person_id}`} className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-50 text-sbc transition hover:bg-sbc hover:text-white" title="Modifier le portrait du bureau">
+                                <i className="fas fa-camera text-xs"></i>
+                            </Link>
+                            <button
+                                onClick={() => handleDelete(member.id)}
+                                className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-500 transition hover:bg-red-500 hover:text-white"
+                                title="Retirer du bureau"
+                            >
+                                <i className="fas fa-trash text-sm"></i>
+                            </button>
+                        </div>
                     </div>
                 ))}
 

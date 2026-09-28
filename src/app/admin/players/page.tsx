@@ -14,10 +14,21 @@ async function getPlayers() {
                 p.lastname, 
                 p.birthdate, 
                 p.gender, 
-                p.image_id, p.celebration_image_id, p.active,
+                COALESCE(role_images.player_image_id, role_images.coach_image_id, role_images.bureau_image_id, p.image_id) AS image_id,
+                COALESCE(role_images.player_celebration_image_id, role_images.coach_celebration_image_id, p.celebration_image_id) AS celebration_image_id,
+                p.active,
                 GROUP_CONCAT(DISTINCT CONCAT(s.label, ' · ', t.name) ORDER BY s.starts_on DESC SEPARATOR ', ') as teams,
                 GROUP_CONCAT(DISTINCT r.label ORDER BY r.label SEPARATOR ', ') AS roles
             FROM persons p
+            LEFT JOIN (
+                SELECT person_id,
+                       MAX(CASE WHEN role_context = 'player' THEN image_id END) AS player_image_id,
+                       MAX(CASE WHEN role_context = 'player' THEN celebration_image_id END) AS player_celebration_image_id,
+                       MAX(CASE WHEN role_context = 'coach' THEN image_id END) AS coach_image_id,
+                       MAX(CASE WHEN role_context = 'coach' THEN celebration_image_id END) AS coach_celebration_image_id,
+                       MAX(CASE WHEN role_context = 'bureau' THEN image_id END) AS bureau_image_id
+                FROM person_role_images GROUP BY person_id
+            ) role_images ON role_images.person_id = p.id
             LEFT JOIN team_memberships tm ON p.id = tm.person_id
             LEFT JOIN teams t ON tm.team_id = t.id
             LEFT JOIN seasons s ON s.id = t.season_id

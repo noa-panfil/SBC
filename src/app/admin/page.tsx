@@ -72,8 +72,12 @@ async function getTeams() {
     `);
     const [memberRows] = await pool.query<RowDataPacket[]>(`
         SELECT tm.person_id, tm.team_id, tm.membership_role, tm.jersey_number,
-               p.firstname, p.lastname, p.birthdate, p.gender, p.image_id
-        FROM team_memberships tm JOIN persons p ON p.id = tm.person_id
+               p.firstname, p.lastname, p.birthdate, p.gender,
+               CASE WHEN pri.person_id IS NULL THEN p.image_id ELSE pri.image_id END AS image_id
+        FROM team_memberships tm
+        JOIN persons p ON p.id = tm.person_id
+        LEFT JOIN person_role_images pri ON pri.person_id = p.id
+             AND pri.role_context = CASE WHEN tm.membership_role = 'player' THEN 'player' ELSE 'coach' END
     `);
     const [trainingSlotRows] = await pool.query<RowDataPacket[]>(`
         SELECT team_id, schedule_text
@@ -117,10 +121,12 @@ async function getVolunteersForBirthdays() {
 
 async function getPersonsForBureau() {
     const [rows] = await pool.query<RowDataPacket[]>(`
-        SELECT p.id, p.firstname, p.lastname, p.image_id,
+        SELECT p.id, p.firstname, p.lastname,
+               CASE WHEN bri.person_id IS NULL THEN p.image_id ELSE bri.image_id END AS image_id,
                GROUP_CONCAT(DISTINCT t.name ORDER BY t.name SEPARATOR ', ') AS teams,
                GROUP_CONCAT(DISTINCT r.label ORDER BY r.label SEPARATOR ', ') AS roles
         FROM persons p
+        LEFT JOIN person_role_images bri ON bri.person_id = p.id AND bri.role_context = 'bureau'
         LEFT JOIN team_memberships tm ON tm.person_id = p.id
         LEFT JOIN teams t ON t.id = tm.team_id
         LEFT JOIN person_roles pr ON pr.person_id = p.id
@@ -133,10 +139,20 @@ async function getPersonsForBureau() {
 
 async function getTeamCandidates() {
     const [rows] = await pool.query<RowDataPacket[]>(`
-        SELECT p.id, p.firstname, p.lastname, p.image_id, p.gender,
+        SELECT p.id, p.firstname, p.lastname, p.gender,
+               CASE WHEN COALESCE(role_images.has_player_context, 0) = 1 THEN role_images.player_image_id ELSE p.image_id END AS player_image_id,
+               CASE WHEN COALESCE(role_images.has_coach_context, 0) = 1 THEN role_images.coach_image_id ELSE p.image_id END AS coach_image_id,
                DATE_FORMAT(p.birthdate, '%d/%m/%Y') AS birth,
                GROUP_CONCAT(DISTINCT r.code ORDER BY r.code SEPARATOR ',') AS role_codes
         FROM persons p
+        LEFT JOIN (
+            SELECT person_id,
+                   MAX(role_context = 'player') AS has_player_context,
+                   MAX(role_context = 'coach') AS has_coach_context,
+                   MAX(CASE WHEN role_context = 'player' THEN image_id END) AS player_image_id,
+                   MAX(CASE WHEN role_context = 'coach' THEN image_id END) AS coach_image_id
+            FROM person_role_images GROUP BY person_id
+        ) role_images ON role_images.person_id = p.id
         LEFT JOIN person_roles pr ON pr.person_id = p.id
         LEFT JOIN roles r ON r.id = pr.role_id
         WHERE p.active = 1
@@ -146,8 +162,10 @@ async function getTeamCandidates() {
     return rows.map((row) => ({
         id: Number(row.id),
         name: `${row.firstname} ${row.lastname}`.trim(),
-        image_id: row.image_id == null ? null : Number(row.image_id),
-        img: row.image_id ? `/api/image/${row.image_id}?scope=person` : null,
+        player_image_id: row.player_image_id == null ? null : Number(row.player_image_id),
+        coach_image_id: row.coach_image_id == null ? null : Number(row.coach_image_id),
+        player_img: row.player_image_id ? `/api/image/${row.player_image_id}?scope=person` : null,
+        coach_img: row.coach_image_id ? `/api/image/${row.coach_image_id}?scope=person` : null,
         birth: row.birth || null,
         sexe: row.gender || "",
         roles: row.role_codes ? String(row.role_codes).split(",") : [],

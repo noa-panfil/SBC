@@ -35,8 +35,10 @@ interface Team {
 interface Candidate {
     id: number;
     name: string;
-    image_id: number | null;
-    img: string | null;
+    player_image_id: number | null;
+    coach_image_id: number | null;
+    player_img: string | null;
+    coach_img: string | null;
     birth: string | null;
     sexe: string;
     roles: string[];
@@ -140,7 +142,7 @@ export default function AdminTeamsClient({ teams, candidates, teamToOpen }: {
         name: candidate.name,
         role,
         num: null,
-        img: candidate.img,
+        img: role === "player" ? candidate.player_img : candidate.coach_img,
         birth: candidate.birth,
         sexe: candidate.sexe,
     });

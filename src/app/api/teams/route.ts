@@ -14,12 +14,15 @@ export async function GET() {
         // 2. Fetch All Members
         const [memberRows] = await pool.query<RowDataPacket[]>(
             `SELECT tm.team_id, tm.membership_role, tm.jersey_number, p.firstname,
-                    DATE_FORMAT(p.birthdate, '%d/%m') AS birthday, p.gender, p.image_id,
-                    p.celebration_image_id
+                    DATE_FORMAT(p.birthdate, '%d/%m') AS birthday, p.gender,
+                    CASE WHEN pri.person_id IS NULL THEN p.image_id ELSE pri.image_id END AS image_id,
+                    CASE WHEN pri.person_id IS NULL THEN p.celebration_image_id ELSE pri.celebration_image_id END AS celebration_image_id
        FROM team_memberships tm
        JOIN persons p ON tm.person_id = p.id
        JOIN teams t ON t.id = tm.team_id
        JOIN seasons s ON s.id = t.season_id
+       LEFT JOIN person_role_images pri ON pri.person_id = p.id
+            AND pri.role_context = CASE WHEN tm.membership_role = 'player' THEN 'player' ELSE 'coach' END
        WHERE p.active = 1 AND t.active = 1 AND s.is_current = 1
        ORDER BY tm.team_id,
                 CASE WHEN tm.membership_role = 'player' THEN 0 ELSE 1 END,

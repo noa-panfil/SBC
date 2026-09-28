@@ -5,7 +5,14 @@ import pool from "@/lib/db";
 import { authOptions } from "@/lib/auth";
 
 export async function GET() {
-    const [rows] = await pool.query<RowDataPacket[]>("SELECT b.id, b.person_id, CONCAT(p.firstname, ' ', p.lastname) AS fullname, b.title AS role, p.image_id FROM bureau_members b JOIN persons p ON p.id = b.person_id ORDER BY b.display_order, b.id");
+    const [rows] = await pool.query<RowDataPacket[]>(`
+        SELECT b.id, b.person_id, CONCAT(p.firstname, ' ', p.lastname) AS fullname, b.title AS role,
+               CASE WHEN pri.person_id IS NULL THEN p.image_id ELSE pri.image_id END AS image_id
+        FROM bureau_members b
+        JOIN persons p ON p.id = b.person_id
+        LEFT JOIN person_role_images pri ON pri.person_id = p.id AND pri.role_context = 'bureau'
+        ORDER BY b.display_order, b.id
+    `);
     return NextResponse.json(rows);
 }
 
@@ -18,5 +25,10 @@ export async function POST(request: NextRequest) {
     const [result] = await pool.query<ResultSetHeader>("INSERT INTO bureau_members (person_id, season_id, title) VALUES (?, ?, ?)", [personId, season[0]?.id || null, title]);
     const [role] = await pool.query<RowDataPacket[]>("SELECT id FROM roles WHERE code = 'board_member'");
     await pool.query("INSERT IGNORE INTO person_roles (person_id, role_id) VALUES (?, ?)", [personId, role[0].id]);
+    await pool.query(`
+        INSERT INTO person_role_images (person_id, role_context, image_id, celebration_image_id)
+        SELECT id, 'bureau', image_id, NULL FROM persons WHERE id = ?
+        ON DUPLICATE KEY UPDATE person_id = VALUES(person_id)
+    `, [personId]);
     return NextResponse.json({ id: result.insertId }, { status: 201 });
 }

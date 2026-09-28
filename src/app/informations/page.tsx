@@ -17,10 +17,11 @@ export default async function Informations() {
         const [rows] = await pool.query<RowDataPacket[]>(
             `SELECT 
                 b.title AS role,
-                p.image_id,
+                CASE WHEN pri.person_id IS NULL THEN p.image_id ELSE pri.image_id END AS image_id,
                 TRIM(CONCAT(p.lastname, ' ', p.firstname)) AS fullname
              FROM bureau_members b
-             JOIN persons p ON b.person_id = p.id`
+             JOIN persons p ON b.person_id = p.id
+             LEFT JOIN person_role_images pri ON pri.person_id = p.id AND pri.role_context = 'bureau'`
         );
         bureauMembers = rows;
     } catch (e) {
